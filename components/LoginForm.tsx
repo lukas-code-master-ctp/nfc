@@ -6,11 +6,12 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  type User,
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
 
-async function establishSession() {
-  const idToken = await auth.currentUser!.getIdToken()
+async function establishSession(user: User) {
+  const idToken = await user.getIdToken()
   await fetch('/api/session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -25,8 +26,8 @@ export default function LoginForm() {
   const [isRegister, setIsRegister] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function afterAuth() {
-    await establishSession()
+  async function afterAuth(user: User) {
+    await establishSession(user)
     router.push('/dashboard')
     router.refresh()
   }
@@ -34,9 +35,9 @@ export default function LoginForm() {
   async function handleGoogle() {
     setError(null)
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider())
-      await afterAuth()
-    } catch (e) {
+      const { user } = await signInWithPopup(auth, new GoogleAuthProvider())
+      await afterAuth(user)
+    } catch {
       setError('No se pudo iniciar sesión con Google.')
     }
   }
@@ -45,9 +46,10 @@ export default function LoginForm() {
     e.preventDefault()
     setError(null)
     try {
-      if (isRegister) await createUserWithEmailAndPassword(auth, email, password)
-      else await signInWithEmailAndPassword(auth, email, password)
-      await afterAuth()
+      const cred = isRegister
+        ? await createUserWithEmailAndPassword(auth, email, password)
+        : await signInWithEmailAndPassword(auth, email, password)
+      await afterAuth(cred.user)
     } catch {
       setError(isRegister ? 'No se pudo crear la cuenta.' : 'Credenciales inválidas.')
     }
