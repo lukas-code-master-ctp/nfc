@@ -1,4 +1,4 @@
-import { adminDb, adminBucket } from '@/lib/firebase/admin'
+import { adminDb, adminAuth } from '@/lib/firebase/admin'
 import { nanoid } from 'nanoid'
 import type { Vehicle } from '@/lib/types'
 
@@ -69,4 +69,17 @@ export async function regenerateToken(vehicleId: string, ownerUid: string): Prom
   const publicToken = nanoid(21)
   await adminDb.collection(COL).doc(vehicleId).update({ publicToken })
   return publicToken
+}
+
+export async function vehicleInfoForReminder(
+  vehicleId: string,
+): Promise<{ patente: string; email: string } | null> {
+  const v = await getVehicle(vehicleId)
+  if (!v) return null
+  try {
+    const u = await adminAuth.getUser(v.ownerUid)
+    return { patente: v.patente, email: u.email ?? '' }
+  } catch {
+    return { patente: v.patente, email: '' }
+  }
 }

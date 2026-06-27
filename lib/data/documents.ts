@@ -59,3 +59,8 @@ export async function deleteDocument(documentId: string, ownerUid: string): Prom
   }
   await adminDb.collection(COL).doc(documentId).delete()
 }
+
+export async function listAllDocuments(): Promise<VehicleDocument[]> {
+  const snap = await adminDb.collection(COL).where('fechaVencimiento', '!=', null).get()
+  return snap.docs.map((d) => toDoc(d.id, d.data()))
+}
