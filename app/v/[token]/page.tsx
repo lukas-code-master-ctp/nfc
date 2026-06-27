@@ -1,0 +1,26 @@
+import { notFound } from 'next/navigation'
+import { getVehicleByToken } from '@/lib/data/vehicles'
+import { listDocuments } from '@/lib/data/documents'
+import { documentStatus } from '@/lib/documents/status'
+import { createReadUrl } from '@/lib/storage/signedUrls'
+import PublicVehicleView from '@/components/PublicVehicleView'
+
+export const dynamic = 'force-dynamic'
+
+export default async function PublicPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params
+  const vehicle = await getVehicleByToken(token)
+  if (!vehicle) notFound()
+
+  const now = new Date()
+  const docs = await listDocuments(vehicle.id)
+  const items = await Promise.all(
+    docs.map(async (d) => ({
+      ...d,
+      status: documentStatus(d.fechaVencimiento, now),
+      readUrl: d.filePath ? await createReadUrl(d.filePath) : null,
+    })),
+  )
+
+  return <PublicVehicleView vehicle={vehicle} documents={items} />
+}
