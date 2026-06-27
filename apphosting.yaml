@@ -1,0 +1,26 @@
+runConfig:
+  minInstances: 0
+  maxInstances: 2
+
+env:
+  - variable: NEXT_PUBLIC_APP_URL
+    value: https://tudominio.cl
+    availability:
+      - BUILD
+      - RUNTIME
+
+# Nota: las variables secretas (claves de API, credenciales Firebase, etc.) se
+# configuran como secretos en Firebase App Hosting, no en este archivo.
+# Secretos requeridos en Firebase Console:
+#   - NEXT_PUBLIC_FIREBASE_API_KEY
+#   - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+#   - NEXT_PUBLIC_FIREBASE_PROJECT_ID
+#   - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+#   - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+#   - NEXT_PUBLIC_FIREBASE_APP_ID
+#   - FIREBASE_PROJECT_ID
+#   - FIREBASE_CLIENT_EMAIL
+#   - FIREBASE_PRIVATE_KEY
+#   - RESEND_API_KEY
+#   - RESEND_FROM
+#   - CRON_SECRET
