@@ -42,7 +42,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
           <h2 className="text-lg font-semibold">Documentos</h2>
           <DocumentForm vehicleId={vehicle.id} />
         </div>
-        <DocumentList documents={items} />
+        <DocumentList documents={items} vehicleId={vehicle.id} />
       </section>
     </main>
   )
