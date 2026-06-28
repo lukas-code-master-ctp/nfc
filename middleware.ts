@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SESSION_COOKIE } from '@/lib/auth/constants'
 
-const PRIVATE_PREFIXES = ['/dashboard', '/vehiculos']
+const PRIVATE_PREFIXES = ['/dashboard', '/vehiculos', '/perfil', '/facturacion']
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -17,5 +17,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/vehiculos/:path*'],
+  matcher: ['/dashboard/:path*', '/vehiculos/:path*', '/perfil/:path*', '/facturacion/:path*'],
 }
