@@ -28,7 +28,10 @@ export default function DocumentList({ documents, vehicleId }: { documents: Item
 
   return (
     <ul className="space-y-2.5">
-      {documents.map((d) => (
+      {documents.map((d) => {
+        const editing = editingId === d.id
+        const needsUpdate = d.status === 'por_vencer' || d.status === 'vencido'
+        return (
         <li key={d.id} className="rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -41,31 +44,51 @@ export default function DocumentList({ documents, vehicleId }: { documents: Item
             </div>
             <StatusBadge status={d.status} />
           </div>
-          <div className="mt-3 flex items-center gap-4 border-t border-linea pt-3 text-sm font-medium">
-            {d.readUrl ? (
-              <a href={d.readUrl} target="_blank" rel="noopener noreferrer" className="text-azul hover:text-azul-press">
-                Ver archivo
-              </a>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-[#B45309]">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5" aria-hidden="true">
-                  <path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+
+          <div className="mt-3 space-y-3 border-t border-linea pt-3">
+            {needsUpdate && (
+              <button
+                onClick={() => setEditingId(editing ? null : d.id)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" />
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" />
                 </svg>
-                Sin archivo
-              </span>
+                {editing ? 'Cerrar' : 'Actualizar documento'}
+              </button>
             )}
-            <button onClick={() => setEditingId(editingId === d.id ? null : d.id)} className="text-azul hover:text-azul-press">
-              {editingId === d.id ? 'Cerrar' : 'Editar'}
-            </button>
-            <button onClick={() => remove(d.id)} className="ml-auto text-vencido hover:text-[#B91C1C]">
-              Eliminar
-            </button>
+
+            <div className="flex items-center gap-4 text-sm font-medium">
+              {d.readUrl ? (
+                <a href={d.readUrl} target="_blank" rel="noopener noreferrer" className="text-azul hover:text-azul-press">
+                  Ver archivo
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[#B45309]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5" aria-hidden="true">
+                    <path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                  </svg>
+                  Sin archivo
+                </span>
+              )}
+              {!needsUpdate && (
+                <button onClick={() => setEditingId(editing ? null : d.id)} className="text-azul hover:text-azul-press">
+                  {editing ? 'Cerrar' : 'Editar'}
+                </button>
+              )}
+              <button onClick={() => remove(d.id)} className="ml-auto text-vencido hover:text-[#B91C1C]">
+                Eliminar
+              </button>
+            </div>
           </div>
-          {editingId === d.id && (
+
+          {editing && (
             <DocumentEditForm vehicleId={vehicleId} document={d} onClose={() => setEditingId(null)} />
           )}
         </li>
-      ))}
+        )
+      })}
     </ul>
   )
 }
