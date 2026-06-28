@@ -9,6 +9,7 @@ import {
   type User,
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
+import PasswordInput from '@/components/PasswordInput'
 
 async function establishSession(user: User) {
   const idToken = await user.getIdToken()
@@ -80,7 +81,7 @@ export default function LoginForm() {
       <form onSubmit={handleEmail} className="space-y-3">
         <input className={inputCls} type="email" placeholder="Correo" autoComplete="email"
           value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input className={inputCls} type="password" placeholder="Contraseña"
+        <PasswordInput placeholder="Contraseña"
           autoComplete={isRegister ? 'new-password' : 'current-password'}
           value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button

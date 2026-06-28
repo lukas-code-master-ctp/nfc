@@ -9,9 +9,7 @@ import {
   linkWithCredential,
 } from 'firebase/auth'
 import { useAuth } from '@/lib/auth/AuthProvider'
-
-const inputCls =
-  'w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero/45 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20'
+import PasswordInput from '@/components/PasswordInput'
 
 function codeOf(err: unknown): string {
   return typeof err === 'object' && err && 'code' in err ? String((err as { code: unknown }).code) : ''
@@ -85,7 +83,7 @@ export default function SecurityCard() {
         {hasPassword && (
           <div className="space-y-1.5">
             <label htmlFor="cur" className="block text-sm font-medium text-acero">Contraseña actual</label>
-            <input id="cur" type="password" autoComplete="current-password" className={inputCls}
+            <PasswordInput id="cur" autoComplete="current-password"
               value={current} onChange={(e) => setCurrent(e.target.value)} required />
           </div>
         )}
@@ -93,12 +91,12 @@ export default function SecurityCard() {
           <label htmlFor="new" className="block text-sm font-medium text-acero">
             {hasPassword ? 'Nueva contraseña' : 'Contraseña'}
           </label>
-          <input id="new" type="password" autoComplete="new-password" className={inputCls}
+          <PasswordInput id="new" autoComplete="new-password"
             value={next} onChange={(e) => setNext(e.target.value)} required />
         </div>
         <div className="space-y-1.5">
           <label htmlFor="conf" className="block text-sm font-medium text-acero">Confirmar contraseña</label>
-          <input id="conf" type="password" autoComplete="new-password" className={inputCls}
+          <PasswordInput id="conf" autoComplete="new-password"
             value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
         </div>
         {error && <p className="text-sm text-vencido">{error}</p>}
