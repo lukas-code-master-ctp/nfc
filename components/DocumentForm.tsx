@@ -91,9 +91,10 @@ export default function DocumentForm({ vehicleId }: { vehicleId: string }) {
         <input type="date" className={inputCls} value={fechaVencimiento} onChange={(e) => setFecha(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <label className={labelCls}>Archivo <span className="font-normal text-acero/70">(opcional)</span></label>
-        <input type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        <label className={labelCls}>Archivo del documento</label>
+        <input type="file" accept="application/pdf,image/*" required onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="block w-full text-sm text-acero file:mr-3 file:rounded-lg file:border-0 file:bg-azul/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-azul hover:file:bg-azul/15" />
+        <p className="text-xs text-acero">Sube la foto o PDF del documento para que pueda validarse en una fiscalización.</p>
       </div>
       {error && <p role="alert" className="rounded-lg bg-[#FCE7E7] px-3 py-2 text-sm text-[#C81E1E]">{error}</p>}
       <div className="flex gap-2 pt-1">

@@ -42,10 +42,17 @@ export default function DocumentList({ documents, vehicleId }: { documents: Item
             <StatusBadge status={d.status} />
           </div>
           <div className="mt-3 flex items-center gap-4 border-t border-linea pt-3 text-sm font-medium">
-            {d.readUrl && (
+            {d.readUrl ? (
               <a href={d.readUrl} target="_blank" rel="noopener noreferrer" className="text-azul hover:text-azul-press">
                 Ver archivo
               </a>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[#B45309]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5" aria-hidden="true">
+                  <path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                </svg>
+                Sin archivo
+              </span>
             )}
             <button onClick={() => setEditingId(editingId === d.id ? null : d.id)} className="text-azul hover:text-azul-press">
               {editingId === d.id ? 'Cerrar' : 'Editar'}

@@ -43,12 +43,24 @@ export default function PublicVehicleView({ vehicle, documents }: { vehicle: Veh
                   </div>
                   <StatusBadge status={d.status} />
                 </div>
-                {d.readUrl && (
-                  <a href={d.readUrl} target="_blank" rel="noopener noreferrer"
-                    className="mt-3 inline-block border-t border-linea pt-3 text-sm font-medium text-azul hover:text-azul-press">
-                    Ver archivo
-                  </a>
-                )}
+                <div className="mt-3 border-t border-linea pt-3">
+                  {d.readUrl ? (
+                    <a href={d.readUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
+                      </svg>
+                      Ver documento
+                    </a>
+                  ) : (
+                    <p className="flex items-center justify-center gap-2 rounded-lg bg-[#FDF1DC] px-4 py-2.5 text-sm font-medium text-[#B45309]">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+                        <path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                      </svg>
+                      Sin archivo adjunto
+                    </p>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
