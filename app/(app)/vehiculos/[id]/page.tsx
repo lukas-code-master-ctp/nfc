@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/session'
 import { getVehicle } from '@/lib/data/vehicles'
@@ -31,15 +32,37 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   const publicUrl = `${base}/v/${vehicle.publicToken}`
 
   return (
-    <main className="mx-auto max-w-2xl space-y-6 p-4">
-      <div>
-        <h1 className="text-2xl font-bold">{vehicle.patente}</h1>
-        <p className="text-gray-600">{vehicle.marca} {vehicle.modelo} · {vehicle.anio} · {vehicle.color}</p>
+    <main className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-acero hover:text-tinta"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+        Volver
+      </Link>
+
+      <div className="flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-azul/10 text-azul">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-7" aria-hidden="true">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+            <circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" />
+          </svg>
+        </span>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-tinta">
+            {vehicle.marca} {vehicle.modelo} · {vehicle.patente}
+          </h1>
+          <p className="text-sm text-acero">{vehicle.anio} · {vehicle.color}</p>
+        </div>
       </div>
+
       <NfcTokenPanel vehicleId={vehicle.id} initialUrl={publicUrl} />
+
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Documentos</h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold text-tinta">Documentos</h2>
           <DocumentForm vehicleId={vehicle.id} />
         </div>
         <DocumentList documents={items} vehicleId={vehicle.id} />

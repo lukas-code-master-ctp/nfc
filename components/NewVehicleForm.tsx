@@ -22,21 +22,52 @@ export default function NewVehicleForm() {
     router.refresh()
   }
 
+  const LABELS: Record<keyof typeof form, string> = {
+    patente: 'Patente',
+    marca: 'Marca',
+    modelo: 'Modelo',
+    anio: 'Año',
+    color: 'Color',
+  }
+  const inputCls =
+    'w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20'
+
   if (!open) {
-    return <button onClick={() => setOpen(true)} className="rounded bg-blue-600 px-4 py-2 text-white">+ Nuevo vehículo</button>
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Nuevo vehículo
+      </button>
+    )
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 rounded-lg border p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
       {(['patente', 'marca', 'modelo', 'anio', 'color'] as const).map((f) => (
-        <input key={f} className="w-full rounded border p-2" placeholder={f}
-          value={form[f]} onChange={(e) => setForm({ ...form, [f]: e.target.value })}
-          required={f !== 'color'} />
+        <div key={f} className="space-y-1.5">
+          <label className="block text-sm font-medium text-acero">
+            {LABELS[f]}{f === 'color' && <span className="font-normal text-acero/70"> (opcional)</span>}
+          </label>
+          <input className={inputCls} placeholder={LABELS[f]}
+            value={form[f]} onChange={(e) => setForm({ ...form, [f]: e.target.value })}
+            required={f !== 'color'} />
+        </div>
       ))}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="flex gap-2">
-        <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">Guardar</button>
-        <button type="button" onClick={() => setOpen(false)} className="rounded border px-4 py-2">Cancelar</button>
+      {error && <p role="alert" className="rounded-lg bg-[#FCE7E7] px-3 py-2 text-sm text-[#C81E1E]">{error}</p>}
+      <div className="flex gap-2 pt-1">
+        <button type="submit"
+          className="rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press">
+          Guardar
+        </button>
+        <button type="button" onClick={() => setOpen(false)}
+          className="rounded-lg border border-linea bg-superficie px-4 py-2.5 text-sm font-medium text-tinta transition-colors hover:bg-lienzo">
+          Cancelar
+        </button>
       </div>
     </form>
   )

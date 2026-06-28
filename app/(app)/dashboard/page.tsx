@@ -18,22 +18,32 @@ export default async function DashboardPage() {
     vehicles.map(async (v) => {
       const docs = await listDocuments(v.id)
       const statuses: DocStatus[] = docs.map((d) => documentStatus(d.fechaVencimiento, now))
-      return { vehicle: v, status: worstStatus(statuses) }
+      return { vehicle: v, status: worstStatus(statuses), docCount: docs.length }
     }),
   )
 
   return (
-    <main className="mx-auto max-w-2xl p-4">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Mis vehículos</h1>
+    <main className="mx-auto max-w-2xl px-4 py-8">
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-tinta">Mis vehículos</h1>
+          <p className="mt-1 text-sm text-acero">
+            {withStatus.length} {withStatus.length === 1 ? 'vehículo registrado' : 'vehículos registrados'}
+          </p>
+        </div>
         <NewVehicleForm />
       </div>
       {withStatus.length === 0 ? (
-        <p className="text-gray-500">Aún no tienes vehículos registrados.</p>
+        <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-12 text-center">
+          <p className="font-medium text-tinta">Aún no tienes vehículos</p>
+          <p className="mt-1 text-sm text-acero">
+            Registra tu primer vehículo para empezar a guardar su documentación.
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {withStatus.map(({ vehicle, status }) => (
-            <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} />
+          {withStatus.map(({ vehicle, status, docCount }) => (
+            <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} />
           ))}
         </div>
       )}

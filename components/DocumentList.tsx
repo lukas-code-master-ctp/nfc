@@ -18,27 +18,41 @@ export default function DocumentList({ documents, vehicleId }: { documents: Item
     router.refresh()
   }
 
-  if (documents.length === 0) return <p className="text-gray-500">Sin documentos.</p>
+  if (documents.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-10 text-center">
+        <p className="text-sm text-acero">Aún no hay documentos. Agrega el primero con el botón de arriba.</p>
+      </div>
+    )
+  }
 
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-2.5">
       {documents.map((d) => (
-        <li key={d.id} className="rounded border p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">
+        <li key={d.id} className="rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-tinta">
                 {d.tipo === 'otro' ? d.nombrePersonalizado : DOCUMENT_TYPE_LABELS[d.tipo]}
               </p>
-              <p className="text-sm text-gray-600">
-                {d.fechaVencimiento ? `Vence: ${d.fechaVencimiento}` : 'Sin vencimiento'}
+              <p className="mt-0.5 text-sm text-acero">
+                {d.fechaVencimiento ? `Vence el ${d.fechaVencimiento}` : 'Sin vencimiento'}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <StatusBadge status={d.status} />
-              {d.readUrl && <a href={d.readUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600">Ver</a>}
-              <button onClick={() => setEditingId(editingId === d.id ? null : d.id)} className="text-sm text-blue-600">Editar</button>
-              <button onClick={() => remove(d.id)} className="text-sm text-red-600">Eliminar</button>
-            </div>
+            <StatusBadge status={d.status} />
+          </div>
+          <div className="mt-3 flex items-center gap-4 border-t border-linea pt-3 text-sm font-medium">
+            {d.readUrl && (
+              <a href={d.readUrl} target="_blank" rel="noopener noreferrer" className="text-azul hover:text-azul-press">
+                Ver archivo
+              </a>
+            )}
+            <button onClick={() => setEditingId(editingId === d.id ? null : d.id)} className="text-azul hover:text-azul-press">
+              {editingId === d.id ? 'Cerrar' : 'Editar'}
+            </button>
+            <button onClick={() => remove(d.id)} className="ml-auto text-vencido hover:text-[#B91C1C]">
+              Eliminar
+            </button>
           </div>
           {editingId === d.id && (
             <DocumentEditForm vehicleId={vehicleId} document={d} onClose={() => setEditingId(null)} />
