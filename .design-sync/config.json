@@ -1,0 +1,25 @@
+{
+  "pkg": "nfc-vehiculos",
+  "globalName": "TapCarUI",
+  "shape": "package",
+  "srcDir": "components",
+  "tsconfig": "tsconfig.json",
+  "componentSrcMap": {
+    "StatusBadge": "components/StatusBadge.tsx",
+    "PasswordInput": "components/PasswordInput.tsx",
+    "PublicVehicleView": "components/PublicVehicleView.tsx",
+    "VehicleCard": ".design-sync/ds-src/general/VehicleCard.tsx"
+  },
+  "overrides": {
+    "PublicVehicleView": { "cardMode": "single", "viewport": "620x900" },
+    "VehicleCard": { "cardMode": "column" }
+  },
+  "dtsPropsFor": {
+    "StatusBadge": "/** Estado a mostrar como pill. */ status: 'al_dia' | 'por_vencer' | 'vencido' | 'sin_vencimiento'; /** 'document' = etiqueta de un documento; 'vehicle' = estado resumido del vehículo. */ variant?: 'document' | 'vehicle';",
+    "PasswordInput": "/** Campo de contraseña con botón mostrar/ocultar. Extiende los atributos nativos de <input>. */ placeholder?: string; value?: string; defaultValue?: string; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; name?: string; autoComplete?: string; required?: boolean; disabled?: boolean; className?: string;",
+    "VehicleCard": "/** Vehículo a mostrar en la tarjeta. */ vehicle: { id: string; marca: string; modelo: string; patente: string; anio: number; color: string }; /** Peor estado entre sus documentos. */ status: 'al_dia' | 'por_vencer' | 'vencido' | 'sin_vencimiento'; /** Cantidad de documentos/archivos. */ docCount?: number;",
+    "PublicVehicleView": "/** Vehículo de la ficha pública de fiscalización. */ vehicle: { id: string; marca: string; modelo: string; patente: string; anio: number; color: string }; /** Documentos con su estado y URL de lectura ya resuelta. */ documents: Array<{ id: string; tipo: 'permiso_circulacion' | 'revision_tecnica' | 'soap' | 'certificado_gases' | 'padron' | 'otro'; nombrePersonalizado: string | null; fechaVencimiento: string | null; status: 'al_dia' | 'por_vencer' | 'vencido' | 'sin_vencimiento'; readUrl: string | null; filePath: string }>;"
+  },
+  "cssEntry": ".design-sync/.cache/tailwind.out.css",
+  "readmeHeader": ".design-sync/conventions.md"
+}

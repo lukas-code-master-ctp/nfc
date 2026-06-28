@@ -1,0 +1,9 @@
+Safelist de utilidades de marca TapCar — fuerza a Tailwind a emitir las
+utilidades de cada token de color aunque ningún componente las use todavía,
+para que el agente de diseño pueda construir pantallas on-brand y el
+conventions header sea verídico.
+
+text-tinta text-acero text-linea text-lienzo text-superficie text-azul text-azul-press text-ambar text-vigente text-por-vencer text-vencido
+bg-tinta bg-acero bg-linea bg-lienzo bg-superficie bg-azul bg-azul-press bg-ambar bg-vigente bg-por-vencer bg-vencido
+border-tinta border-acero border-linea border-azul border-ambar border-vigente border-por-vencer border-vencido
+hover:bg-azul hover:bg-azul-press hover:text-azul-press

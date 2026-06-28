@@ -1,0 +1,33 @@
+/* Entrada para compilar el CSS de los componentes sincronizados (TapCar UI).
+   Tailwind v4 escanea los @source y emite solo las utilidades usadas + los
+   tokens @theme como variables :root. El resultado se anexa a _ds_bundle.css
+   vía cfg.cssEntry. Geist no se embebe: usamos un stack del sistema. */
+@import "tailwindcss";
+
+@theme {
+  /* Neutros · base de la interfaz */
+  --color-tinta: #16191f;
+  --color-acero: #5b6573;
+  --color-linea: #e3e6ea;
+  --color-lienzo: #f6f7f9;
+  --color-superficie: #ffffff;
+
+  /* Marca · acentos */
+  --color-azul: #2952e6;
+  --color-azul-press: #1e3dae;
+  --color-ambar: #f59e0b;
+
+  /* Estados · vencimiento de documentos */
+  --color-vigente: #16a34a;
+  --color-por-vencer: #f59e0b;
+  --color-vencido: #dc2626;
+
+  /* Geist no se embebe en el bundle de diseño → stack del sistema */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@source "./safelist.txt";
+@source "../../components/StatusBadge.tsx";
+@source "../../components/PasswordInput.tsx";
+@source "../../components/PublicVehicleView.tsx";
+@source "./general/VehicleCard.tsx";

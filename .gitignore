@@ -9,3 +9,10 @@ test-results/
 playwright-report/
 /coverage
 *.tsbuildinfo
+
+# design-sync (generado, no versionar)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
