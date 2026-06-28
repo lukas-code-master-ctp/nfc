@@ -72,7 +72,7 @@ export default function AccountCard({ email, initialName }: { email: string; ini
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Tu nombre"
-            className="w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+            className="w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero/45 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
           />
           <button
             type="submit"

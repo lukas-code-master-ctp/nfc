@@ -54,7 +54,7 @@ export default function DangerCard() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="ELIMINAR"
-            className="w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero focus:border-vencido focus:outline-none focus:ring-2 focus:ring-vencido/20"
+            className="w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero/45 focus:border-vencido focus:outline-none focus:ring-2 focus:ring-vencido/20"
           />
           {error && <p className="text-sm text-vencido">{error}</p>}
           <div className="flex gap-2">

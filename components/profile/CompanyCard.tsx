@@ -54,7 +54,7 @@ export default function CompanyCard({ initial }: { initial: CompanyData }) {
               value={company[f.key]}
               onChange={(e) => setCompany({ ...company, [f.key]: e.target.value })}
               placeholder={f.placeholder}
-              className="w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+              className="w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero/45 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
             />
           </div>
         ))}
