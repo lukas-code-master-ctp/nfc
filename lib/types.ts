@@ -29,6 +29,29 @@ export interface Vehicle {
   createdAt: string // ISO
 }
 
+export interface CompanyData {
+  razonSocial: string
+  rut: string
+  giro: string
+  direccion: string
+  telefono: string
+}
+
+export const EMPTY_COMPANY: CompanyData = {
+  razonSocial: '',
+  rut: '',
+  giro: '',
+  direccion: '',
+  telefono: '',
+}
+
+export interface UserProfile {
+  email: string
+  displayName: string
+  company: CompanyData
+  createdAt: string | null
+}
+
 export interface VehicleDocument {
   id: string
   vehicleId: string

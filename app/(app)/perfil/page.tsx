@@ -1,13 +1,25 @@
+import { redirect } from 'next/navigation'
+import { getCurrentUser } from '@/lib/auth/session'
+import { getProfile } from '@/lib/data/profile'
+import AccountCard from '@/components/profile/AccountCard'
+import CompanyCard from '@/components/profile/CompanyCard'
+import SecurityCard from '@/components/profile/SecurityCard'
+import DangerCard from '@/components/profile/DangerCard'
+
 export const dynamic = 'force-dynamic'
 
-export default function PerfilPage() {
+export default async function PerfilPage() {
+  const user = await getCurrentUser()
+  if (!user) redirect('/login')
+  const profile = await getProfile(user.uid, user.email)
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-4 text-2xl font-bold tracking-tight text-tinta">Perfil</h1>
-      <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-12 text-center">
-        <p className="font-medium text-tinta">Próximamente</p>
-        <p className="mt-1 text-sm text-acero">Aquí podrás ver y editar los datos de tu cuenta.</p>
-      </div>
+    <main className="mx-auto max-w-2xl space-y-5 px-4 py-8">
+      <h1 className="text-2xl font-bold tracking-tight text-tinta">Perfil</h1>
+      <AccountCard email={profile.email} initialName={profile.displayName} />
+      <CompanyCard initial={profile.company} />
+      <SecurityCard />
+      <DangerCard />
     </main>
   )
 }
