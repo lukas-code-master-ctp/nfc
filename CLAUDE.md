@@ -35,15 +35,20 @@ Tras cambios de código: corre `npx tsc --noEmit` y `npm run build` antes de com
 
 ## Arquitectura
 
-- `lib/types.ts` — tipos del dominio (`Vehicle`, `VehicleDocument`, enums de tipos de documento).
+- `lib/types.ts` — tipos del dominio (`Vehicle`, `VehicleDocument`, `CompanyData`, `UserProfile`, enums de tipos de documento).
 - `lib/documents/` — **lógica de negocio pura, sin Firebase** (testeable): `status.ts` (estado de documento: al_dia/por_vencer/vencido/sin_vencimiento, zona horaria `America/Santiago`), `reminders.ts` (qué recordatorio toca: hitos 30/7/0 días), `runReminders.ts` (job con dependencias inyectadas).
 - `lib/firebase/` — `client.ts` (SDK navegador) y `admin.ts` (Admin SDK). Ambos con **init lazy** (ver Gotchas).
-- `lib/data/` — acceso a Firestore vía Admin SDK (`vehicles.ts`, `documents.ts`). Toda mutación valida `ownerUid`.
+- `lib/data/` — acceso a Firestore vía Admin SDK (`vehicles.ts`, `documents.ts`, `profile.ts`). Toda mutación valida `ownerUid`. `deleteVehicle` borra en cascada documentos + archivos.
 - `lib/auth/` — `constants.ts` (`SESSION_COOKIE`, sin imports), `session.ts` (`getCurrentUser`), `AuthProvider.tsx` (contexto cliente).
 - `lib/storage/signedUrls.ts` — signed URLs de subida/lectura de Cloud Storage.
 - `lib/email/` — copy de recordatorios (puro) + cliente Resend (`getResend()` lazy).
-- `app/(auth)/login`, `app/(app)/*` (dashboard, vehiculos/[id], perfil, facturacion — con layout y avatar), `app/v/[token]` (ficha pública), `app/api/*` (route handlers).
-- `components/` — UI. Diseño en `docs/superpowers/specs/` y plan en `docs/superpowers/plans/`.
+- `app/(auth)/login`, `app/(app)/*` (dashboard, vehiculos/[id], perfil, facturacion — con `layout.tsx` que pone la barra superior + avatar y exige sesión), `app/v/[token]` (ficha pública), `app/api/*` (route handlers: vehicles, documents, session, cron/reminders, profile, account).
+- `components/` — UI. Reutilizables clave: `StatusBadge` (variantes `document`/`vehicle`), `PasswordInput` (toggle ojito), `UserMenu` (avatar + menú), `profile/*` (cards de la página de perfil). Diseño en `docs/superpowers/specs/` y plan en `docs/superpowers/plans/`.
+
+### Modelo de datos (Firestore)
+- `vehicles/{id}` y `documents/{id}` — colecciones de nivel superior con `ownerUid` denormalizado.
+- `users/{uid}` — perfil del usuario: `displayName` + `company` (`CompanyData`: razón social, RUT, giro, dirección, teléfono). Capa: `lib/data/profile.ts`; endpoints `/api/profile` (GET/PATCH) y `/api/account` (DELETE, borra todo + usuario de Auth).
+- **Alcance actual: 1 empresa por usuario** (los vehículos pertenecen al usuario vía `ownerUid`). Multi-usuario por empresa (roles, invitaciones, vehículos de la empresa) sería una fase aparte y un cambio de modelo.
 
 ### Seguridad
 - Reglas de Firestore aíslan datos por `ownerUid == request.auth.uid` (`firestore.rules`).
