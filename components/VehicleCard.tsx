@@ -48,7 +48,7 @@ export default function VehicleCard({
           Documentación · {docCount} {docCount === 1 ? 'archivo' : 'archivos'}
         </p>
       </div>
-      <StatusBadge status={status} />
+      <StatusBadge status={status} variant="vehicle" />
     </Link>
   )
 }
