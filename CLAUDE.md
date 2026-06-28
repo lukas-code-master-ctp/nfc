@@ -1,6 +1,8 @@
 @AGENTS.md
 
-# Documentos Vehiculares NFC
+# TapCar (Documentos Vehiculares NFC)
+
+**Nombre del producto: TapCar** (dominio elegido: `tapcar.cl`, disponible al 2026-06-28 — aún sin registrar; marca INAPI sin verificar). Combina el gesto NFC (*Tap*) + vehículo (*Car*).
 
 App web para almacenar la documentación de vehículos. Cada vehículo se vincula a un chip NFC: al acercar un smartphone se abre una **ficha pública de solo lectura** (`/v/<token>`) con sus documentos, pensada para fiscalización vehicular (ej. un carabinero valida los documentos). El dueño gestiona vehículos y documentos tras iniciar sesión, y recibe recordatorios por email antes de cada vencimiento.
 
