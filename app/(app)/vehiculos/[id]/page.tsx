@@ -1,13 +1,14 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/session'
 import { getVehicle } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
 import { documentStatus } from '@/lib/documents/status'
 import { createReadUrl } from '@/lib/storage/signedUrls'
+import BackLink from '@/components/BackLink'
 import DocumentForm from '@/components/DocumentForm'
 import DocumentList from '@/components/DocumentList'
 import NfcTokenPanel from '@/components/NfcTokenPanel'
+import DeleteVehicleButton from '@/components/DeleteVehicleButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,15 +34,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 px-4 py-8">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-acero hover:text-tinta"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
-          <path d="m15 18-6-6 6-6" />
-        </svg>
-        Volver
-      </Link>
+      <BackLink />
 
       <div className="flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
         <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-azul/10 text-azul">
@@ -67,6 +60,11 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         </div>
         <DocumentList documents={items} vehicleId={vehicle.id} />
       </section>
+
+      <DeleteVehicleButton
+        vehicleId={vehicle.id}
+        label={`${vehicle.marca} ${vehicle.modelo} · ${vehicle.patente}`}
+      />
     </main>
   )
 }
