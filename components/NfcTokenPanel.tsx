@@ -30,7 +30,26 @@ export default function NfcTokenPanel({ vehicleId, initialUrl }: { vehicleId: st
         </svg>
         <h3 className="font-semibold text-tinta">Enlace NFC</h3>
       </div>
-      <p className="mt-3 break-all rounded-lg bg-lienzo px-3 py-2 font-mono text-sm text-tinta">{url}</p>
+      <div className="mt-3 flex items-center gap-2 rounded-lg bg-lienzo px-3 py-2">
+        <span className="min-w-0 flex-1 break-all font-mono text-sm text-tinta">{url}</span>
+        <button
+          onClick={copy}
+          aria-label="Copiar enlace"
+          title={copied ? '¡Copiado!' : 'Copiar'}
+          className="shrink-0 rounded-md p-1.5 text-acero transition-colors hover:bg-linea hover:text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
+        >
+          {copied ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-vigente" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+              <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            </svg>
+          )}
+        </button>
+      </div>
       <p className="mt-2 flex items-center gap-1.5 text-xs text-acero">
         Graba esta URL en el chip NFC del vehículo.
         <InfoTip label="Cómo grabar el chip NFC">
@@ -49,13 +68,7 @@ export default function NfcTokenPanel({ vehicleId, initialUrl }: { vehicleId: st
           </p>
         </InfoTip>
       </p>
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={copy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm font-medium text-tinta transition-colors hover:bg-lienzo"
-        >
-          {copied ? '¡Copiado!' : 'Copiar'}
-        </button>
+      <div className="mt-3">
         <button
           onClick={regenerate}
           className="rounded-lg px-3 py-1.5 text-sm font-medium text-vencido transition-colors hover:bg-[#FCE7E7]"
