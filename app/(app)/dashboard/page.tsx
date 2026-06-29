@@ -2,9 +2,12 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/session'
 import { listVehicles } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
+import { getProfile } from '@/lib/data/profile'
 import { documentStatus, worstStatus, type DocStatus } from '@/lib/documents/status'
+import { maxVehiculos, planCapacity } from '@/lib/plan'
 import VehicleCard from '@/components/VehicleCard'
 import NewVehicleForm from '@/components/NewVehicleForm'
+import PlanCapacity from '@/components/PlanCapacity'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +15,13 @@ export default async function DashboardPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
-  const vehicles = await listVehicles(user.uid)
+  const [vehicles, profile] = await Promise.all([
+    listVehicles(user.uid),
+    getProfile(user.uid, user.email),
+  ])
+  const limit = maxVehiculos(profile)
+  const { atCapacity } = planCapacity(vehicles.length, limit)
+
   const now = new Date()
   const withStatus = await Promise.all(
     vehicles.map(async (v) => {
@@ -28,11 +37,12 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-tinta">Mis vehículos</h1>
           <p className="mt-1 text-sm text-acero">
-            {withStatus.length} {withStatus.length === 1 ? 'vehículo registrado' : 'vehículos registrados'}
+            {withStatus.length} de {limit} {limit === 1 ? 'vehículo' : 'vehículos'} de tu plan
           </p>
         </div>
-        <NewVehicleForm />
+        <NewVehicleForm disabled={atCapacity} />
       </div>
+
       {withStatus.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-12 text-center">
           <p className="font-medium text-tinta">Aún no tienes vehículos</p>
@@ -41,10 +51,13 @@ export default async function DashboardPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {withStatus.map(({ vehicle, status, docCount }) => (
-            <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} />
-          ))}
+        <div className="space-y-4">
+          <PlanCapacity used={withStatus.length} limit={limit} />
+          <div className="space-y-3">
+            {withStatus.map(({ vehicle, status, docCount }) => (
+              <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} />
+            ))}
+          </div>
         </div>
       )}
     </main>

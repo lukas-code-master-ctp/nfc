@@ -45,10 +45,18 @@ export const EMPTY_COMPANY: CompanyData = {
   telefono: '',
 }
 
+export interface PlanData {
+  /** Máximo de vehículos permitidos por el plan (lo configura el admin). Mínimo 1. */
+  maxVehiculos: number
+}
+
+export const DEFAULT_PLAN: PlanData = { maxVehiculos: 3 }
+
 export interface UserProfile {
   email: string
   displayName: string
   company: CompanyData
+  plan: PlanData
   createdAt: string | null
 }
 

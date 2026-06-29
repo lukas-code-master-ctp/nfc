@@ -49,7 +49,8 @@ Tras cambios de código: corre `npx tsc --noEmit` y `npm run build` antes de com
 
 ### Modelo de datos (Firestore)
 - `vehicles/{id}` y `documents/{id}` — colecciones de nivel superior con `ownerUid` denormalizado.
-- `users/{uid}` — perfil del usuario: `displayName` + `company` (`CompanyData`: razón social, RUT, giro, dirección, teléfono). Capa: `lib/data/profile.ts`; endpoints `/api/profile` (GET/PATCH) y `/api/account` (DELETE, borra todo + usuario de Auth).
+- `users/{uid}` — perfil del usuario: `displayName` + `company` (`CompanyData`: razón social, RUT, giro, dirección, teléfono) + `plan` (`PlanData`: `maxVehiculos`, mínimo 1). Capa: `lib/data/profile.ts`; endpoints `/api/profile` (GET/PATCH — **solo `displayName`/`company`**, nunca `plan`) y `/api/account` (DELETE, borra todo + usuario de Auth).
+- **Cupo del plan**: `plan.maxVehiculos` limita cuántos vehículos puede crear el usuario. Lógica pura en `lib/plan.ts` (`maxVehiculos`, `planCapacity`); default `DEFAULT_PLAN` (3). Se **enforca en el servidor** (`POST /api/vehicles` responde 409 `plan_limit` al tope) y se muestra en el dashboard (`components/PlanCapacity.tsx` + botón "Nuevo vehículo" deshabilitado). **Lo configura un admin**, no el usuario. **Pendiente: panel de administración** (rol admin, listar todos los usuarios, setear `maxVehiculos`) — feature aparte; `saveProfile` ya acepta `plan` para cuando exista.
 - **Alcance actual: 1 empresa por usuario** (los vehículos pertenecen al usuario vía `ownerUid`). Multi-usuario por empresa (roles, invitaciones, vehículos de la empresa) sería una fase aparte y un cambio de modelo.
 
 ### Seguridad

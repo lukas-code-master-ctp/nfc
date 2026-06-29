@@ -7,8 +7,12 @@ describe('StatusBadge', () => {
     render(<StatusBadge status="vencido" />)
     expect(screen.getByText('Vencido')).toBeDefined()
   })
-  it('muestra "Al día"', () => {
+  it('muestra "Vigente" para un documento al día', () => {
     render(<StatusBadge status="al_dia" />)
+    expect(screen.getByText('Vigente')).toBeDefined()
+  })
+  it('usa etiquetas de vehículo con variant="vehicle"', () => {
+    render(<StatusBadge status="al_dia" variant="vehicle" />)
     expect(screen.getByText('Al día')).toBeDefined()
   })
 })

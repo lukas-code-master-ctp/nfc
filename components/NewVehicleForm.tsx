@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function NewVehicleForm() {
+export default function NewVehicleForm({ disabled = false }: { disabled?: boolean }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ patente: '', marca: '', modelo: '', anio: '', color: '' })
@@ -16,6 +16,10 @@ export default function NewVehicleForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     })
+    if (res.status === 409) {
+      setError('Alcanzaste el límite de tu plan. Amplía tu plan para agregar más vehículos.')
+      return
+    }
     if (!res.ok) { setError('No se pudo crear el vehículo.'); return }
     setOpen(false)
     setForm({ patente: '', marca: '', modelo: '', anio: '', color: '' })
@@ -36,7 +40,9 @@ export default function NewVehicleForm() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
+        disabled={disabled}
+        title={disabled ? 'Alcanzaste el límite de tu plan' : undefined}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-azul"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
           <path d="M12 5v14M5 12h14" />
