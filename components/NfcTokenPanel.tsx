@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import InfoTip from '@/components/InfoTip'
 
 export default function NfcTokenPanel({ vehicleId, initialUrl }: { vehicleId: string; initialUrl: string }) {
   const [url, setUrl] = useState(initialUrl)
@@ -30,7 +31,24 @@ export default function NfcTokenPanel({ vehicleId, initialUrl }: { vehicleId: st
         <h3 className="font-semibold text-tinta">Enlace NFC</h3>
       </div>
       <p className="mt-3 break-all rounded-lg bg-lienzo px-3 py-2 font-mono text-sm text-tinta">{url}</p>
-      <p className="mt-2 text-xs text-acero">Graba esta URL en el chip NFC del vehículo.</p>
+      <p className="mt-2 flex items-center gap-1.5 text-xs text-acero">
+        Graba esta URL en el chip NFC del vehículo.
+        <InfoTip label="Cómo grabar el chip NFC">
+          <p className="text-sm font-semibold text-tinta">Cómo grabar el chip</p>
+          <p className="mt-1 text-xs text-acero">
+            Recomendamos la app gratuita <strong className="text-tinta">NFC Tools</strong> (Android e iPhone).
+          </p>
+          <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-xs text-acero">
+            <li>Copia esta URL con el botón <strong className="text-tinta">Copiar</strong>.</li>
+            <li>En NFC Tools abre <strong className="text-tinta">Escribir → Añadir un registro → URL/URI</strong>.</li>
+            <li>Pega la URL (con <code className="font-mono">https://</code>) y confirma.</li>
+            <li>Toca <strong className="text-tinta">Escribir</strong> y acerca el chip a la parte de arriba del teléfono.</li>
+          </ol>
+          <p className="mt-2 text-xs text-acero">
+            Usa el tipo <strong className="text-tinta">URL/URI</strong> (no «Texto»), o algunos iPhone no abrirán el enlace.
+          </p>
+        </InfoTip>
+      </p>
       <div className="mt-3 flex gap-2">
         <button
           onClick={copy}
