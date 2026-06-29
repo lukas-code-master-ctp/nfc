@@ -54,10 +54,8 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
       <NfcTokenPanel vehicleId={vehicle.id} initialUrl={publicUrl} />
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold text-tinta">Documentos</h2>
-          <DocumentForm vehicleId={vehicle.id} />
-        </div>
+        <h2 className="text-lg font-semibold text-tinta">Documentos</h2>
+        <DocumentForm vehicleId={vehicle.id} />
         <DocumentList documents={items} vehicleId={vehicle.id} />
       </section>
 
