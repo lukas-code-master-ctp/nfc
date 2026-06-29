@@ -1,4 +1,5 @@
 import StatusBadge from '@/components/StatusBadge'
+import { TapCarLockup } from '@/components/brand/Logo'
 import { DOCUMENT_TYPE_LABELS, type VehicleDocument, type Vehicle } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 
@@ -18,6 +19,10 @@ function CarIcon() {
 export default function PublicVehicleView({ vehicle, documents }: { vehicle: Vehicle; documents: Item[] }) {
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-6 px-4 py-10">
+      <div className="flex justify-center">
+        <TapCarLockup iconClassName="size-6" wordClassName="text-lg" />
+      </div>
+
       <div className="flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-6 shadow-sm">
         <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-azul/10 text-azul">
           <CarIcon />
