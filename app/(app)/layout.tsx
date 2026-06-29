@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/session'
+import { isAdminEmail } from '@/lib/auth/admin'
 import UserMenu from '@/components/UserMenu'
 import { TapCarIsotipo, TapCarWordmark } from '@/components/brand/Logo'
 
@@ -18,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <TapCarIsotipo className="size-8" />
             <TapCarWordmark className="hidden text-xl sm:inline" />
           </Link>
-          <UserMenu email={user.email} />
+          <UserMenu email={user.email} isAdmin={isAdminEmail(user.email)} />
         </div>
       </header>
       {children}

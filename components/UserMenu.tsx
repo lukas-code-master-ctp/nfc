@@ -6,7 +6,7 @@ import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
 import { useAuth } from '@/lib/auth/AuthProvider'
 
-export default function UserMenu({ email }: { email: string }) {
+export default function UserMenu({ email, isAdmin = false }: { email: string; isAdmin?: boolean }) {
   const router = useRouter()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -87,6 +87,15 @@ export default function UserMenu({ email }: { email: string }) {
             </svg>
             Facturación
           </Link>
+
+          {isAdmin && (
+            <Link href="/admin" role="menuitem" className={itemCls} onClick={() => setOpen(false)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-acero" aria-hidden="true">
+                <path d="M12 2 4 5v6c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V5z" />
+              </svg>
+              Administración
+            </Link>
+          )}
 
           <div className="border-t border-linea" />
 
