@@ -26,7 +26,10 @@ export default function NfcTokenPanel({ vehicleId, initialUrl }: { vehicleId: st
     <div className="rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
       <div className="flex items-center gap-2">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-azul" aria-hidden="true">
-          <path d="M6 8a6 6 0 0 1 12 0c0 4-3 5-3 9" /><path d="M9 17c0-2 3-3 3-7a3 3 0 0 0-6 0" /><path d="M12 21v-1" />
+          <rect x="3.5" y="3" width="9.5" height="18" rx="2.2" />
+          <line x1="6.5" y1="18.4" x2="10" y2="18.4" />
+          <path d="M16.5 9.5a5 5 0 0 1 0 5" />
+          <path d="M19.2 7.3a9 9 0 0 1 0 9.4" />
         </svg>
         <h3 className="font-semibold text-tinta">Enlace NFC</h3>
       </div>
