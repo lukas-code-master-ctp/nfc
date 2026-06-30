@@ -17,6 +17,13 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 
 export const REMINDER_MILESTONES = [30, 7, 0] as const
 
+// Tipos de documento que no tienen fecha de vencimiento (p.ej. el Padrón).
+export const DOCUMENT_TYPES_SIN_VENCIMIENTO = new Set<DocumentType>(['padron'])
+
+export function tipoTieneVencimiento(tipo: DocumentType): boolean {
+  return !DOCUMENT_TYPES_SIN_VENCIMIENTO.has(tipo)
+}
+
 export interface Vehicle {
   id: string
   ownerUid: string

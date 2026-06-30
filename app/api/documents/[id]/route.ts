@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/session'
 import { updateDocument, deleteDocument } from '@/lib/data/documents'
+import { tipoTieneVencimiento, type DocumentType } from '@/lib/types'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   const { id } = await params
   const patch = await req.json()
+  // Tipos sin vencimiento (Padrón) nunca llevan fecha.
+  if (patch.tipo && !tipoTieneVencimiento(patch.tipo as DocumentType)) patch.fechaVencimiento = null
   // Si cambia la fecha de vencimiento, reiniciar recordatorios.
   if ('fechaVencimiento' in patch) patch.remindersSent = []
   try {

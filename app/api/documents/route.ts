@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/session'
 import { getVehicle } from '@/lib/data/vehicles'
 import { createDocument } from '@/lib/data/documents'
+import { tipoTieneVencimiento } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
@@ -14,7 +15,8 @@ export async function POST(req: NextRequest) {
     vehicleId,
     tipo,
     nombrePersonalizado: nombrePersonalizado ?? null,
-    fechaVencimiento: fechaVencimiento || null,
+    // Tipos sin vencimiento (Padrón) nunca llevan fecha.
+    fechaVencimiento: tipoTieneVencimiento(tipo) ? fechaVencimiento || null : null,
     fileUrl: fileUrl ?? '',
     filePath: filePath ?? '',
   })

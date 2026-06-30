@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DOCUMENT_TYPE_LABELS, type DocumentType, type VehicleDocument } from '@/lib/types'
+import { DOCUMENT_TYPE_LABELS, tipoTieneVencimiento, type DocumentType, type VehicleDocument } from '@/lib/types'
 
 const TYPES = Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]
 
@@ -30,7 +30,7 @@ export default function DocumentEditForm({
       const patch: Record<string, unknown> = {
         tipo,
         nombrePersonalizado: tipo === 'otro' ? nombrePersonalizado : null,
-        fechaVencimiento: fechaVencimiento || null,
+        fechaVencimiento: tipoTieneVencimiento(tipo) ? fechaVencimiento || null : null,
       }
       if (file) {
         const res = await fetch('/api/documents/upload-url', {
@@ -76,10 +76,12 @@ export default function DocumentEditForm({
         <input className={inputCls} placeholder="Nombre del documento"
           value={nombrePersonalizado} onChange={(e) => setNombre(e.target.value)} required />
       )}
-      <div className="space-y-1.5">
-        <label className={labelCls}>Fecha de vencimiento <span className="font-normal text-acero/70">(opcional)</span></label>
-        <input type="date" className={inputCls} value={fechaVencimiento} onChange={(e) => setFecha(e.target.value)} />
-      </div>
+      {tipoTieneVencimiento(tipo) && (
+        <div className="space-y-1.5">
+          <label className={labelCls}>Fecha de vencimiento <span className="font-normal text-acero/70">(opcional)</span></label>
+          <input type="date" className={inputCls} value={fechaVencimiento} onChange={(e) => setFecha(e.target.value)} />
+        </div>
+      )}
       <div className="space-y-1.5">
         <label className={labelCls}>Reemplazar archivo <span className="font-normal text-acero/70">(opcional)</span></label>
         <input type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
