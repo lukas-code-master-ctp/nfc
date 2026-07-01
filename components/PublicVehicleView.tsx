@@ -1,6 +1,13 @@
+'use client'
+import { useState } from 'react'
 import StatusBadge from '@/components/StatusBadge'
 import { TapCarLockup } from '@/components/brand/Logo'
-import { DOCUMENT_TYPE_LABELS, type VehicleDocument, type Vehicle } from '@/lib/types'
+import {
+  DOCUMENT_TYPE_LABELS,
+  VEHICLE_INFO_FIELDS,
+  type VehicleDocument,
+  type Vehicle,
+} from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 
 type Item = VehicleDocument & { status: DocStatus; readUrl: string | null }
@@ -16,7 +23,117 @@ function CarIcon() {
   )
 }
 
+function DocumentosView({ documents }: { documents: Item[] }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="px-1 text-sm font-semibold uppercase tracking-wide text-acero">Documentación</h2>
+      {documents.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-10 text-center">
+          <p className="text-sm text-acero">Este vehículo no tiene documentos cargados.</p>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {documents.map((d) => {
+            const label = d.tipo === 'otro' ? d.nombrePersonalizado : DOCUMENT_TYPE_LABELS[d.tipo]
+            return (
+              <li key={d.id} className="rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-semibold text-tinta">{label}</p>
+                    <p className="mt-0.5 text-base text-acero">
+                      {d.fechaVencimiento ? `Vence el ${d.fechaVencimiento}` : 'Sin vencimiento'}
+                    </p>
+                  </div>
+                  <StatusBadge status={d.status} />
+                </div>
+
+                <div className="mt-3 border-t border-linea pt-3">
+                  {!d.readUrl ? (
+                    <p className="flex items-center justify-center gap-2 rounded-lg bg-[#FDF1DC] px-4 py-3 text-base font-medium text-[#B45309]">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+                        <path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                      </svg>
+                      Sin archivo adjunto
+                    </p>
+                  ) : isImage(d.filePath) ? (
+                    <a href={d.readUrl} target="_blank" rel="noopener noreferrer" className="block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={d.readUrl}
+                        alt={`Documento: ${label}`}
+                        loading="lazy"
+                        className="max-h-96 w-full rounded-xl border border-linea bg-lienzo object-contain"
+                      />
+                      <span className="mt-2 block text-center text-sm text-acero">Toca la imagen para ampliar</span>
+                    </a>
+                  ) : (
+                    <a
+                      href={d.readUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-azul px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-azul-press"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
+                      </svg>
+                      Ver documento (PDF)
+                    </a>
+                  )}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function SobreVehiculoView({ vehicle }: { vehicle: Vehicle }) {
+  const info = vehicle.info ?? {}
+  const filled = VEHICLE_INFO_FIELDS.filter((f) => (info[f.key] ?? '').trim())
+  const rows = filled.filter((f) => !f.multiline)
+  const notas = filled.find((f) => f.multiline)
+
+  return (
+    <section className="space-y-3">
+      <h2 className="px-1 text-sm font-semibold uppercase tracking-wide text-acero">Sobre el vehículo</h2>
+      {filled.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-10 text-center">
+          <p className="text-sm text-acero">El dueño aún no agregó información de este vehículo.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {rows.length > 0 && (
+            <dl className="divide-y divide-linea overflow-hidden rounded-2xl border border-linea bg-superficie shadow-sm">
+              {rows.map((f) => (
+                <div key={f.key} className="flex items-center justify-between gap-4 px-5 py-4">
+                  <dt className="text-sm text-acero">{f.label}</dt>
+                  <dd className="text-right text-base font-semibold text-tinta">{info[f.key]}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {notas && (
+            <div className="rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
+              <p className="text-sm font-semibold text-tinta">{notas.label}</p>
+              <p className="mt-1 whitespace-pre-wrap text-base text-acero">{info[notas.key]}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function PublicVehicleView({ vehicle, documents }: { vehicle: Vehicle; documents: Item[] }) {
+  const [tab, setTab] = useState<'docs' | 'info'>('docs')
+
+  const pill = (active: boolean) =>
+    `rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+      active ? 'bg-azul text-white shadow-sm' : 'text-acero hover:text-tinta'
+    }`
+
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-6 px-4 py-10">
       <div className="flex justify-center">
@@ -35,67 +152,18 @@ export default function PublicVehicleView({ vehicle, documents }: { vehicle: Veh
         </div>
       </div>
 
-      <section className="space-y-3">
-        <h2 className="px-1 text-sm font-semibold uppercase tracking-wide text-acero">Documentación</h2>
-        {documents.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-10 text-center">
-            <p className="text-sm text-acero">Este vehículo no tiene documentos cargados.</p>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {documents.map((d) => {
-              const label = d.tipo === 'otro' ? d.nombrePersonalizado : DOCUMENT_TYPE_LABELS[d.tipo]
-              return (
-                <li key={d.id} className="rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-lg font-semibold text-tinta">{label}</p>
-                      <p className="mt-0.5 text-base text-acero">
-                        {d.fechaVencimiento ? `Vence el ${d.fechaVencimiento}` : 'Sin vencimiento'}
-                      </p>
-                    </div>
-                    <StatusBadge status={d.status} />
-                  </div>
+      <div className="flex justify-center">
+        <div className="inline-flex items-center gap-1 rounded-full border border-linea bg-superficie p-1 shadow-sm">
+          <button type="button" onClick={() => setTab('docs')} className={pill(tab === 'docs')} aria-pressed={tab === 'docs'}>
+            Documentación
+          </button>
+          <button type="button" onClick={() => setTab('info')} className={pill(tab === 'info')} aria-pressed={tab === 'info'}>
+            Sobre el vehículo
+          </button>
+        </div>
+      </div>
 
-                  <div className="mt-3 border-t border-linea pt-3">
-                    {!d.readUrl ? (
-                      <p className="flex items-center justify-center gap-2 rounded-lg bg-[#FDF1DC] px-4 py-3 text-base font-medium text-[#B45309]">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
-                          <path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-                        </svg>
-                        Sin archivo adjunto
-                      </p>
-                    ) : isImage(d.filePath) ? (
-                      <a href={d.readUrl} target="_blank" rel="noopener noreferrer" className="block">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={d.readUrl}
-                          alt={`Documento: ${label}`}
-                          loading="lazy"
-                          className="max-h-96 w-full rounded-xl border border-linea bg-lienzo object-contain"
-                        />
-                        <span className="mt-2 block text-center text-sm text-acero">Toca la imagen para ampliar</span>
-                      </a>
-                    ) : (
-                      <a
-                        href={d.readUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-azul px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-azul-press"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden="true">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
-                        </svg>
-                        Ver documento (PDF)
-                      </a>
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+      {tab === 'docs' ? <DocumentosView documents={documents} /> : <SobreVehiculoView vehicle={vehicle} />}
 
       <p className="pt-2 text-center text-xs text-acero">Ficha de fiscalización · solo lectura</p>
     </main>

@@ -16,6 +16,7 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
     modelo: data.modelo,
     anio: data.anio,
     color: data.color,
+    info: data.info ?? {},
     publicToken: data.publicToken,
     createdAt: data.createdAt,
   }

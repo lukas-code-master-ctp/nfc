@@ -24,6 +24,33 @@ export function tipoTieneVencimiento(tipo: DocumentType): boolean {
   return !DOCUMENT_TYPES_SIN_VENCIMIENTO.has(tipo)
 }
 
+// Información operativa del vehículo (para quien lo va a manejar). Todos
+// los campos son opcionales; la ficha pública muestra solo los que estén.
+export interface VehicleInfo {
+  combustible?: string
+  presionNeumaticos?: string
+  medidaNeumaticos?: string
+  transmision?: string
+  aceite?: string
+  estanque?: string
+  notas?: string
+}
+
+export const VEHICLE_INFO_FIELDS: {
+  key: keyof VehicleInfo
+  label: string
+  placeholder: string
+  multiline?: boolean
+}[] = [
+  { key: 'combustible', label: 'Combustible', placeholder: 'Bencina 95 · Diésel · Eléctrico' },
+  { key: 'presionNeumaticos', label: 'Presión de neumáticos', placeholder: '32 psi adelante · 35 psi atrás' },
+  { key: 'medidaNeumaticos', label: 'Medida de neumáticos', placeholder: '205/55 R16' },
+  { key: 'transmision', label: 'Transmisión', placeholder: 'Automática · Manual' },
+  { key: 'aceite', label: 'Aceite', placeholder: '5W-30 sintético' },
+  { key: 'estanque', label: 'Capacidad del estanque', placeholder: '50 L' },
+  { key: 'notas', label: 'Notas', placeholder: 'Cualquier dato útil para quien maneje el vehículo', multiline: true },
+]
+
 export interface Vehicle {
   id: string
   ownerUid: string
@@ -32,6 +59,7 @@ export interface Vehicle {
   modelo: string
   anio: number
   color: string
+  info?: VehicleInfo
   publicToken: string
   createdAt: string // ISO
 }
