@@ -37,15 +37,16 @@ Tras cambios de código: corre `npx tsc --noEmit` y `npm run build` antes de com
 
 ## Arquitectura
 
-- `lib/types.ts` — tipos del dominio (`Vehicle`, `VehicleDocument`, `CompanyData`, `UserProfile`, enums de tipos de documento).
+- `lib/types.ts` — tipos del dominio (`Vehicle` con `info?: VehicleInfo`, `VehicleDocument`, `CompanyData`, `UserProfile` con `plan: PlanData`, enums de tipos de documento) + helpers de dominio: `VEHICLE_INFO_FIELDS` (campos/labels de "Sobre el vehículo"), `DOCUMENT_TYPES_SIN_VENCIMIENTO` + `tipoTieneVencimiento()` (el **Padrón no vence** → sin campo de fecha, forzado también en el servidor).
+- `lib/plan.ts` / `lib/billing.ts` — lógica pura de cupo del plan y de precios (ver Modelo de datos).
 - `lib/documents/` — **lógica de negocio pura, sin Firebase** (testeable): `status.ts` (estado de documento: al_dia/por_vencer/vencido/sin_vencimiento, zona horaria `America/Santiago`), `reminders.ts` (qué recordatorio toca: hitos 30/7/0 días), `runReminders.ts` (job con dependencias inyectadas).
 - `lib/firebase/` — `client.ts` (SDK navegador) y `admin.ts` (Admin SDK). Ambos con **init lazy** (ver Gotchas).
-- `lib/data/` — acceso a Firestore vía Admin SDK (`vehicles.ts`, `documents.ts`, `profile.ts`). Toda mutación valida `ownerUid`. `deleteVehicle` borra en cascada documentos + archivos.
-- `lib/auth/` — `constants.ts` (`SESSION_COOKIE`, sin imports), `session.ts` (`getCurrentUser`), `AuthProvider.tsx` (contexto cliente).
+- `lib/data/` — acceso a Firestore vía Admin SDK (`vehicles.ts`, `documents.ts`, `profile.ts`, `admin.ts` → `listAllUsers`, `billing.ts` → `createBillingRequest`). Toda mutación valida `ownerUid`. `deleteVehicle` borra en cascada documentos + archivos.
+- `lib/auth/` — `constants.ts` (`SESSION_COOKIE`, sin imports), `session.ts` (`getCurrentUser`), `admin.ts` (`isAdminEmail`, allowlist por env), `AuthProvider.tsx` (contexto cliente).
 - `lib/storage/signedUrls.ts` — signed URLs de subida/lectura de Cloud Storage.
 - `lib/email/` — copy de recordatorios (puro) + cliente Resend (`getResend()` lazy).
-- `app/(auth)/login`, `app/(app)/*` (dashboard, vehiculos/[id], perfil, facturacion — con `layout.tsx` que pone la barra superior + avatar y exige sesión), `app/v/[token]` (ficha pública), `app/api/*` (route handlers: vehicles, documents, session, cron/reminders, profile, account).
-- `components/` — UI. Reutilizables clave: `StatusBadge` (variantes `document`/`vehicle`), `PasswordInput` (toggle ojito), `UserMenu` (avatar + menú), `profile/*` (cards de la página de perfil). Diseño en `docs/superpowers/specs/` y plan en `docs/superpowers/plans/`.
+- `app/(auth)/login`, `app/(app)/*` (dashboard, vehiculos/[id], perfil, facturacion, **admin** — con `layout.tsx` que pone la barra superior con **logo TapCar** + avatar y exige sesión), `app/v/[token]` (ficha pública), `app/api/*` (route handlers: vehicles [+`/[id]`, `/[id]/token`], documents [+`/[id]`, `/upload-url`], session, cron/reminders, profile, account, **admin/users/[uid]**, **billing/request**). Favicon en `app/icon.svg`.
+- `components/` — UI. Reutilizables clave: `brand/Logo` (`TapCarIsotipo`/`TapCarWordmark`/`TapCarLockup`), `StatusBadge` (variantes `document`/`vehicle`), `PasswordInput` (toggle ojito), `UserMenu` (avatar + menú; muestra "Administración" solo a admins), `BackLink` (flecha volver), `InfoTip` (botón "i" + popover), `LoadingDots` (puntitos de carga). Dashboard: `VehiclesBoard` + `NewVehicleModal`. Vehículo: `NfcTokenPanel`, `DocumentForm`/`DocumentEditForm`/`DocumentList`, `VehicleInfoForm`, `DeleteVehicleButton`. `profile/*`, `admin/*`, `billing/*`. Diseño en `docs/superpowers/specs/` y plan en `docs/superpowers/plans/`.
 
 ### Modelo de datos (Firestore)
 - `vehicles/{id}` y `documents/{id}` — colecciones de nivel superior con `ownerUid` denormalizado. `vehicles/{id}` incluye `info?` (`VehicleInfo`: combustible, presión/medida de neumáticos, transmisión, aceite, estanque, notas — todo opcional; campos y labels en `VEHICLE_INFO_FIELDS`). El dueño lo edita en `components/VehicleInfoForm.tsx`. La **ficha pública** (`app/v/[token]`, `PublicVehicleView`) tiene dos pestañas (pills): **Documentación** y **Sobre el vehículo** (muestra los `info` que estén llenos), pensada para que quien maneje el auto lo conozca.
@@ -64,6 +65,8 @@ Tras cambios de código: corre `npx tsc --noEmit` y `npm run build` antes de com
 ## Diseño / UI
 
 Tokens en `app/globals.css` (`@theme`): `tinta` (texto), `acero` (texto 2º), `linea` (bordes), `lienzo` (fondo), `superficie` (cards), `azul`/`azul-press` (primario), `ambar`, estados `vigente`/`por-vencer`/`vencido`. Cards blancas con sombra suave sobre fondo lienzo; badges tipo pill. Sin dark mode. Iconos SVG inline (no emojis).
+
+**Marca TapCar**: logo (auto + ondas NFC, azul de marca) vía `components/brand/Logo.tsx`; SVG fuente en `Brand/` y servibles en `public/brand/` (isotipo, lockup, apilado, favicon + variantes oscuras para un futuro dark mode). El wordmark "**Tap**Car" usa la tipografía real de la app (Geist), no el texto incrustado en el SVG.
 
 ## Gotchas (errores ya resueltos — NO reintroducir)
 
