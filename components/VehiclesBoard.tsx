@@ -42,13 +42,21 @@ function PlusIcon({ className = 'size-4' }: { className?: string }) {
 
 const nombre = (i: Item) => `${i.vehicle.marca} ${i.vehicle.modelo}`
 
-export default function VehiclesBoard({ items, limit }: { items: Item[]; limit: number }) {
+export default function VehiclesBoard({
+  items,
+  limit,
+  canWrite,
+}: {
+  items: Item[]
+  limit: number
+  canWrite: boolean
+}) {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<Filter>('todos')
   const [sort, setSort] = useState<SortKey>('urgencia')
 
   const { used, remaining, atCapacity } = planCapacity(items.length, limit)
-  const ghosts = Math.min(remaining, MAX_GHOSTS)
+  const ghosts = canWrite ? Math.min(remaining, MAX_GHOSTS) : 0
 
   const counts = useMemo(() => {
     const c: Record<DocStatus, number> = { al_dia: 0, por_vencer: 0, vencido: 0, sin_vencimiento: 0 }
@@ -128,21 +136,31 @@ export default function VehiclesBoard({ items, limit }: { items: Item[]; limit: 
             {used} de {limit} {limit === 1 ? 'vehículo registrado' : 'vehículos registrados'}
           </p>
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          disabled={atCapacity}
-          title={atCapacity ? 'Alcanzaste el límite de tu plan' : undefined}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-azul"
-        >
-          <PlusIcon />
-          Nuevo vehículo
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setOpen(true)}
+            disabled={atCapacity}
+            title={atCapacity ? 'Alcanzaste el límite de tu plan' : undefined}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-azul"
+          >
+            <PlusIcon />
+            Nuevo vehículo
+          </button>
+        )}
       </div>
 
       {items.length === 0 ? (
         <div className="mx-auto max-w-2xl">
-          <div className="space-y-3">{ghostsBlock}</div>
-          {footerBlock}
+          {canWrite ? (
+            <>
+              <div className="space-y-3">{ghostsBlock}</div>
+              {footerBlock}
+            </>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-10 text-center">
+              <p className="text-sm text-acero">Aún no hay vehículos registrados.</p>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-[210px_1fr]">
@@ -183,15 +201,15 @@ export default function VehiclesBoard({ items, limit }: { items: Item[]; limit: 
                 {visible.map(({ vehicle, status, docCount }) => (
                   <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} />
                 ))}
-                {filter === 'todos' && ghostsBlock}
+                {canWrite && filter === 'todos' && ghostsBlock}
               </div>
             )}
-            {filter === 'todos' && footerBlock}
+            {canWrite && filter === 'todos' && footerBlock}
           </div>
         </div>
       )}
 
-      <NewVehicleModal open={open} onClose={() => setOpen(false)} />
+      {canWrite && <NewVehicleModal open={open} onClose={() => setOpen(false)} />}
     </main>
   )
 }

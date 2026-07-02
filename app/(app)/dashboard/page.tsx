@@ -1,23 +1,24 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth/session'
+import { getMembership } from '@/lib/auth/membership'
+import { can } from '@/lib/auth/roles'
 import { listVehicles } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
-import { getProfile } from '@/lib/data/profile'
+import { getCompany } from '@/lib/data/companies'
 import { documentStatus, worstStatus, type DocStatus } from '@/lib/documents/status'
-import { maxVehiculos } from '@/lib/plan'
+import { maxVehiculosDe } from '@/lib/plan'
 import VehiclesBoard from '@/components/VehiclesBoard'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const m = await getMembership()
+  if (!m) redirect('/login')
 
-  const [vehicles, profile] = await Promise.all([
-    listVehicles(user.uid),
-    getProfile(user.uid, user.email),
+  const [vehicles, company] = await Promise.all([
+    listVehicles(m.companyId),
+    getCompany(m.companyId),
   ])
-  const limit = maxVehiculos(profile)
+  const limit = maxVehiculosDe(company?.plan)
 
   const now = new Date()
   const items = await Promise.all(
@@ -28,5 +29,5 @@ export default async function DashboardPage() {
     }),
   )
 
-  return <VehiclesBoard items={items} limit={limit} />
+  return <VehiclesBoard items={items} limit={limit} canWrite={can(m.role, 'vehicle:write')} />
 }
