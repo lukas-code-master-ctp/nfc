@@ -3,21 +3,30 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function owns(uid) { return signedIn() && request.auth.uid == uid; }
+    // Un usuario es miembro de una empresa si su propio doc en users/{uid}
+    // tiene ese companyId. El acceso a vehicles/documents se define por esto,
+    // no por ownerUid (ese campo ya no existe en el modelo multi-tenant).
+    function isMember(companyId) {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId;
+    }
 
     match /users/{uid} {
       allow read, write: if owns(uid);
     }
 
+    match /companies/{companyId} {
+      allow read, write: if isMember(companyId);
+    }
+
     match /vehicles/{vehicleId} {
-      allow read: if owns(resource.data.ownerUid);
-      allow create: if owns(request.resource.data.ownerUid);
-      allow update, delete: if owns(resource.data.ownerUid);
+      allow read, update, delete: if isMember(resource.data.companyId);
+      allow create: if isMember(request.resource.data.companyId);
     }
 
     match /documents/{documentId} {
-      allow read: if owns(resource.data.ownerUid);
-      allow create: if owns(request.resource.data.ownerUid);
-      allow update, delete: if owns(resource.data.ownerUid);
+      allow read, update, delete: if isMember(resource.data.companyId);
+      allow create: if isMember(request.resource.data.companyId);
     }
   }
 }
