@@ -1,3 +1,5 @@
+import type { Role } from '@/lib/auth/roles'
+
 export type DocumentType =
   | 'permiso_circulacion'
   | 'revision_tecnica'
@@ -62,6 +64,8 @@ export interface Vehicle {
   info?: VehicleInfo
   publicToken: string
   createdAt: string // ISO
+  companyId?: string
+  createdByUid?: string
 }
 
 export interface CompanyData {
@@ -87,12 +91,22 @@ export interface PlanData {
 
 export const DEFAULT_PLAN: PlanData = { maxVehiculos: 3 }
 
+export interface Company {
+  id: string
+  ownerUid: string // Administrador que la creó
+  company: CompanyData
+  plan: PlanData
+  createdAt: string | null
+}
+
 export interface UserProfile {
   email: string
   displayName: string
   company: CompanyData
   plan: PlanData
   createdAt: string | null
+  companyId?: string
+  role?: Role
 }
 
 export interface VehicleDocument {
@@ -106,4 +120,6 @@ export interface VehicleDocument {
   filePath: string
   remindersSent: string[] // p.ej. ['30','7','0']
   createdAt: string // ISO
+  companyId?: string
+  createdByUid?: string
 }
