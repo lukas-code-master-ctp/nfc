@@ -3,13 +3,12 @@ import type { VehicleDocument } from '@/lib/types'
 
 const COL = 'documents'
 
-type DocInput = Omit<VehicleDocument, 'id' | 'ownerUid' | 'companyId' | 'createdByUid' | 'remindersSent' | 'createdAt'>
+type DocInput = Omit<VehicleDocument, 'id' | 'companyId' | 'createdByUid' | 'remindersSent' | 'createdAt'>
 
 function toDoc(id: string, data: FirebaseFirestore.DocumentData): VehicleDocument {
   return {
     id,
     vehicleId: data.vehicleId,
-    ownerUid: data.ownerUid,
     companyId: data.companyId,
     createdByUid: data.createdByUid ?? data.ownerUid ?? null,
     tipo: data.tipo,
@@ -30,7 +29,6 @@ export async function createDocument(
   const createdAt = new Date().toISOString()
   const full = {
     ...data,
-    ownerUid: createdByUid,
     companyId,
     createdByUid,
     remindersSent: [] as string[],

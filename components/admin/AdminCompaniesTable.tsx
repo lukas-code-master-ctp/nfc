@@ -1,23 +1,23 @@
 'use client'
 import { useState } from 'react'
-import type { AdminUserRow } from '@/lib/data/admin'
+import type { AdminCompanyRow } from '@/lib/data/admin'
 
-function Row({ u }: { u: AdminUserRow }) {
-  const [value, setValue] = useState(String(u.maxVehiculos))
+function Row({ c }: { c: AdminCompanyRow }) {
+  const [value, setValue] = useState(String(c.maxVehiculos))
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const n = Number(value)
   const invalid = !Number.isInteger(n) || n < 1
-  const dirty = n !== u.maxVehiculos
+  const dirty = n !== c.maxVehiculos
 
   async function save() {
     if (invalid || !dirty) return
     setSaving(true)
     setError(null)
     setSaved(false)
-    const res = await fetch(`/api/admin/users/${u.uid}`, {
+    const res = await fetch(`/api/admin/companies/${c.companyId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ maxVehiculos: n }),
@@ -27,7 +27,7 @@ function Row({ u }: { u: AdminUserRow }) {
       setError('No se pudo guardar.')
       return
     }
-    u.maxVehiculos = n
+    c.maxVehiculos = n
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -36,19 +36,19 @@ function Row({ u }: { u: AdminUserRow }) {
     <li className="rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-semibold text-tinta">{u.email || '(sin correo)'}</p>
+          <p className="truncate font-semibold text-tinta">{c.razonSocial || c.ownerEmail || '(sin nombre)'}</p>
           <p className="truncate text-sm text-acero">
-            {u.razonSocial || u.displayName || 'Sin empresa'} · {u.vehicleCount}{' '}
-            {u.vehicleCount === 1 ? 'vehículo' : 'vehículos'}
+            {c.ownerEmail || 'Sin correo'} · {c.vehicleCount}{' '}
+            {c.vehicleCount === 1 ? 'vehículo' : 'vehículos'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <label htmlFor={`max-${u.uid}`} className="text-sm text-acero">
+          <label htmlFor={`max-${c.companyId}`} className="text-sm text-acero">
             Cupo
           </label>
           <input
-            id={`max-${u.uid}`}
+            id={`max-${c.companyId}`}
             type="number"
             min={1}
             inputMode="numeric"
@@ -70,26 +70,26 @@ function Row({ u }: { u: AdminUserRow }) {
         {invalid && <span className="text-vencido">Mínimo 1.</span>}
         {!invalid && error && <span className="text-vencido">{error}</span>}
         {!invalid && !error && saved && <span className="text-[#15803D]">Guardado ✓</span>}
-        {!invalid && !error && !saved && u.vehicleCount > u.maxVehiculos && (
-          <span className="text-acero">Usa {u.vehicleCount}, sobre el cupo (no podrá agregar más).</span>
+        {!invalid && !error && !saved && c.vehicleCount > c.maxVehiculos && (
+          <span className="text-acero">Usa {c.vehicleCount}, sobre el cupo (no podrá agregar más).</span>
         )}
       </div>
     </li>
   )
 }
 
-export default function AdminUsersTable({ users }: { users: AdminUserRow[] }) {
-  if (users.length === 0) {
+export default function AdminCompaniesTable({ companies }: { companies: AdminCompanyRow[] }) {
+  if (companies.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-12 text-center">
-        <p className="text-sm text-acero">No hay usuarios todavía.</p>
+        <p className="text-sm text-acero">No hay empresas todavía.</p>
       </div>
     )
   }
   return (
     <ul className="space-y-3">
-      {users.map((u) => (
-        <Row key={u.uid} u={u} />
+      {companies.map((c) => (
+        <Row key={c.companyId} c={c} />
       ))}
     </ul>
   )

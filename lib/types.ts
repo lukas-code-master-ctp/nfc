@@ -55,7 +55,6 @@ export const VEHICLE_INFO_FIELDS: {
 
 export interface Vehicle {
   id: string
-  ownerUid: string
   patente: string
   marca: string
   modelo: string
@@ -64,7 +63,7 @@ export interface Vehicle {
   info?: VehicleInfo
   publicToken: string
   createdAt: string // ISO
-  companyId?: string
+  companyId: string
   createdByUid?: string
 }
 
@@ -102,17 +101,14 @@ export interface Company {
 export interface UserProfile {
   email: string
   displayName: string
-  company: CompanyData
-  plan: PlanData
   createdAt: string | null
-  companyId?: string
-  role?: Role
+  companyId: string
+  role: Role
 }
 
 export interface VehicleDocument {
   id: string
   vehicleId: string
-  ownerUid: string
   tipo: DocumentType
   nombrePersonalizado: string | null
   fechaVencimiento: string | null // ISO date (YYYY-MM-DD)
@@ -120,6 +116,6 @@ export interface VehicleDocument {
   filePath: string
   remindersSent: string[] // p.ej. ['30','7','0']
   createdAt: string // ISO
-  companyId?: string
+  companyId: string
   createdByUid?: string
 }

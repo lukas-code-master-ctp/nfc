@@ -1,10 +1,10 @@
 import { redirect, notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/session'
 import { isAdminEmail } from '@/lib/auth/admin'
-import { listAllUsers } from '@/lib/data/admin'
+import { listAllCompanies } from '@/lib/data/admin'
 import { PRICE_PER_VEHICLE, monthlyTotal, formatCLP } from '@/lib/billing'
 import BackLink from '@/components/BackLink'
-import AdminUsersTable from '@/components/admin/AdminUsersTable'
+import AdminCompaniesTable from '@/components/admin/AdminCompaniesTable'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,8 +14,8 @@ export default async function AdminPage() {
   // Falla cerrado: si no es admin, la ruta no existe para él.
   if (!isAdminEmail(user.email)) notFound()
 
-  const users = await listAllUsers()
-  const totalVehiculos = users.reduce((sum, u) => sum + u.maxVehiculos, 0)
+  const companies = await listAllCompanies()
+  const totalVehiculos = companies.reduce((sum, c) => sum + c.maxVehiculos, 0)
   const recaudacion = monthlyTotal(totalVehiculos)
 
   return (
@@ -24,7 +24,7 @@ export default async function AdminPage() {
       <div className="mb-6 mt-5">
         <h1 className="text-2xl font-bold tracking-tight text-tinta">Administración</h1>
         <p className="mt-1 text-sm text-acero">
-          {users.length} {users.length === 1 ? 'usuario' : 'usuarios'} · configura el cupo de vehículos del plan de cada uno.
+          {companies.length} {companies.length === 1 ? 'empresa' : 'empresas'} · configura el cupo de vehículos del plan de cada una.
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export default async function AdminPage() {
         </p>
       </section>
 
-      <AdminUsersTable users={users} />
+      <AdminCompaniesTable companies={companies} />
     </main>
   )
 }

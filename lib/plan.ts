@@ -1,12 +1,7 @@
-// Lógica de plan (pura, sin Firebase). El cupo de vehículos vive en el perfil
-// del usuario (`plan.maxVehiculos`), lo configura un admin de la plataforma.
-// Mientras no esté seteado, se usa el default. Mínimo 1 siempre.
-import { DEFAULT_PLAN, type PlanData, type UserProfile } from '@/lib/types'
-
-export function maxVehiculos(profile: Pick<UserProfile, 'plan'>): number {
-  const n = profile.plan?.maxVehiculos ?? DEFAULT_PLAN.maxVehiculos
-  return Math.max(1, Math.floor(n))
-}
+// Lógica de plan (pura, sin Firebase). El cupo de vehículos vive en la empresa
+// (`companies/{companyId}.plan.maxVehiculos`), lo configura un admin de la
+// plataforma. Mientras no esté seteado, se usa el default. Mínimo 1 siempre.
+import { DEFAULT_PLAN, type PlanData } from '@/lib/types'
 
 export function maxVehiculosDe(plan: PlanData | undefined): number {
   const n = plan?.maxVehiculos ?? DEFAULT_PLAN.maxVehiculos

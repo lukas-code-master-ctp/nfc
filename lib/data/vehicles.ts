@@ -6,12 +6,11 @@ import type { Vehicle } from '@/lib/types'
 
 const COL = 'vehicles'
 
-type VehicleInput = Omit<Vehicle, 'id' | 'ownerUid' | 'companyId' | 'createdByUid' | 'publicToken' | 'createdAt'>
+type VehicleInput = Omit<Vehicle, 'id' | 'companyId' | 'createdByUid' | 'publicToken' | 'createdAt'>
 
 function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
   return {
     id,
-    ownerUid: data.ownerUid,
     companyId: data.companyId,
     createdByUid: data.createdByUid ?? data.ownerUid ?? null,
     patente: data.patente,
@@ -33,7 +32,7 @@ export async function createVehicle(
   const publicToken = nanoid(21)
   const createdAt = new Date().toISOString()
   const ref = await adminDb.collection(COL).add({ ...data, companyId, createdByUid, publicToken, createdAt })
-  return { id: ref.id, ownerUid: createdByUid, companyId, createdByUid, publicToken, createdAt, ...data }
+  return { id: ref.id, companyId, createdByUid, publicToken, createdAt, ...data }
 }
 
 export async function listVehicles(companyId: string): Promise<Vehicle[]> {

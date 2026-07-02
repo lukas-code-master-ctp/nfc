@@ -1,19 +1,21 @@
 import { adminDb } from '@/lib/firebase/admin'
-import { DEFAULT_PLAN, EMPTY_COMPANY, type UserProfile } from '@/lib/types'
+import type { UserProfile } from '@/lib/types'
 
 const COL = 'users'
 
 export async function getProfile(uid: string, email: string): Promise<UserProfile> {
   const doc = await adminDb.collection(COL).doc(uid).get()
   if (!doc.exists) {
-    return { email, displayName: '', company: { ...EMPTY_COMPANY }, plan: { ...DEFAULT_PLAN }, createdAt: null }
+    // Un usuario real siempre tiene companyId/role tras la migración; esto es
+    // solo un default seguro si el doc no existe todavía.
+    return { email, displayName: '', companyId: '', role: 'viewer', createdAt: null }
   }
   const d = doc.data()!
   return {
     email: d.email ?? email,
     displayName: d.displayName ?? '',
-    company: { ...EMPTY_COMPANY, ...(d.company ?? {}) },
-    plan: { ...DEFAULT_PLAN, ...(d.plan ?? {}) },
+    companyId: d.companyId ?? '',
+    role: d.role ?? 'viewer',
     createdAt: d.createdAt ?? null,
   }
 }
