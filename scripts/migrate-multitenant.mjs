@@ -35,16 +35,25 @@ async function main() {
   for (const u of users.docs) {
     const d = u.data()
     if (d.companyId) { console.log(`- ${u.id}: ya migrado, skip`); continue }
-    const companyRef = await db.collection('companies').add({
-      ownerUid: u.id,
-      company: { ...EMPTY_COMPANY, ...(d.company ?? {}) },
-      plan: { ...DEFAULT_PLAN, ...(d.plan ?? {}) },
-      createdAt: new Date().toISOString(),
-    })
-    await u.ref.set({ companyId: companyRef.id, role: 'admin' }, { merge: true })
-    const v = await stampCollection('vehicles', u.id, companyRef.id)
-    const docs = await stampCollection('documents', u.id, companyRef.id)
-    console.log(`+ ${u.id} → company ${companyRef.id} (${v} vehículos, ${docs} documentos)`)
+    // Si una corrida previa se cayó entre crear la company y marcar al user,
+    // reutilizamos esa company en vez de crear una huérfana duplicada.
+    const existing = await db.collection('companies').where('ownerUid', '==', u.id).limit(1).get()
+    let companyId
+    if (!existing.empty) {
+      companyId = existing.docs[0].id
+    } else {
+      const companyRef = await db.collection('companies').add({
+        ownerUid: u.id,
+        company: { ...EMPTY_COMPANY, ...(d.company ?? {}) },
+        plan: { ...DEFAULT_PLAN, ...(d.plan ?? {}) },
+        createdAt: new Date().toISOString(),
+      })
+      companyId = companyRef.id
+    }
+    await u.ref.set({ companyId, role: 'admin' }, { merge: true })
+    const v = await stampCollection('vehicles', u.id, companyId)
+    const docs = await stampCollection('documents', u.id, companyId)
+    console.log(`+ ${u.id} → company ${companyId} (${v} vehículos, ${docs} documentos)`)
     migrated++
   }
   // Vehículos/documentos sin dueño en users (por si acaso): reportar, no tocar.
