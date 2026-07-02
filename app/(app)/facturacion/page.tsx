@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth/session'
-import { getProfile } from '@/lib/data/profile'
+import { getMembership } from '@/lib/auth/membership'
+import { can } from '@/lib/auth/roles'
+import { getCompany } from '@/lib/data/companies'
 import { listVehicles } from '@/lib/data/vehicles'
-import { maxVehiculos } from '@/lib/plan'
+import { maxVehiculosDe } from '@/lib/plan'
 import {
   PRICE_PER_VEHICLE,
   TAG_PRICE,
@@ -17,17 +18,18 @@ import BillingRequestForm from '@/components/billing/BillingRequestForm'
 export const dynamic = 'force-dynamic'
 
 export default async function FacturacionPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const m = await getMembership()
+  if (!m) redirect('/login')
 
-  const [vehicles, profile] = await Promise.all([
-    listVehicles(user.uid),
-    getProfile(user.uid, user.email),
+  const [company, vehicles] = await Promise.all([
+    getCompany(m.companyId),
+    listVehicles(m.companyId),
   ])
-  const cupo = maxVehiculos(profile)
+  const cupo = maxVehiculosDe(company?.plan)
   const used = vehicles.length
   const total = monthlyTotal(cupo)
   const tagFree = tagIncluded(cupo)
+  const esAdmin = can(m.role, 'billing:manage')
 
   return (
     <main className="mx-auto max-w-2xl space-y-5 px-4 py-8">
@@ -78,12 +80,20 @@ export default async function FacturacionPage() {
         )}
       </section>
 
-      <p className="rounded-xl bg-azul/5 px-4 py-3 text-sm text-acero">
-        Estamos en marcha blanca: por ahora coordinamos el pago y la <strong className="text-tinta">factura
-        electrónica</strong> contigo directamente. Envíanos tu solicitud y te contactamos.
-      </p>
+      {esAdmin ? (
+        <>
+          <p className="rounded-xl bg-azul/5 px-4 py-3 text-sm text-acero">
+            Estamos en marcha blanca: por ahora coordinamos el pago y la <strong className="text-tinta">factura
+            electrónica</strong> contigo directamente. Envíanos tu solicitud y te contactamos.
+          </p>
 
-      <BillingRequestForm currentCupo={cupo} />
+          <BillingRequestForm currentCupo={cupo} />
+        </>
+      ) : (
+        <p className="rounded-xl bg-azul/5 px-4 py-3 text-sm text-acero">
+          Solo un administrador de la empresa puede solicitar cambios de plan.
+        </p>
+      )}
     </main>
   )
 }

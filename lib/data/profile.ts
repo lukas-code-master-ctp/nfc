@@ -1,5 +1,5 @@
 import { adminDb } from '@/lib/firebase/admin'
-import { DEFAULT_PLAN, EMPTY_COMPANY, type CompanyData, type PlanData, type UserProfile } from '@/lib/types'
+import { DEFAULT_PLAN, EMPTY_COMPANY, type UserProfile } from '@/lib/types'
 
 const COL = 'users'
 
@@ -18,19 +18,18 @@ export async function getProfile(uid: string, email: string): Promise<UserProfil
   }
 }
 
-// `plan` solo lo setea el admin de la plataforma (no el endpoint del propio
-// usuario), por eso no se expone en /api/profile PATCH.
+// `company`/`plan` ahora viven en `companies/{companyId}` (ver lib/data/companies.ts)
+// y los edita solo un admin de empresa vía /api/company. El perfil del usuario
+// (`users/{uid}`) solo guarda datos personales (`displayName`).
 export async function saveProfile(
   uid: string,
   email: string,
-  patch: { displayName?: string; company?: CompanyData; plan?: PlanData },
+  patch: { displayName?: string },
 ): Promise<void> {
   const ref = adminDb.collection(COL).doc(uid)
   const snap = await ref.get()
   const data: Record<string, unknown> = {}
   if (patch.displayName !== undefined) data.displayName = patch.displayName
-  if (patch.company !== undefined) data.company = patch.company
-  if (patch.plan !== undefined) data.plan = { maxVehiculos: Math.max(1, Math.floor(patch.plan.maxVehiculos)) }
   if (!snap.exists) {
     data.email = email
     data.createdAt = new Date().toISOString()
