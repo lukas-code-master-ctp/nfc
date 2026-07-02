@@ -20,12 +20,19 @@ service cloud.firestore {
     }
 
     match /vehicles/{vehicleId} {
-      allow read, update, delete: if isMember(resource.data.companyId);
+      allow read, delete: if isMember(resource.data.companyId);
+      // En update se exige pertenencia tanto al companyId actual como al
+      // entrante: evita que un miembro reasigne el documento a otra empresa
+      // cambiando companyId en la escritura (companyId es inmutable entre empresas).
+      allow update: if isMember(resource.data.companyId) && isMember(request.resource.data.companyId);
       allow create: if isMember(request.resource.data.companyId);
     }
 
     match /documents/{documentId} {
-      allow read, update, delete: if isMember(resource.data.companyId);
+      allow read, delete: if isMember(resource.data.companyId);
+      // Mismo criterio que en vehicles: companyId no puede cambiar a una
+      // empresa de la que el usuario no sea miembro.
+      allow update: if isMember(resource.data.companyId) && isMember(request.resource.data.companyId);
       allow create: if isMember(request.resource.data.companyId);
     }
   }

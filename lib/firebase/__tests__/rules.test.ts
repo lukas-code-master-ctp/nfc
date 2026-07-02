@@ -11,7 +11,7 @@ import {
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -74,6 +74,32 @@ describe('reglas de firestore', () => {
         setDoc(doc(alice, 'vehicles/v3'), { companyId: 'empresa-bob', patente: 'AAAA11' }),
       )
     })
+
+    it('un miembro puede actualizar un campo normal de un vehículo de su propia empresa', async () => {
+      await seedUsers()
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'vehicles/v4'), {
+          companyId: 'empresa-alice',
+          patente: 'ABCD12',
+        })
+      })
+      const alice = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(updateDoc(doc(alice, 'vehicles/v4'), { patente: 'ZZZZ99' }))
+    })
+
+    it('un miembro NO puede cambiar el companyId de un vehículo a otra empresa', async () => {
+      await seedUsers()
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'vehicles/v5'), {
+          companyId: 'empresa-alice',
+          patente: 'ABCD12',
+        })
+      })
+      const alice = testEnv.authenticatedContext('alice').firestore()
+      await assertFails(
+        updateDoc(doc(alice, 'vehicles/v5'), { companyId: 'empresa-bob' }),
+      )
+    })
   })
 
   describe('documents', () => {
@@ -103,6 +129,32 @@ describe('reglas de firestore', () => {
       const alice = testEnv.authenticatedContext('alice').firestore()
       await assertSucceeds(
         setDoc(doc(alice, 'documents/d1'), { companyId: 'empresa-alice', vehicleId: 'v' }),
+      )
+    })
+
+    it('un miembro puede actualizar un campo normal de un documento de su propia empresa', async () => {
+      await seedUsers()
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'documents/d4'), {
+          companyId: 'empresa-alice',
+          vehicleId: 'v',
+        })
+      })
+      const alice = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(updateDoc(doc(alice, 'documents/d4'), { vehicleId: 'v2' }))
+    })
+
+    it('un miembro NO puede cambiar el companyId de un documento a otra empresa', async () => {
+      await seedUsers()
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'documents/d5'), {
+          companyId: 'empresa-alice',
+          vehicleId: 'v',
+        })
+      })
+      const alice = testEnv.authenticatedContext('alice').firestore()
+      await assertFails(
+        updateDoc(doc(alice, 'documents/d5'), { companyId: 'empresa-bob' }),
       )
     })
   })
