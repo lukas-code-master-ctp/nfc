@@ -3,13 +3,14 @@ import type { VehicleDocument } from '@/lib/types'
 
 const COL = 'documents'
 
-type DocInput = Omit<VehicleDocument, 'id' | 'ownerUid' | 'remindersSent' | 'createdAt'>
+type DocInput = Omit<VehicleDocument, 'id' | 'companyId' | 'createdByUid' | 'remindersSent' | 'createdAt'>
 
 function toDoc(id: string, data: FirebaseFirestore.DocumentData): VehicleDocument {
   return {
     id,
     vehicleId: data.vehicleId,
-    ownerUid: data.ownerUid,
+    companyId: data.companyId,
+    createdByUid: data.createdByUid ?? data.ownerUid ?? null,
     tipo: data.tipo,
     nombrePersonalizado: data.nombrePersonalizado ?? null,
     fechaVencimiento: data.fechaVencimiento ?? null,
@@ -20,9 +21,19 @@ function toDoc(id: string, data: FirebaseFirestore.DocumentData): VehicleDocumen
   }
 }
 
-export async function createDocument(ownerUid: string, data: DocInput): Promise<VehicleDocument> {
+export async function createDocument(
+  companyId: string,
+  createdByUid: string,
+  data: DocInput,
+): Promise<VehicleDocument> {
   const createdAt = new Date().toISOString()
-  const full = { ...data, ownerUid, remindersSent: [] as string[], createdAt }
+  const full = {
+    ...data,
+    companyId,
+    createdByUid,
+    remindersSent: [] as string[],
+    createdAt,
+  }
   const ref = await adminDb.collection(COL).add(full)
   return { id: ref.id, ...full }
 }
@@ -37,23 +48,23 @@ export async function getDocument(documentId: string): Promise<VehicleDocument |
   return doc.exists ? toDoc(doc.id, doc.data()!) : null
 }
 
-async function assertDocOwner(documentId: string, ownerUid: string) {
+async function assertCompany(documentId: string, companyId: string) {
   const d = await getDocument(documentId)
-  if (!d || d.ownerUid !== ownerUid) throw new Error('forbidden')
+  if (!d || d.companyId !== companyId) throw new Error('forbidden')
   return d
 }
 
 export async function updateDocument(
   documentId: string,
-  ownerUid: string,
+  companyId: string,
   patch: Partial<DocInput> & { remindersSent?: string[] },
 ): Promise<void> {
-  await assertDocOwner(documentId, ownerUid)
+  await assertCompany(documentId, companyId)
   await adminDb.collection(COL).doc(documentId).update(patch)
 }
 
-export async function deleteDocument(documentId: string, ownerUid: string): Promise<void> {
-  const d = await assertDocOwner(documentId, ownerUid)
+export async function deleteDocument(documentId: string, companyId: string): Promise<void> {
+  const d = await assertCompany(documentId, companyId)
   if (d.filePath) {
     await adminBucket.file(d.filePath).delete({ ignoreNotFound: true })
   }

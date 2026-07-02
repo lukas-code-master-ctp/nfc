@@ -5,6 +5,7 @@ const COL = 'billingRequests'
 export interface BillingRequestInput {
   uid: string
   email: string
+  companyId: string
   razonSocial: string
   currentCupo: number
   desiredVehicles: number

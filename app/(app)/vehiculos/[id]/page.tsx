@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth/session'
+import { getMembership } from '@/lib/auth/membership'
+import { can } from '@/lib/auth/roles'
 import { getVehicle } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
 import { documentStatus } from '@/lib/documents/status'
@@ -15,10 +16,13 @@ export const dynamic = 'force-dynamic'
 
 export default async function VehiclePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const m = await getMembership()
+  if (!m) redirect('/login')
   const vehicle = await getVehicle(id)
-  if (!vehicle || vehicle.ownerUid !== user.uid) notFound()
+  if (!vehicle || vehicle.companyId !== m.companyId) notFound()
+
+  const canEditDocs = can(m.role, 'document:write')
+  const canManageVehicle = can(m.role, 'vehicle:write')
 
   const now = new Date()
   const docs = await listDocuments(vehicle.id)
@@ -56,16 +60,20 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-tinta">Documentos</h2>
-        <DocumentForm vehicleId={vehicle.id} />
-        <DocumentList documents={items} vehicleId={vehicle.id} />
+        {canEditDocs && <DocumentForm vehicleId={vehicle.id} />}
+        <DocumentList documents={items} vehicleId={vehicle.id} canEdit={canEditDocs} />
       </section>
 
-      <VehicleInfoForm vehicleId={vehicle.id} initial={vehicle.info ?? {}} />
+      {canManageVehicle && (
+        <VehicleInfoForm vehicleId={vehicle.id} initial={vehicle.info ?? {}} />
+      )}
 
-      <DeleteVehicleButton
-        vehicleId={vehicle.id}
-        label={`${vehicle.marca} ${vehicle.modelo} · ${vehicle.patente}`}
-      />
+      {canManageVehicle && (
+        <DeleteVehicleButton
+          vehicleId={vehicle.id}
+          label={`${vehicle.marca} ${vehicle.modelo} · ${vehicle.patente}`}
+        />
+      )}
     </main>
   )
 }

@@ -23,7 +23,7 @@ export default function CompanyCard({ initial }: { initial: CompanyData }) {
     setSaving(true)
     setError(null)
     setSaved(false)
-    const res = await fetch('/api/profile', {
+    const res = await fetch('/api/company', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ company }),

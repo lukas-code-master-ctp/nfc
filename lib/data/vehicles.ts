@@ -1,16 +1,18 @@
 import { adminDb, adminAuth } from '@/lib/firebase/admin'
 import { nanoid } from 'nanoid'
 import { listDocuments, deleteDocument } from '@/lib/data/documents'
+import { getCompany } from '@/lib/data/companies'
 import type { Vehicle } from '@/lib/types'
 
 const COL = 'vehicles'
 
-type VehicleInput = Omit<Vehicle, 'id' | 'ownerUid' | 'publicToken' | 'createdAt'>
+type VehicleInput = Omit<Vehicle, 'id' | 'companyId' | 'createdByUid' | 'publicToken' | 'createdAt'>
 
 function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
   return {
     id,
-    ownerUid: data.ownerUid,
+    companyId: data.companyId,
+    createdByUid: data.createdByUid ?? data.ownerUid ?? null,
     patente: data.patente,
     marca: data.marca,
     modelo: data.modelo,
@@ -22,15 +24,19 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
   }
 }
 
-export async function createVehicle(ownerUid: string, data: VehicleInput): Promise<Vehicle> {
+export async function createVehicle(
+  companyId: string,
+  createdByUid: string,
+  data: VehicleInput,
+): Promise<Vehicle> {
   const publicToken = nanoid(21)
   const createdAt = new Date().toISOString()
-  const ref = await adminDb.collection(COL).add({ ...data, ownerUid, publicToken, createdAt })
-  return { id: ref.id, ownerUid, publicToken, createdAt, ...data }
+  const ref = await adminDb.collection(COL).add({ ...data, companyId, createdByUid, publicToken, createdAt })
+  return { id: ref.id, companyId, createdByUid, publicToken, createdAt, ...data }
 }
 
-export async function listVehicles(ownerUid: string): Promise<Vehicle[]> {
-  const snap = await adminDb.collection(COL).where('ownerUid', '==', ownerUid).get()
+export async function listVehicles(companyId: string): Promise<Vehicle[]> {
+  const snap = await adminDb.collection(COL).where('companyId', '==', companyId).get()
   return snap.docs.map((d) => toVehicle(d.id, d.data()))
 }
 
@@ -46,33 +52,33 @@ export async function getVehicleByToken(publicToken: string): Promise<Vehicle | 
   return toVehicle(d.id, d.data())
 }
 
-async function assertOwner(vehicleId: string, ownerUid: string) {
+async function assertCompany(vehicleId: string, companyId: string) {
   const v = await getVehicle(vehicleId)
-  if (!v || v.ownerUid !== ownerUid) throw new Error('forbidden')
+  if (!v || v.companyId !== companyId) throw new Error('forbidden')
   return v
 }
 
 export async function updateVehicle(
   vehicleId: string,
-  ownerUid: string,
+  companyId: string,
   patch: Partial<VehicleInput>,
 ): Promise<void> {
-  await assertOwner(vehicleId, ownerUid)
+  await assertCompany(vehicleId, companyId)
   await adminDb.collection(COL).doc(vehicleId).update(patch)
 }
 
-export async function deleteVehicle(vehicleId: string, ownerUid: string): Promise<void> {
-  await assertOwner(vehicleId, ownerUid)
+export async function deleteVehicle(vehicleId: string, companyId: string): Promise<void> {
+  await assertCompany(vehicleId, companyId)
   // Borrado en cascada: eliminar documentos hijos (y sus archivos en Storage) antes del vehículo.
   const docs = await listDocuments(vehicleId)
   for (const d of docs) {
-    await deleteDocument(d.id, ownerUid)
+    await deleteDocument(d.id, companyId)
   }
   await adminDb.collection(COL).doc(vehicleId).delete()
 }
 
-export async function regenerateToken(vehicleId: string, ownerUid: string): Promise<string> {
-  await assertOwner(vehicleId, ownerUid)
+export async function regenerateToken(vehicleId: string, companyId: string): Promise<string> {
+  await assertCompany(vehicleId, companyId)
   const publicToken = nanoid(21)
   await adminDb.collection(COL).doc(vehicleId).update({ publicToken })
   return publicToken
@@ -82,9 +88,11 @@ export async function vehicleInfoForReminder(
   vehicleId: string,
 ): Promise<{ patente: string; email: string } | null> {
   const v = await getVehicle(vehicleId)
-  if (!v) return null
+  if (!v || !v.companyId) return null
   try {
-    const u = await adminAuth.getUser(v.ownerUid)
+    const company = await getCompany(v.companyId)
+    if (!company) return { patente: v.patente, email: '' }
+    const u = await adminAuth.getUser(company.ownerUid)
     return { patente: v.patente, email: u.email ?? '' }
   } catch {
     return { patente: v.patente, email: '' }

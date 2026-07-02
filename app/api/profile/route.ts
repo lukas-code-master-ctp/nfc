@@ -15,22 +15,10 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const patch: { displayName?: string; company?: ReturnType<typeof sanitizeCompany> } = {}
+  const patch: { displayName?: string } = {}
 
   if (typeof body.displayName === 'string') patch.displayName = body.displayName.trim()
-  if (body.company && typeof body.company === 'object') patch.company = sanitizeCompany(body.company)
 
   await saveProfile(user.uid, user.email, patch)
   return NextResponse.json({ ok: true })
-}
-
-function sanitizeCompany(c: Record<string, unknown>) {
-  const s = (v: unknown) => String(v ?? '').trim()
-  return {
-    razonSocial: s(c.razonSocial),
-    rut: s(c.rut),
-    giro: s(c.giro),
-    direccion: s(c.direccion),
-    telefono: s(c.telefono),
-  }
 }

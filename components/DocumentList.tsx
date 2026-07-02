@@ -8,7 +8,15 @@ import type { DocStatus } from '@/lib/documents/status'
 
 type Item = VehicleDocument & { status: DocStatus; readUrl: string | null }
 
-export default function DocumentList({ documents, vehicleId }: { documents: Item[]; vehicleId: string }) {
+export default function DocumentList({
+  documents,
+  vehicleId,
+  canEdit,
+}: {
+  documents: Item[]
+  vehicleId: string
+  canEdit: boolean
+}) {
   const router = useRouter()
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -46,7 +54,7 @@ export default function DocumentList({ documents, vehicleId }: { documents: Item
           </div>
 
           <div className="mt-3 space-y-3 border-t border-linea pt-3">
-            {needsUpdate && (
+            {canEdit && needsUpdate && (
               <button
                 onClick={() => setEditingId(editing ? null : d.id)}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press"
@@ -72,18 +80,20 @@ export default function DocumentList({ documents, vehicleId }: { documents: Item
                   Sin archivo
                 </span>
               )}
-              {!needsUpdate && (
+              {canEdit && !needsUpdate && (
                 <button onClick={() => setEditingId(editing ? null : d.id)} className="text-azul hover:text-azul-press">
                   {editing ? 'Cerrar' : 'Editar'}
                 </button>
               )}
-              <button onClick={() => remove(d.id)} className="ml-auto text-vencido hover:text-[#B91C1C]">
-                Eliminar
-              </button>
+              {canEdit && (
+                <button onClick={() => remove(d.id)} className="ml-auto text-vencido hover:text-[#B91C1C]">
+                  Eliminar
+                </button>
+              )}
             </div>
           </div>
 
-          {editing && (
+          {canEdit && editing && (
             <DocumentEditForm vehicleId={vehicleId} document={d} onClose={() => setEditingId(null)} />
           )}
         </li>
