@@ -119,3 +119,19 @@ export interface VehicleDocument {
   companyId: string
   createdByUid?: string
 }
+
+export const MAX_MIEMBROS_EQUIPO = 5
+
+export interface Invitation {
+  id: string
+  companyId: string
+  email: string // normalizado a minúsculas
+  role: Role
+  token: string
+  status: 'pending' | 'accepted' | 'revoked'
+  invitedByUid: string
+  createdAt: string // ISO
+  expiresAt: string // ISO
+  acceptedByUid?: string
+  acceptedAt?: string
+}
