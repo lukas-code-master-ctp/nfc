@@ -167,5 +167,7 @@ export interface VehicleUsage {
   bencina?: string
   km?: number
   limpieza?: string
+  iaAnalizadoEn?: string // ISO; cuándo corrió la IA
+  datosConfirmados?: boolean // true cuando un gestor edita/confirma
   createdAt: string // ISO
 }
