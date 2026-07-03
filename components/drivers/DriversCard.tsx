@@ -46,7 +46,8 @@ export default function DriversCard() {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: nuevo }),
     })
-    if (!res.ok) alert('PIN inválido (deben ser 4 dígitos).')
+    if (res.ok) { alert('PIN actualizado.'); load() }
+    else alert('PIN inválido (deben ser 4 dígitos).')
   }
   async function eliminar(d: Driver) {
     if (!confirm(`¿Eliminar a ${d.nombre} del padrón? Su historial de usos se conserva.`)) return
