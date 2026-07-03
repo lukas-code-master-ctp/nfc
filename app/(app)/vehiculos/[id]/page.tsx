@@ -10,6 +10,7 @@ import DocumentForm from '@/components/DocumentForm'
 import DocumentList from '@/components/DocumentList'
 import NfcTokenPanel from '@/components/NfcTokenPanel'
 import VehicleInfoForm from '@/components/VehicleInfoForm'
+import VehicleInfoView from '@/components/VehicleInfoView'
 import DeleteVehicleButton from '@/components/DeleteVehicleButton'
 
 export const dynamic = 'force-dynamic'
@@ -64,8 +65,10 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         <DocumentList documents={items} vehicleId={vehicle.id} canEdit={canEditDocs} />
       </section>
 
-      {canManageVehicle && (
+      {canManageVehicle ? (
         <VehicleInfoForm vehicleId={vehicle.id} initial={vehicle.info ?? {}} />
+      ) : (
+        <VehicleInfoView info={vehicle.info ?? {}} />
       )}
 
       {canManageVehicle && (
