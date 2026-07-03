@@ -65,6 +65,7 @@ export interface Vehicle {
   createdAt: string // ISO
   companyId: string
   createdByUid?: string
+  usoActual?: { driverId: string; driverNombre: string; tomadoEn: string } | null
 }
 
 export interface CompanyData {
@@ -170,4 +171,16 @@ export interface VehicleUsage {
   iaAnalizadoEn?: string // ISO; cuándo corrió la IA
   datosConfirmados?: boolean // true cuando un gestor edita/confirma
   createdAt: string // ISO
+}
+
+export interface Alerta {
+  id: string
+  companyId: string
+  vehicleId: string
+  patente: string // denormalizado
+  usageId: string
+  tipo: 'dano' | 'sin_entrega'
+  driverNombre: string
+  nota?: string
+  creadaEn: string // ISO
 }
