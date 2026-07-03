@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getVehicleByToken } from '@/lib/data/vehicles'
-import { verifyDriverPin, getDriver } from '@/lib/data/drivers'
+import { verifyDriverPin, getDriver, incrementDriverStats } from '@/lib/data/drivers'
 import { openUsage } from '@/lib/data/usages'
 import { getCompany } from '@/lib/data/companies'
 import { adminAuth } from '@/lib/firebase/admin'
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   if (!driver) return NextResponse.json({ error: 'Conductor no encontrado.' }, { status: 404 })
 
   const { forced } = await openUsage(vehicle.companyId, vehicle.id, { id: driver.id, nombre: driver.nombre })
+  try { await incrementDriverStats(driver.id, 'usos') } catch { /* best-effort */ }
 
   // Aviso best-effort al dueño/admin si el uso anterior quedó sin entrega formal.
   if (forced) {
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     } catch {
       /* best-effort */
     }
+    try { await incrementDriverStats(forced.driverId, 'sinEntrega') } catch { /* best-effort */ }
   }
 
   return NextResponse.json({ ok: true })
