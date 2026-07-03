@@ -5,6 +5,7 @@ import { getCompany } from '@/lib/data/companies'
 import { EMPTY_COMPANY } from '@/lib/types'
 import BackLink from '@/components/BackLink'
 import CompanyCard from '@/components/company/CompanyCard'
+import TeamCard from '@/components/company/TeamCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +53,8 @@ export default async function ConfiguracionPage() {
           </dl>
         </section>
       )}
+
+      {esAdmin && <TeamCard />}
     </main>
   )
 }

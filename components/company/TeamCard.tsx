@@ -1,0 +1,170 @@
+'use client'
+import { useEffect, useState } from 'react'
+
+type Role = 'admin' | 'editor' | 'viewer'
+const ROLE_LABELS: Record<Role, string> = { admin: 'Administrador', editor: 'Editor', viewer: 'Visor' }
+const ROLE_OPTIONS: Role[] = ['viewer', 'editor', 'admin']
+
+interface Member { uid: string; email: string; displayName: string; role: Role; isOwner: boolean }
+interface Invitation { id: string; email: string; role: Role; expiresAt: string }
+
+function diasRestantes(expiresAt: string): number {
+  const ms = new Date(expiresAt).getTime() - Date.now()
+  return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)))
+}
+
+export default function TeamCard() {
+  const [members, setMembers] = useState<Member[]>([])
+  const [invitations, setInvitations] = useState<Invitation[]>([])
+  const [loading, setLoading] = useState(true)
+  const [email, setEmail] = useState('')
+  const [role, setRole] = useState<Role>('viewer')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [lastLink, setLastLink] = useState<string | null>(null)
+
+  async function load() {
+    const res = await fetch('/api/company/team')
+    if (res.ok) {
+      const data = await res.json()
+      setMembers(data.members)
+      setInvitations(data.invitations)
+    }
+    setLoading(false)
+  }
+  useEffect(() => { load() }, [])
+
+  const total = members.length + invitations.length
+  const lleno = total >= 5
+
+  async function invitar(e: React.FormEvent) {
+    e.preventDefault()
+    setBusy(true); setError(null); setLastLink(null)
+    const res = await fetch('/api/company/invitations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role }),
+    })
+    setBusy(false)
+    if (res.ok) {
+      const data = await res.json()
+      setLastLink(data.acceptUrl)
+      setEmail('')
+      load()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'No se pudo invitar.')
+    }
+  }
+
+  async function cancelar(id: string) {
+    await fetch(`/api/company/invitations/${id}`, { method: 'DELETE' })
+    load()
+  }
+  async function cambiarRol(uid: string, nuevo: Role) {
+    await fetch(`/api/company/members/${uid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: nuevo }),
+    })
+    load()
+  }
+  async function quitar(uid: string) {
+    if (!confirm('¿Quitar a este miembro del equipo?')) return
+    await fetch(`/api/company/members/${uid}`, { method: 'DELETE' })
+    load()
+  }
+
+  return (
+    <section className="mt-5 rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold text-tinta">Equipo</h2>
+        <span className="text-sm text-acero">{total} de 5 miembros</span>
+      </div>
+      <p className="mt-1 text-sm text-acero">Invita personas y define qué pueden hacer con tu flota.</p>
+
+      {loading ? (
+        <p className="mt-4 text-sm text-acero">Cargando…</p>
+      ) : (
+        <>
+          <ul className="mt-4 space-y-2">
+            {members.map((mem) => (
+              <li key={mem.uid} className="flex items-center justify-between gap-3 rounded-lg border border-linea px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-tinta">{mem.email || mem.displayName || mem.uid}</p>
+                  {mem.isOwner && <span className="text-xs text-acero">Dueño</span>}
+                </div>
+                {mem.isOwner ? (
+                  <span className="rounded-full bg-lienzo px-2.5 py-1 text-xs font-medium text-acero">{ROLE_LABELS[mem.role]}</span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={mem.role}
+                      onChange={(e) => cambiarRol(mem.uid, e.target.value as Role)}
+                      className="rounded-lg border border-linea bg-superficie px-2 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none"
+                    >
+                      {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                    </select>
+                    <button onClick={() => quitar(mem.uid)} className="text-sm text-vencido hover:underline">Quitar</button>
+                  </div>
+                )}
+              </li>
+            ))}
+
+            {invitations.map((inv) => (
+              <li key={inv.id} className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-linea px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-tinta">{inv.email}</p>
+                  <span className="text-xs text-acero">Invitación pendiente · {ROLE_LABELS[inv.role]} · expira en {diasRestantes(inv.expiresAt)} días</span>
+                </div>
+                <button onClick={() => cancelar(inv.id)} className="text-sm text-vencido hover:underline">Cancelar</button>
+              </li>
+            ))}
+          </ul>
+
+          {lleno ? (
+            <p className="mt-4 text-sm text-acero">Alcanzaste el máximo de 5 miembros.</p>
+          ) : (
+            <form onSubmit={invitar} className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="correo@empresa.cl"
+                className="flex-1 rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero/45 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+              />
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as Role)}
+                className="rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta focus:border-azul focus:outline-none"
+              >
+                {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+              </select>
+              <button
+                type="submit"
+                disabled={busy}
+                className="rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press disabled:opacity-50"
+              >
+                {busy ? 'Invitando…' : 'Invitar'}
+              </button>
+            </form>
+          )}
+
+          {error && <p className="mt-2 text-sm text-vencido">{error}</p>}
+          {lastLink && (
+            <p className="mt-2 text-sm text-acero">
+              Invitación creada. Si el correo no llega, comparte este enlace:{' '}
+              <button
+                onClick={() => navigator.clipboard?.writeText(lastLink)}
+                className="font-medium text-azul hover:underline"
+              >
+                copiar enlace
+              </button>
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
