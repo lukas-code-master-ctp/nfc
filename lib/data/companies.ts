@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase/admin'
 import { DEFAULT_PLAN, EMPTY_COMPANY, type Company, type CompanyData, type PlanData } from '@/lib/types'
+import { findPendingInvitationByEmail, markInvitationAccepted } from '@/lib/data/invitations'
 
 const COL = 'companies'
 
@@ -50,6 +51,19 @@ export async function ensureProvisioned(uid: string, email: string): Promise<voi
   const userRef = adminDb.collection('users').doc(uid)
   const userDoc = await userRef.get()
   if (userDoc.exists && userDoc.data()?.companyId) return
+
+  // ¿Fue invitado? Unirlo a esa empresa con su rol en vez de crear una propia.
+  const invite = email ? await findPendingInvitationByEmail(email) : null
+  if (invite) {
+    const patch: Record<string, unknown> = { email, companyId: invite.companyId, role: invite.role }
+    if (!userDoc.exists) {
+      patch.displayName = ''
+      patch.createdAt = new Date().toISOString()
+    }
+    await userRef.set(patch, { merge: true })
+    await markInvitationAccepted(invite.id, uid)
+    return
+  }
 
   let companyId: string
   const existing = await adminDb.collection(COL).where('ownerUid', '==', uid).limit(1).get()
