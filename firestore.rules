@@ -40,5 +40,13 @@ service cloud.firestore {
     match /invitations/{id} {
       allow read, write: if false;
     }
+
+    // Padrón y bitácora: solo server-side (Admin SDK). Cliente sin acceso.
+    match /drivers/{id} {
+      allow read, write: if false;
+    }
+    match /usages/{id} {
+      allow read, write: if false;
+    }
   }
 }
