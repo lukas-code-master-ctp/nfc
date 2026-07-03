@@ -1,314 +1,91 @@
-# Gestor de Fichas Vehiculares con NFC
+# TapCar — Documentos Vehiculares con NFC
 
-Aplicación web para almacenar y gestionar documentos vehiculares, con fichas públicas accesibles vía código NFC y recordatorios automáticos de renovación.
+App web para que **empresas con flota** gestionen la documentación de sus vehículos. Cada vehículo se vincula a un chip NFC: al acercar un smartphone se abre una **ficha pública de solo lectura** (`/v/<token>`) con sus documentos, pensada para fiscalización (ej. un carabinero valida la documentación). El equipo de la empresa gestiona vehículos y documentos tras iniciar sesión (según su rol), y recibe recordatorios por email antes de cada vencimiento.
 
-## Descripción
+- **Producción:** https://app.tapcar.cl
+- **Contexto:** Chile. Documentos chilenos (Permiso de Circulación, Revisión Técnica, SOAP, Certificado de Gases, Padrón).
 
-Esta aplicación permite:
-- Registrar y almacenar documentos vehiculares (póliza, permiso de circulación, revisión técnica, etc.)
-- Generar fichas públicas de solo lectura mediante tokens públicos
-- Escribir tokens públicos en chips NFC para acceso rápido a la ficha
-- Recibir recordatorios automáticos vía email para renovaciones próximas
-- Autenticación con Google o email/contraseña
+> Para el detalle de arquitectura, modelo de datos y convenciones, ver **[CLAUDE.md](CLAUDE.md)**.
 
-**Stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS, Firebase Authentication, Cloud Firestore, Cloud Storage, Resend (email), Cloud Scheduler.
+## Stack
 
----
+Next.js 16 (App Router, TypeScript estricto) · Tailwind CSS v4 · Firebase (Authentication, Cloud Firestore, Cloud Storage) · firebase-admin · Resend (emails) · **Vercel** (hosting, auto-deploy en push a `master`) + **Vercel Cron** (job diario de recordatorios).
+
+## Modelo multi-tenant (equipo por empresa)
+
+- `companies/{companyId}` — la empresa: datos tributarios + `plan` (cupo de vehículos).
+- `users/{uid}` — perfil personal + `companyId` + `role` (`admin` | `editor` | `viewer`).
+- La **flota** (`vehicles`/`documents`) se comparte por empresa (scope `companyId`).
+- **Roles:** Visor (solo lee) · Editor (+ documentos) · Administrador (+ vehículos, facturación, datos de empresa). El enforcement vive en `/api/*` (`getMembership()` + `can(role, action)`); las reglas de Firestore son defensa en profundidad.
+- **Admin de plataforma** (aparte, allowlist `ADMIN_EMAILS`): panel `/admin` para configurar el cupo de cada empresa.
 
 ## Requisitos
 
-- **Node.js** 20 o superior
-- **Cuenta Firebase/GCP** en plan Blaze (requerido para Cloud Scheduler y Cloud Storage)
-- **Cuenta Resend** (para envío de emails de recordatorios)
-- **firebase-tools** instalado globalmente: `npm install -g firebase-tools`
-
----
+- **Node.js** 20+
+- Proyecto **Firebase/GCP** en plan **Blaze** (Storage)
+- Cuenta **Resend** (emails de recordatorios)
 
 ## Configuración Firebase
 
-### 1. Crear un proyecto en Firebase Console
-
-Ve a [Firebase Console](https://console.firebase.google.com) y crea un nuevo proyecto en el plan Blaze.
-
-### 2. Habilitar autenticación
-
-En **Authentication** (Autenticación):
-- Habilita **Google** como proveedor
-- Habilita **Email/Password** como proveedor
-
-### 3. Crear base de datos Firestore
-
-En **Firestore Database** (Base de datos):
-- Crea una base de datos en modo **producción**
-- Elige la región más cercana (ej. `southamerica-east1` para Chile)
-
-### 4. Crear bucket de Cloud Storage
-
-En **Storage** (Almacenamiento):
-- Crea un bucket nuevo
-- Elige la región correspondiente
-
-### 5. Obtener credenciales
-
-- Ve a **Project Settings** (Configuración del proyecto)
-- En la pestaña **Service Accounts** (Cuentas de servicio):
-  - Genera una nueva clave privada (JSON) para Firebase Admin SDK
-- En la pestaña **General**:
-  - Copia la configuración de Firebase (claves públicas para el cliente)
-
----
+1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com) (plan Blaze).
+2. **Authentication** → habilita **Google** y **Email/Password**.
+   - **Settings → Authorized domains**: agrega tu dominio de producción (`app.tapcar.cl`) y `localhost`, o el login con Google fallará con `auth/unauthorized-domain`.
+3. **Firestore Database** → crea la base en modo producción (región `southamerica-east1` para Chile).
+4. **Storage** → crea el bucket. Las subidas requieren **CORS** en el bucket para el dominio de la app + `localhost`.
+5. **Project Settings → Service Accounts** → genera una clave privada (JSON) para el Admin SDK; en **General**, copia la config web (claves públicas).
 
 ## Variables de entorno
 
-Copia `.env.example` a `.env.local` y completa los valores:
+Copia `.env.example` a `.env.local` y complétalo (`cp .env.example .env.local`). En Vercel, configúralas en **Settings → Environment Variables**.
 
-```bash
-cp .env.example .env.local
-```
-
-### Firebase Cliente (públicas, prefijo `NEXT_PUBLIC_`)
-
-```
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-```
-
-Obtén estos valores de Firebase Console → Configuración del proyecto → General → Configuración de aplicación web.
-
-### Firebase Admin (servidor)
-
-```
-FIREBASE_PROJECT_ID=
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_PRIVATE_KEY=
-```
-
-Obtén estos de la clave JSON de la cuenta de servicio descargada.
-
-**Nota:** Si prefieres usar la clave JSON completa:
-- Guarda el JSON en un archivo (ej. `firebase-key.json`)
-- No la subas al repositorio (está en `.gitignore`)
-- En el servidor, lee el archivo directamente si es necesario
-
-### Resend
-
-```
-RESEND_API_KEY=
-RESEND_FROM="Documentos Vehiculares <no-reply@tudominio.cl>"
-```
-
-Obtén la API key de [Resend Console](https://resend.com/api-keys).
-
-### Aplicación
-
-```
-CRON_SECRET=
-NEXT_PUBLIC_APP_URL=https://tudominio.cl
-```
-
-- `CRON_SECRET`: token secreto para autenticar Cloud Scheduler (genera uno seguro, ej. `openssl rand -hex 32`)
-- `NEXT_PUBLIC_APP_URL`: URL pública de la aplicación (para emails y fichas públicas)
-
----
+| Variable | Uso |
+|---|---|
+| `NEXT_PUBLIC_FIREBASE_*` | Config web (pública) |
+| `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` | Admin SDK (servidor; secretas) |
+| `RESEND_API_KEY` / `RESEND_FROM` | Envío de emails (`RESEND_FROM="TapCar <no-reply@tapcar.cl>"`) |
+| `CRON_SECRET` | Autentica el cron de recordatorios (`openssl rand -hex 32`) |
+| `NEXT_PUBLIC_APP_URL` | Base de los enlaces NFC públicos = `https://app.tapcar.cl`. Es **build-time** → redeploy al cambiarla |
+| `ADMIN_EMAILS` | Correos (coma) de los admins de plataforma del panel `/admin` |
+| `BILLING_EMAIL` | (Opcional) destino de las solicitudes de plan de `/facturacion`; si falta usa el primer `ADMIN_EMAILS` |
 
 ## Comandos
 
-### Desarrollo
-
 ```bash
-npm run dev
+npm run dev          # desarrollo local (usa .env.local)
+npm run build        # build de producción (corre lint)
+npm test             # Vitest (unit/integración)
+npm run test:rules   # reglas Firestore — REQUIERE emulador + Java
+npm run test:e2e     # Playwright — requiere dev server
+npx tsc --noEmit     # typecheck
 ```
 
-Inicia el servidor de desarrollo en `http://localhost:3000`.
-
-### Testing
-
-**Tests unitarios e integración:**
-```bash
-npm run test
-```
-
-**Tests en modo watch:**
-```bash
-npm run test:watch
-```
-
-**Tests de reglas Firestore:**
-```bash
-npm run test:rules
-```
-
-**Nota:** Este comando requiere:
-- El emulador de Firestore instalado (firebase-tools)
-- Java instalado en el sistema
-
-**Tests E2E (Playwright):**
-```bash
-npm run test:e2e
-```
-
-**Nota:** Este comando requiere:
-- El servidor de desarrollo ejecutándose (`npm run dev`)
-- Credenciales reales de Firebase en `.env.local` (o usar el emulador de Firebase)
-- La ruta `/v/[token]` necesita un token público válido en Firestore o usar el emulador
-
-### Compilación
+Scripts de operación (Admin SDK, cargan credenciales de prod desde `.env.local`):
 
 ```bash
-npm run build
+node --env-file=.env.local scripts/migrate-multitenant.mjs      # migración one-time a multi-tenant (idempotente)
+node --env-file=.env.local scripts/deploy-firestore-rules.mjs   # despliega firestore.rules sin CLI de Firebase
 ```
-
-Compila la aplicación para producción en la carpeta `.next`.
-
-### Iniciar en producción
-
-```bash
-npm start
-```
-
-Inicia el servidor compilado.
-
-### Linting
-
-```bash
-npm run lint
-```
-
----
 
 ## Despliegue
 
-### 1. Desplegar reglas Firestore
-
-Antes de desplegar la aplicación, asegúrate de desplegar las reglas de seguridad:
-
-```bash
-firebase deploy --only firestore:rules
-```
-
-### 2. Desplegar en Firebase App Hosting
-
-La configuración de Firebase App Hosting se encuentra en `apphosting.yaml`. 
-
-Para desplegar:
-
-```bash
-firebase deploy --only apphosting
-```
-
-**Nota:** Las variables secretas (como `RESEND_API_KEY`, `FIREBASE_PRIVATE_KEY`, etc.) se configuran como **secretos de Firebase App Hosting**, no en el archivo `apphosting.yaml`.
-
----
-
-## Cloud Scheduler: Recordatorios diarios
-
-Para enviar recordatorios automáticos, configura un job en **Cloud Scheduler** de GCP:
-
-### Crear el job
-
-1. Ve a [Cloud Scheduler](https://console.cloud.google.com/cloudscheduler)
-2. Crea un nuevo job:
-   - **Nombre:** `reminders-daily` (o similar)
-   - **Frecuencia:** `0 9 * * *` (9:00 AM todos los días)
-   - **Timezone:** `America/Santiago`
-   - **Tipo de ejecución:** HTTP
-   - **URL:** `https://<tudominio.cl>/api/cron/reminders`
-   - **Método HTTP:** GET
-   - **Headers HTTP:** Añade un header:
-     ```
-     Authorization: Bearer <CRON_SECRET>
-     ```
-     (reemplaza `<CRON_SECRET>` con el valor de tu variable de entorno)
-
-### Verificación
-
-El endpoint `/api/cron/reminders`:
-- Valida el header `Authorization`
-- Busca documentos que expiran en 30 días
-- Envía emails de recordatorio vía Resend
-- Retorna 200 OK si se ejecuta correctamente
-
----
+- **App:** Vercel auto-despliega al hacer **push a `master`**.
+- **Reglas de Firestore:** Vercel no las despliega. Usa el script `deploy-firestore-rules.mjs` (arriba) o `firebase deploy --only firestore:rules`.
+- **Recordatorios diarios:** configurados vía **Vercel Cron** en `vercel.json` (`GET /api/cron/reminders`, protegido con `Authorization: Bearer ${CRON_SECRET}` que Vercel inyecta).
 
 ## Chip NFC
 
-El chip NFC se escribe con la URL pública de la ficha:
-
-```
-https://<tudominio.cl>/v/<publicToken>
-```
-
-**Nota:** La escritura del chip se realiza con una app externa (fuera del alcance de esta aplicación web). Algunas opciones:
-- [NFC Tools](https://www.nfctools.com/) (iOS/Android)
-- [TagWriter by NXP](https://www.nxp.com/products/wireless-connectivity/nfc/nfc-tools:NDEF-TAGWRITER-MAN) (Android)
-- Cualquier app de lectura/escritura NFC que soporte URLs en NDEF
-
-El token público es único y seguro; permite leer la ficha pero no modificarla.
-
----
-
-## Estructura del proyecto
-
-```
-.
-├── app/                    # Next.js App Router
-│   ├── api/                # Rutas API
-│   ├── (auth)/             # Rutas autenticadas
-│   └── v/                  # Fichas públicas
-├── lib/                    # Utilidades y configuración
-│   ├── firebase.ts         # Cliente Firebase
-│   ├── firestore.rules     # Reglas de seguridad Firestore
-│   └── ...
-├── components/             # Componentes React
-├── public/                 # Archivos estáticos
-├── .env.example            # Plantilla de variables de entorno
-├── apphosting.yaml         # Configuración de Firebase App Hosting
-└── README.md               # Este archivo
-```
-
----
+El chip se graba con la URL pública de la ficha: `https://app.tapcar.cl/v/<publicToken>`. Grábalo como registro **URL/URI** (no "Texto") con una app externa como **NFC Tools** (Android/iOS) — el tipo URL/URI es necesario para que abra en iPhone. El token es opaco: permite leer la ficha, no modificarla. La app muestra el enlace y un tutorial (botón "i") en la página del vehículo.
 
 ## Seguridad
 
-- **Autenticación:** Firebase Authentication con proveedores Google y email/password
-- **Autorización:** Reglas de Firestore que limitan acceso a documentos propios del usuario
-- **Ficha pública:** Token público opaco que permite leer solo una ficha específica
-- **Cloud Scheduler:** Protegido con token Bearer en header `Authorization`
-- **Datos sensibles:** Claves privadas y tokens se almacenan en variables de entorno (no versionadas)
-
----
+- **Enforcement primario en `/api/*`**: cada endpoint privado valida `getMembership()` + `can(role, action)`; nunca confía en `companyId`/`role` del cliente.
+- **Reglas de Firestore** (`firestore.rules`): aíslan por `companyId` (defensa en profundidad; el camino real es Admin SDK server-side).
+- **Ficha pública** (`/v/[token]`): resuelve por token vía servidor; no expone Firestore ni datos del dueño.
+- **Cron** (`/api/cron/reminders`): exige `Authorization: Bearer ${CRON_SECRET}` (falla cerrado).
 
 ## Solución de problemas
 
-### "NEXT_PUBLIC_* no definidos en cliente"
-
-Asegúrate de:
-- Haber creado `.env.local` (no `.env`)
-- Haber reiniciado el servidor de desarrollo (`npm run dev`)
-
-### "Error autenticando con Firebase"
-
-- Verifica que `NEXT_PUBLIC_FIREBASE_PROJECT_ID` sea correcto
-- Verifica que los proveedores (Google, Email) estén habilitados en Firebase Console
-
-### "Error escribiendo en Firestore"
-
-- Verifica que la base de datos Firestore exista
-- Revisa que las reglas de Firestore hayan sido desplegadas (`firebase deploy --only firestore:rules`)
-
-### "Emulador de Firestore no inicia"
-
-Asegúrate de tener:
-- `firebase-tools` instalado: `npm install -g firebase-tools`
-- Java instalado (requiere JDK 11+)
-- Ejecuta: `firebase emulators:start --only firestore`
-
----
-
-## Contacto y soporte
-
-Para reportar bugs o sugerencias, contacta al equipo de desarrollo.
+- **Login con Google falla (`auth/unauthorized-domain`):** agrega el dominio a Firebase → Authentication → Settings → Authorized domains.
+- **`NEXT_PUBLIC_*` no definidos:** usa `.env.local` (no `.env`) y reinicia `npm run dev`; en Vercel, redeploy tras cambiar una `NEXT_PUBLIC_*`.
+- **Subida de archivos falla (CORS):** reaplica el CORS del bucket de Storage para el dominio actual.
+- **`npm run test:rules` no corre:** requiere `firebase-tools` + Java (JDK 11+) y el emulador de Firestore.

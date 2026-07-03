@@ -2,7 +2,7 @@
 
 # TapCar (Documentos Vehiculares NFC)
 
-**Nombre del producto: TapCar** (dominio elegido: `tapcar.cl`, disponible al 2026-06-28 — aún sin registrar; marca INAPI sin verificar). Combina el gesto NFC (*Tap*) + vehículo (*Car*).
+**Nombre del producto: TapCar** (`tapcar.cl` **registrado**; producción en **`https://app.tapcar.cl`**; marca INAPI sin verificar). Combina el gesto NFC (*Tap*) + vehículo (*Car*).
 
 App web para almacenar la documentación de vehículos. Cada vehículo se vincula a un chip NFC: al acercar un smartphone se abre una **ficha pública de solo lectura** (`/v/<token>`) con sus documentos, pensada para fiscalización vehicular (ej. un carabinero valida los documentos). El equipo de la empresa gestiona vehículos y documentos tras iniciar sesión (según su rol), y recibe recordatorios por email antes de cada vencimiento.
 
@@ -20,7 +20,7 @@ Todo el código, UI, comentarios y mensajes en **español neutro (Chile)**. Usa 
 - **firebase-admin** (servidor) + Firebase JS SDK (cliente).
 - **Resend** para emails. **Vercel Cron** para el job diario de recordatorios.
 - Tests: **Vitest** (unit/integración), `@firebase/rules-unit-testing` (reglas), **Playwright** (E2E).
-- Despliegue: **Vercel** (prod: https://nfc-roan-nine.vercel.app).
+- Despliegue: **Vercel** (prod: **https://app.tapcar.cl**; también responde `https://nfc-roan-nine.vercel.app`).
 
 ## Comandos
 
@@ -34,6 +34,13 @@ npx tsc --noEmit     # typecheck
 ```
 
 Tras cambios de código: corre `npx tsc --noEmit` y `npm run build` antes de commitear. Vercel **auto-despliega** al hacer push a `master`.
+
+Scripts de operación (Admin SDK, cargan credenciales de prod desde `.env.local`):
+
+```bash
+node --env-file=.env.local scripts/migrate-multitenant.mjs        # migración one-time a multi-tenant (idempotente; ya corrida en prod)
+node --env-file=.env.local scripts/deploy-firestore-rules.mjs     # despliega firestore.rules sin CLI de Firebase
+```
 
 ## Arquitectura
 
@@ -77,10 +84,11 @@ Tokens en `app/globals.css` (`@theme`): `tinta` (texto), `acero` (texto 2º), `l
 - **`jose` debe quedar en v5**: `package.json` tiene `overrides: { jose: "^5.9.6" }`. firebase-admin → jwks-rsa hace `require()` de `jose`, y `jose@6` es ESM-only → rompe en el runtime de Vercel con `ERR_REQUIRE_ESM` (500 en `/api/session`). NO actualizar jose a 6 sin que jwks-rsa use `import()` dinámico. `next.config.ts` también externaliza estos paquetes (`serverExternalPackages`).
 - **Init lazy de Firebase obligatorio**: `lib/firebase/admin.ts` y `client.ts` difieren la init a primer uso (patrón Proxy). Si se inicializa en module-scope, el build de Vercel falla sin credenciales. Igual `getResend()` en `lib/email/resend.ts`.
 - **CORS de Cloud Storage**: las subidas (`PUT` a signed URL) requieren CORS en el bucket. Ya configurado para el dominio Vercel + localhost. Si cambia el dominio, reaplicar `bucket.setCorsConfiguration`.
+- **Dominios autorizados de Firebase Auth**: cada dominio desde el que se sirve la app (`app.tapcar.cl`, `nfc-roan-nine.vercel.app`, `localhost`) debe estar en Firebase Console → Authentication → Settings → **Authorized domains**, o el login con Google (`signInWithPopup`) falla con `auth/unauthorized-domain` ("current domain is not authorized for OAuth"). El login por correo/contraseña **no** se ve afectado.
 - **Middleware en edge**: `middleware.ts` solo importa `SESSION_COOKIE` de `lib/auth/constants` (sin firebase-admin), o rompe el edge runtime.
 - **Vitest 4**: mocks compartidos dentro de `vi.mock(...)` requieren `vi.hoisted(() => ({...}))`.
 - **Tests de reglas/E2E**: requieren emulador de Firestore (Java) o credenciales reales; corren en CI, no necesariamente en local.
 
 ## Variables de entorno
 
-Ver `.env.example`. Las `NEXT_PUBLIC_FIREBASE_*` son públicas (config web). `FIREBASE_PRIVATE_KEY` y `CRON_SECRET` son secretos. En Vercel, Vercel Cron inyecta el `Authorization: Bearer ${CRON_SECRET}` solo. `NEXT_PUBLIC_APP_URL` debe ser la URL de producción (base de los enlaces NFC). `ADMIN_EMAILS` (correos separados por coma) define los admins del panel `/admin`; **debe setearse en Vercel** o no habrá admins en producción. `BILLING_EMAIL` (opcional) define a dónde llegan las solicitudes de plan de `/facturacion`; si se omite, usa el primer `ADMIN_EMAILS`.
+Ver `.env.example`. Las `NEXT_PUBLIC_FIREBASE_*` son públicas (config web). `FIREBASE_PRIVATE_KEY` y `CRON_SECRET` son secretos. En Vercel, Vercel Cron inyecta el `Authorization: Bearer ${CRON_SECRET}` solo. `NEXT_PUBLIC_APP_URL` = `https://app.tapcar.cl` (base de los enlaces NFC públicos); es **build-time**, así que al cambiarla hay que **redeploy** en Vercel. `ADMIN_EMAILS` (correos separados por coma) define los admins del panel `/admin`; **debe setearse en Vercel** o no habrá admins en producción. `BILLING_EMAIL` (opcional) define a dónde llegan las solicitudes de plan de `/facturacion`; si se omite, usa el primer `ADMIN_EMAILS`.
