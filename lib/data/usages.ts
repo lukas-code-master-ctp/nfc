@@ -63,9 +63,13 @@ export async function openUsage(
     createdAt: now,
   }
   const ref = await adminDb.collection(COL).add(data)
-  await adminDb.collection('vehicles').doc(vehicleId).update({
-    usoActual: { driverId: driver.id, driverNombre: driver.nombre, tomadoEn: now },
-  })
+  try {
+    await adminDb.collection('vehicles').doc(vehicleId).update({
+      usoActual: { driverId: driver.id, driverNombre: driver.nombre, tomadoEn: now },
+    })
+  } catch {
+    /* best-effort: la denormalización no debe romper el flujo del conductor */
+  }
   return { usage: { id: ref.id, ...data }, forced }
 }
 
@@ -86,7 +90,11 @@ export async function closeUsage(
     fotos,
     ...(dano ? { dano } : {}),
   })
-  await adminDb.collection('vehicles').doc(vehicleId).update({ usoActual: null })
+  try {
+    await adminDb.collection('vehicles').doc(vehicleId).update({ usoActual: null })
+  } catch {
+    /* best-effort: la denormalización no debe romper el flujo del conductor */
+  }
   return open.id
 }
 
