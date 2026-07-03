@@ -26,3 +26,19 @@ export async function createReadUrl(filePath: string): Promise<string> {
   })
   return url
 }
+
+export async function createUsagePhotoUrl(
+  vehicleId: string,
+  tipo: string,
+  contentType: string,
+): Promise<{ uploadUrl: string; filePath: string }> {
+  const safeTipo = tipo.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const filePath = `vehicles/${vehicleId}/usages/${nanoid(10)}-${safeTipo}`
+  const [uploadUrl] = await adminBucket.file(filePath).getSignedUrl({
+    version: 'v4',
+    action: 'write',
+    expires: Date.now() + 10 * 60 * 1000,
+    contentType,
+  })
+  return { uploadUrl, filePath }
+}

@@ -135,3 +135,37 @@ export interface Invitation {
   acceptedByUid?: string
   acceptedAt?: string
 }
+
+export interface Driver {
+  id: string
+  companyId: string
+  nombre: string
+  rut?: string
+  pinHash: string // hash del PIN de 4 dígitos; nunca se devuelve al cliente
+  activo: boolean
+  createdAt: string // ISO
+  createdByUid?: string
+  intentosFallidos?: number
+  bloqueadoHasta?: string | null
+}
+
+export interface VehicleUsage {
+  id: string
+  companyId: string
+  vehicleId: string
+  driverId: string
+  driverNombre: string // denormalizado (el padrón puede cambiar)
+  tomadoEn: string // ISO
+  entregadoEn: string | null
+  estado: 'abierto' | 'cerrado'
+  cierreForzado?: boolean
+  entregadoPorDriverId?: string
+  entregadoPorNombre?: string
+  fotos?: { tablero?: string; cabina?: string }
+  dano?: { hay: boolean; nota?: string; fotoPath?: string }
+  // Reservados para SP3 (IA) — vacíos en SP2:
+  bencina?: string
+  km?: number
+  limpieza?: string
+  createdAt: string // ISO
+}

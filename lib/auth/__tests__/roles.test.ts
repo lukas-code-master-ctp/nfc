@@ -20,4 +20,9 @@ describe('can', () => {
       expect(can('admin', a)).toBe(true)
     }
   })
+  it('driver:manage solo lo tiene el admin', () => {
+    expect(can('admin', 'driver:manage')).toBe(true)
+    expect(can('editor', 'driver:manage')).toBe(false)
+    expect(can('viewer', 'driver:manage')).toBe(false)
+  })
 })

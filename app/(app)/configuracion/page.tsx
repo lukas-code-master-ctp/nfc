@@ -6,6 +6,7 @@ import { EMPTY_COMPANY } from '@/lib/types'
 import BackLink from '@/components/BackLink'
 import CompanyCard from '@/components/company/CompanyCard'
 import TeamCard from '@/components/company/TeamCard'
+import DriversCard from '@/components/drivers/DriversCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,7 @@ export default async function ConfiguracionPage() {
 
   const company = await getCompany(m.companyId)
   const esAdmin = can(m.role, 'billing:manage')
+  const puedeGestionarConductores = can(m.role, 'driver:manage')
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
@@ -55,6 +57,7 @@ export default async function ConfiguracionPage() {
       )}
 
       {esAdmin && <TeamCard currentUid={m.uid} />}
+      {puedeGestionarConductores && <DriversCard />}
     </main>
   )
 }

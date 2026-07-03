@@ -3,6 +3,7 @@ import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { getVehicle } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
+import { listUsages } from '@/lib/data/usages'
 import { documentStatus } from '@/lib/documents/status'
 import { createReadUrl } from '@/lib/storage/signedUrls'
 import BackLink from '@/components/BackLink'
@@ -12,6 +13,7 @@ import NfcTokenPanel from '@/components/NfcTokenPanel'
 import VehicleInfoForm from '@/components/VehicleInfoForm'
 import VehicleInfoView from '@/components/VehicleInfoView'
 import DeleteVehicleButton from '@/components/DeleteVehicleButton'
+import BitacoraUso from '@/components/vehicle/BitacoraUso'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +34,21 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
       ...d,
       status: documentStatus(d.fechaVencimiento, now),
       readUrl: d.filePath ? await createReadUrl(d.filePath) : null,
+    })),
+  )
+
+  const usos = await Promise.all(
+    (await listUsages(vehicle.id)).map(async (u) => ({
+      id: u.id,
+      driverNombre: u.driverNombre,
+      tomadoEn: u.tomadoEn,
+      entregadoEn: u.entregadoEn,
+      estado: u.estado,
+      cierreForzado: u.cierreForzado,
+      entregadoPorNombre: u.entregadoPorNombre,
+      dano: u.dano ? { hay: u.dano.hay, nota: u.dano.nota } : undefined,
+      fotoTableroUrl: u.fotos?.tablero ? await createReadUrl(u.fotos.tablero) : null,
+      fotoCabinaUrl: u.fotos?.cabina ? await createReadUrl(u.fotos.cabina) : null,
     })),
   )
 
@@ -70,6 +87,8 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
       ) : (
         <VehicleInfoView info={vehicle.info ?? {}} />
       )}
+
+      <BitacoraUso usos={usos} />
 
       {canManageVehicle && (
         <DeleteVehicleButton
