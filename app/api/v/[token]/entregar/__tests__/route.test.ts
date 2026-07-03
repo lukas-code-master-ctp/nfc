@@ -9,7 +9,13 @@ vi.mock('@/lib/data/drivers', () => ({
   getDriver: (...a: unknown[]) => getDriver(...a),
 }))
 const closeUsage = vi.fn()
-vi.mock('@/lib/data/usages', () => ({ closeUsage: (...a: unknown[]) => closeUsage(...a) }))
+const getUsage = vi.fn()
+vi.mock('@/lib/data/usages', () => ({
+  closeUsage: (...a: unknown[]) => closeUsage(...a),
+  getUsage: (...a: unknown[]) => getUsage(...a),
+}))
+const createAlerta = vi.fn()
+vi.mock('@/lib/data/alertas', () => ({ createAlerta: (...a: unknown[]) => createAlerta(...a) }))
 const after = vi.fn()
 vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),
@@ -25,6 +31,7 @@ function ctx(token: string) { return { params: Promise.resolve({ token }) } }
 beforeEach(() => {
   getVehicleByToken.mockReset(); verifyDriverPin.mockReset(); getDriver.mockReset(); closeUsage.mockReset()
   after.mockReset(); analyzeUsage.mockReset()
+  createAlerta.mockReset(); getUsage.mockReset(); getUsage.mockResolvedValue({ driverNombre: 'Ana' })
   getVehicleByToken.mockResolvedValue({ id: 'v1', companyId: 'c1' })
   getDriver.mockResolvedValue({ id: 'd1', nombre: 'Ana', companyId: 'c1' })
   verifyDriverPin.mockResolvedValue('ok')
@@ -60,5 +67,11 @@ describe('POST entregar', () => {
     const cb = after.mock.calls[0][0]
     cb()
     expect(analyzeUsage).toHaveBeenCalledWith('u1')
+  })
+  it('crea una alerta de daño cuando se reporta daño', async () => {
+    closeUsage.mockResolvedValue('u1')
+    const res = await POST(req({ driverId: 'd1', pin: '1234', fotos: { tablero: 'a', cabina: 'b' }, dano: { hay: true, nota: 'rayón' } }), ctx('t'))
+    expect(res.status).toBe(200)
+    expect(createAlerta).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'dano', usageId: 'u1', nota: 'rayón', companyId: 'c1', vehicleId: 'v1' }))
   })
 })

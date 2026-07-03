@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { getVehicleByToken } from '@/lib/data/vehicles'
 import { verifyDriverPin, getDriver } from '@/lib/data/drivers'
-import { closeUsage } from '@/lib/data/usages'
+import { closeUsage, getUsage } from '@/lib/data/usages'
 import { analyzeUsage } from '@/lib/ai/analyzeUsage'
+import { createAlerta } from '@/lib/data/alertas'
 
 export const dynamic = 'force-dynamic'
 // El análisis IA corre post-respuesta vía after(); dale margen a la función.
@@ -39,6 +40,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   } catch {
     return NextResponse.json({ error: 'Este vehículo no tiene un uso abierto.' }, { status: 409 })
   }
+
+  // Alerta best-effort si se reportó daño; se atribuye al conductor que tenía el vehículo.
+  if (dano?.hay) {
+    try {
+      const u = await getUsage(usageId)
+      await createAlerta({
+        companyId: vehicle.companyId,
+        vehicleId: vehicle.id,
+        patente: vehicle.patente,
+        usageId,
+        tipo: 'dano',
+        driverNombre: u?.driverNombre ?? driver.nombre,
+        nota: dano.nota,
+      })
+    } catch {
+      /* best-effort */
+    }
+  }
+
   // Análisis IA en segundo plano (post-respuesta, best-effort).
   after(() => analyzeUsage(usageId))
   return NextResponse.json({ ok: true })

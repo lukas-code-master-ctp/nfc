@@ -48,5 +48,10 @@ service cloud.firestore {
     match /usages/{id} {
       allow read, write: if false;
     }
+
+    // Alertas: solo server-side (Admin SDK). Cliente sin acceso.
+    match /alertas/{id} {
+      allow read, write: if false;
+    }
   }
 }
