@@ -6,6 +6,7 @@ import { EMPTY_COMPANY } from '@/lib/types'
 import BackLink from '@/components/BackLink'
 import CompanyCard from '@/components/company/CompanyCard'
 import TeamCard from '@/components/company/TeamCard'
+import DriversCard from '@/components/drivers/DriversCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,6 +56,7 @@ export default async function ConfiguracionPage() {
       )}
 
       {esAdmin && <TeamCard currentUid={m.uid} />}
+      {esAdmin && <DriversCard />}
     </main>
   )
 }
