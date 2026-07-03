@@ -49,6 +49,11 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
       dano: u.dano ? { hay: u.dano.hay, nota: u.dano.nota } : undefined,
       fotoTableroUrl: u.fotos?.tablero ? await createReadUrl(u.fotos.tablero) : null,
       fotoCabinaUrl: u.fotos?.cabina ? await createReadUrl(u.fotos.cabina) : null,
+      bencina: u.bencina ?? null,
+      km: u.km ?? null,
+      limpieza: u.limpieza ?? null,
+      iaAnalizadoEn: u.iaAnalizadoEn,
+      datosConfirmados: u.datosConfirmados,
     })),
   )
 
@@ -88,7 +93,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         <VehicleInfoView info={vehicle.info ?? {}} />
       )}
 
-      <BitacoraUso usos={usos} />
+      <BitacoraUso usos={usos} puedeEditar={canEditDocs} />
 
       {canManageVehicle && (
         <DeleteVehicleButton

@@ -10,6 +10,13 @@ vi.mock('@/lib/data/drivers', () => ({
 }))
 const closeUsage = vi.fn()
 vi.mock('@/lib/data/usages', () => ({ closeUsage: (...a: unknown[]) => closeUsage(...a) }))
+const after = vi.fn()
+vi.mock('next/server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/server')>()),
+  after: (fn: () => void) => after(fn),
+}))
+const analyzeUsage = vi.fn()
+vi.mock('@/lib/ai/analyzeUsage', () => ({ analyzeUsage: (...a: unknown[]) => analyzeUsage(...a) }))
 
 import { POST } from '@/app/api/v/[token]/entregar/route'
 function req(body: unknown) { return { json: () => Promise.resolve(body) } as unknown as import('next/server').NextRequest }
@@ -17,9 +24,11 @@ function ctx(token: string) { return { params: Promise.resolve({ token }) } }
 
 beforeEach(() => {
   getVehicleByToken.mockReset(); verifyDriverPin.mockReset(); getDriver.mockReset(); closeUsage.mockReset()
+  after.mockReset(); analyzeUsage.mockReset()
   getVehicleByToken.mockResolvedValue({ id: 'v1', companyId: 'c1' })
   getDriver.mockResolvedValue({ id: 'd1', nombre: 'Ana', companyId: 'c1' })
   verifyDriverPin.mockResolvedValue('ok')
+  closeUsage.mockResolvedValue('u1')
 })
 
 describe('POST entregar', () => {
@@ -41,5 +50,15 @@ describe('POST entregar', () => {
     const res = await POST(req({ driverId: 'd1', pin: '1234', fotos: { tablero: 'a', cabina: 'b' }, dano: { hay: true, nota: 'rayón' } }), ctx('t'))
     expect(res.status).toBe(200)
     expect(closeUsage).toHaveBeenCalledWith('c1', 'v1', { id: 'd1', nombre: 'Ana' }, { tablero: 'a', cabina: 'b' }, { hay: true, nota: 'rayón' })
+  })
+  it('agenda el análisis IA tras cerrar el uso', async () => {
+    closeUsage.mockResolvedValue('u1')
+    const res = await POST(req({ driverId: 'd1', pin: '1234', fotos: { tablero: 'a', cabina: 'b' } }), ctx('t'))
+    expect(res.status).toBe(200)
+    expect(after).toHaveBeenCalledTimes(1)
+    // ejecutar el callback agendado y verificar que llama a analyzeUsage con el id
+    const cb = after.mock.calls[0][0]
+    cb()
+    expect(analyzeUsage).toHaveBeenCalledWith('u1')
   })
 })

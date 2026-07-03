@@ -1,3 +1,5 @@
+import UsageDatosEditor from '@/components/vehicle/UsageDatosEditor'
+
 interface UsageRow {
   id: string
   driverNombre: string
@@ -9,13 +11,18 @@ interface UsageRow {
   dano?: { hay: boolean; nota?: string }
   fotoTableroUrl: string | null
   fotoCabinaUrl: string | null
+  bencina?: string | null
+  km?: number | null
+  limpieza?: string | null
+  iaAnalizadoEn?: string
+  datosConfirmados?: boolean
 }
 
 function fecha(iso: string): string {
   return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
 }
 
-export default function BitacoraUso({ usos }: { usos: UsageRow[] }) {
+export default function BitacoraUso({ usos, puedeEditar }: { usos: UsageRow[]; puedeEditar: boolean }) {
   return (
     <section className="rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-tinta">Bitácora de uso</h2>
@@ -54,6 +61,21 @@ export default function BitacoraUso({ usos }: { usos: UsageRow[] }) {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={u.fotoCabinaUrl} alt="Cabina" loading="lazy" className="h-20 w-28 rounded-lg border border-linea object-cover" />
                     </a>
+                  )}
+                </div>
+              )}
+              {(u.bencina || u.km != null || u.limpieza || u.iaAnalizadoEn) && (
+                <div className="mt-3 border-t border-linea pt-2">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-acero">
+                    <span>Bencina: <span className="font-medium text-tinta">{u.bencina ?? '—'}</span></span>
+                    <span>Kilometraje: <span className="font-medium text-tinta">{u.km != null ? u.km.toLocaleString('es-CL') : '—'}</span></span>
+                    <span>Limpieza: <span className="font-medium text-tinta">{u.limpieza ?? '—'}</span></span>
+                    {u.iaAnalizadoEn && !u.datosConfirmados && (
+                      <span className="rounded-full bg-azul/10 px-2 py-0.5 font-medium text-azul">estimado por IA</span>
+                    )}
+                  </div>
+                  {puedeEditar && (
+                    <UsageDatosEditor usageId={u.id} bencina={u.bencina ?? null} km={u.km ?? null} limpieza={u.limpieza ?? null} />
                   )}
                 </div>
               )}
