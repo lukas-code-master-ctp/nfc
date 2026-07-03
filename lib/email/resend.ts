@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { reminderSubject, reminderHtml } from '@/lib/email/reminderEmail'
 import { invitationSubject, invitationHtml } from '@/lib/email/invitationEmail'
+import { usageAlertSubject, usageAlertHtml } from '@/lib/email/usageAlertEmail'
 import type { Role } from '@/lib/auth/roles'
 
 let _resend: Resend | undefined
@@ -51,5 +52,17 @@ export async function sendInvitationEmail(
     to,
     subject: invitationSubject(params.companyName),
     html: invitationHtml(params),
+  })
+}
+
+export async function sendUsageAlertEmail(
+  to: string,
+  p: { patente: string; driverNombre: string; tomadoEn: string },
+): Promise<void> {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM!,
+    to,
+    subject: usageAlertSubject(p.patente),
+    html: usageAlertHtml(p),
   })
 }
