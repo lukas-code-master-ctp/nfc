@@ -21,6 +21,8 @@ function toUsage(id: string, d: FirebaseFirestore.DocumentData): VehicleUsage {
     bencina: d.bencina ?? undefined,
     km: d.km ?? undefined,
     limpieza: d.limpieza ?? undefined,
+    iaAnalizadoEn: d.iaAnalizadoEn ?? undefined,
+    datosConfirmados: d.datosConfirmados ?? undefined,
     createdAt: d.createdAt,
   }
 }
@@ -70,7 +72,7 @@ export async function closeUsage(
   entregadoPor: { id: string; nombre: string },
   fotos: { tablero: string; cabina: string },
   dano?: { hay: boolean; nota?: string; fotoPath?: string },
-): Promise<void> {
+): Promise<string> {
   const open = await getOpenUsage(vehicleId)
   if (!open || open.companyId !== companyId) throw new Error('no_open')
   await adminDb.collection(COL).doc(open.id).update({
@@ -81,4 +83,33 @@ export async function closeUsage(
     fotos,
     ...(dano ? { dano } : {}),
   })
+  return open.id
+}
+
+export async function getUsage(id: string): Promise<VehicleUsage | null> {
+  const doc = await adminDb.collection(COL).doc(id).get()
+  return doc.exists ? toUsage(doc.id, doc.data()!) : null
+}
+
+export async function setUsageAnalysis(
+  id: string,
+  datos: { bencina: string | null; km: number | null; limpieza: string | null },
+): Promise<void> {
+  await adminDb.collection(COL).doc(id).update({
+    bencina: datos.bencina,
+    km: datos.km,
+    limpieza: datos.limpieza,
+    iaAnalizadoEn: new Date().toISOString(),
+  })
+}
+
+export async function updateUsageDatos(
+  companyId: string,
+  id: string,
+  patch: { bencina?: string; km?: number; limpieza?: string },
+): Promise<void> {
+  const ref = adminDb.collection(COL).doc(id)
+  const doc = await ref.get()
+  if (!doc.exists || doc.data()?.companyId !== companyId) throw new Error('forbidden')
+  await ref.update({ ...patch, datosConfirmados: true })
 }
