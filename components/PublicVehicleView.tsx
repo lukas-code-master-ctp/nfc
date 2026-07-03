@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import StatusBadge from '@/components/StatusBadge'
 import { TapCarLockup } from '@/components/brand/Logo'
+import UsoPanel from '@/components/uso/UsoPanel'
 import {
   DOCUMENT_TYPE_LABELS,
   VEHICLE_INFO_FIELDS,
@@ -126,7 +127,15 @@ function SobreVehiculoView({ vehicle }: { vehicle: Vehicle }) {
   )
 }
 
-export default function PublicVehicleView({ vehicle, documents }: { vehicle: Vehicle; documents: Item[] }) {
+export default function PublicVehicleView({
+  vehicle, documents, token, drivers, enUso,
+}: {
+  vehicle: Vehicle
+  documents: Item[]
+  token: string
+  drivers: { id: string; nombre: string }[]
+  enUso: { driverNombre: string; tomadoEn: string } | null
+}) {
   const [tab, setTab] = useState<'docs' | 'info'>('docs')
 
   const pill = (active: boolean) =>
@@ -151,6 +160,8 @@ export default function PublicVehicleView({ vehicle, documents }: { vehicle: Veh
           <p className="text-base text-acero">{vehicle.anio} · {vehicle.color}</p>
         </div>
       </div>
+
+      <UsoPanel token={token} drivers={drivers} enUso={enUso} />
 
       <div className="flex justify-center">
         <div className="inline-flex items-center gap-1 rounded-full border border-linea bg-superficie p-1 shadow-sm">

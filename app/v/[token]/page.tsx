@@ -3,6 +3,8 @@ import { getVehicleByToken } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
 import { documentStatus } from '@/lib/documents/status'
 import { createReadUrl } from '@/lib/storage/signedUrls'
+import { getOpenUsage } from '@/lib/data/usages'
+import { listActiveDrivers } from '@/lib/data/drivers'
 import PublicVehicleView from '@/components/PublicVehicleView'
 
 export const dynamic = 'force-dynamic'
@@ -22,5 +24,11 @@ export default async function PublicPage({ params }: { params: Promise<{ token: 
     })),
   )
 
-  return <PublicVehicleView vehicle={vehicle} documents={items} />
+  const [openUsage, drivers] = await Promise.all([
+    getOpenUsage(vehicle.id),
+    listActiveDrivers(vehicle.companyId),
+  ])
+  const enUso = openUsage ? { driverNombre: openUsage.driverNombre, tomadoEn: openUsage.tomadoEn } : null
+
+  return <PublicVehicleView vehicle={vehicle} documents={items} token={token} drivers={drivers} enUso={enUso} />
 }
