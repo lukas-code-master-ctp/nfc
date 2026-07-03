@@ -12,6 +12,28 @@ import { auth } from '@/lib/firebase/client'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingDots from '@/components/LoadingDots'
 
+function codeOf(err: unknown): string {
+  return typeof err === 'object' && err && 'code' in err ? String((err as { code: unknown }).code) : ''
+}
+
+// Mapea los errores del popup de Google a un mensaje accionable. `missing-initial-state`
+// y compañía aparecen cuando el navegador particiona el sessionStorage entre la app y el
+// popup (Safari, incógnito, webviews in-app); guiamos al usuario a un camino que sí funciona.
+function googleErrorMessage(err: unknown): string {
+  const code = codeOf(err)
+  if (
+    code === 'auth/missing-initial-state' ||
+    code === 'auth/web-storage-unsupported' ||
+    code === 'auth/popup-blocked'
+  ) {
+    return 'Tu navegador bloqueó la ventana de Google. Abre app.tapcar.cl en Chrome o Safari (no en modo incógnito ni dentro de otra app), o inicia sesión con tu correo y contraseña.'
+  }
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+    return 'Se cerró la ventana de Google antes de terminar. Inténtalo de nuevo.'
+  }
+  return 'No se pudo iniciar sesión con Google.'
+}
+
 async function establishSession(user: User) {
   const idToken = await user.getIdToken()
   await fetch('/api/session', {
@@ -43,8 +65,8 @@ export default function LoginForm() {
     try {
       const { user } = await signInWithPopup(auth, new GoogleAuthProvider())
       await afterAuth(user)
-    } catch {
-      setError('No se pudo iniciar sesión con Google.')
+    } catch (err) {
+      setError(googleErrorMessage(err))
       setLoading(false)
     }
   }

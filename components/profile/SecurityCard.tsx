@@ -62,6 +62,14 @@ export default function SecurityCard() {
       const code = codeOf(err)
       if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
         setError('La contraseña actual no es correcta.')
+      } else if (
+        // El popup de Google pierde el estado si el navegador particiona el sessionStorage
+        // (Safari, incógnito, webviews in-app). Guiamos a un navegador normal.
+        code === 'auth/missing-initial-state' ||
+        code === 'auth/web-storage-unsupported' ||
+        code === 'auth/popup-blocked'
+      ) {
+        setError('Tu navegador bloqueó la ventana de Google. Abre app.tapcar.cl en Chrome o Safari (no en modo incógnito ni dentro de otra app) e inténtalo de nuevo.')
       } else {
         setError('No se pudo completar la acción. Inténtalo de nuevo.')
       }
