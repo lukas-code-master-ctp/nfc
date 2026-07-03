@@ -33,7 +33,16 @@ describe('GET /api/reportes/usos', () => {
     expect((await res.json()).items[0].id).toBe('u1')
   })
   it('503 si la query falla (índice faltante)', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     listUsagesPage.mockRejectedValue(new Error('FAILED_PRECONDITION: index'))
     expect((await GET(req(''))).status).toBe(503)
+    spy.mockRestore()
+  })
+  it('normaliza fechas peladas a límites de día (hasta = fin de día, desde = inicio de día)', async () => {
+    await GET(req('?desde=2026-07-01&hasta=2026-07-03'))
+    expect(listUsagesPage).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ desde: '2026-07-01T00:00:00.000Z', hasta: '2026-07-03T23:59:59.999Z' }),
+    )
   })
 })
