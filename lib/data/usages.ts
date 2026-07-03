@@ -125,3 +125,22 @@ export async function updateUsageDatos(
   if (!doc.exists || doc.data()?.companyId !== companyId) throw new Error('forbidden')
   await ref.update({ ...patch, datosConfirmados: true })
 }
+
+export async function listUsagesPage(
+  companyId: string,
+  filtros: { driverId?: string; vehicleId?: string; desde?: string; hasta?: string; cursor?: string },
+  pageSize = 20,
+): Promise<{ items: VehicleUsage[]; nextCursor: string | null }> {
+  let q: FirebaseFirestore.Query = adminDb.collection(COL).where('companyId', '==', companyId)
+  if (filtros.driverId) q = q.where('driverId', '==', filtros.driverId)
+  else if (filtros.vehicleId) q = q.where('vehicleId', '==', filtros.vehicleId)
+  if (filtros.desde) q = q.where('tomadoEn', '>=', filtros.desde)
+  if (filtros.hasta) q = q.where('tomadoEn', '<=', filtros.hasta)
+  q = q.orderBy('tomadoEn', 'desc')
+  if (filtros.cursor) q = q.startAfter(filtros.cursor)
+  q = q.limit(pageSize)
+  const snap = await q.get()
+  const items = snap.docs.map((d) => toUsage(d.id, d.data()))
+  const nextCursor = items.length === pageSize ? items[items.length - 1].tomadoEn : null
+  return { items, nextCursor }
+}
