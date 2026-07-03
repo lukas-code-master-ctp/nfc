@@ -15,10 +15,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh">
       <header className="sticky top-0 z-20 border-b border-linea bg-superficie/80 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <Link href="/dashboard" className="flex items-center gap-2" aria-label="TapCar — ir al inicio">
-            <TapCarIsotipo className="size-8" />
-            <TapCarWordmark className="hidden text-xl sm:inline" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="flex items-center gap-2" aria-label="TapCar — ir al inicio">
+              <TapCarIsotipo className="size-8" />
+              <TapCarWordmark className="hidden text-xl sm:inline" />
+            </Link>
+            <nav className="flex items-center gap-3 text-sm font-medium">
+              <Link href="/flota" className="text-acero transition-colors hover:text-tinta">Flota</Link>
+            </nav>
+          </div>
           <UserMenu email={user.email} isAdmin={isAdminEmail(user.email)} />
         </div>
       </header>
