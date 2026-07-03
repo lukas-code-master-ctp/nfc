@@ -2,6 +2,8 @@
 
 App web para que **empresas con flota** gestionen la documentación de sus vehículos. Cada vehículo se vincula a un chip NFC: al acercar un smartphone se abre una **ficha pública de solo lectura** (`/v/<token>`) con sus documentos, pensada para fiscalización (ej. un carabinero valida la documentación). El equipo de la empresa gestiona vehículos y documentos tras iniciar sesión (según su rol), y recibe recordatorios por email antes de cada vencimiento.
 
+Además de los documentos, la app lleva la **bitácora de uso de la flota**: quién usa cada vehículo y cuándo. Un padrón de conductores (sin cuentas, autenticados por **PIN**) permite **tomar y entregar** el vehículo desde la misma ficha pública, adjuntando fotos del tablero y la cabina; una **IA** (OpenRouter) lee esas fotos para estimar bencina, kilometraje y limpieza. Un panel de **flota** muestra el estado en vivo de cada vehículo (disponible / en uso por quién) y las alertas pendientes (daños, entregas no formalizadas), y la sección de **reportes** entrega responsabilidad por conductor y una bitácora filtrable de todos los usos.
+
 - **Producción:** https://app.tapcar.cl
 - **Contexto:** Chile. Documentos chilenos (Permiso de Circulación, Revisión Técnica, SOAP, Certificado de Gases, Padrón).
 
@@ -16,7 +18,8 @@ Next.js 16 (App Router, TypeScript estricto) · Tailwind CSS v4 · Firebase (Aut
 - `companies/{companyId}` — la empresa: datos tributarios + `plan` (cupo de vehículos).
 - `users/{uid}` — perfil personal + `companyId` + `role` (`admin` | `editor` | `viewer`).
 - La **flota** (`vehicles`/`documents`) se comparte por empresa (scope `companyId`).
-- **Roles:** Visor (solo lee) · Editor (+ documentos) · Administrador (+ vehículos, facturación, datos de empresa). El enforcement vive en `/api/*` (`getMembership()` + `can(role, action)`); las reglas de Firestore son defensa en profundidad.
+- **Roles:** Visor (solo lee) · Editor (+ documentos) · Administrador (+ vehículos, facturación, datos de empresa, equipo y conductores). El enforcement vive en `/api/*` (`getMembership()` + `can(role, action)`); las reglas de Firestore son defensa en profundidad.
+- **Equipo:** el Administrador invita miembros por correo (máx. 5 por empresa) desde Configuración; quien acepta se une automáticamente a esa empresa con el rol asignado.
 - **Admin de plataforma** (aparte, allowlist `ADMIN_EMAILS`): panel `/admin` para configurar el cupo de cada empresa.
 
 ## Requisitos
@@ -47,6 +50,8 @@ Copia `.env.example` a `.env.local` y complétalo (`cp .env.example .env.local`)
 | `NEXT_PUBLIC_APP_URL` | Base de los enlaces NFC públicos = `https://app.tapcar.cl`. Es **build-time** → redeploy al cambiarla |
 | `ADMIN_EMAILS` | Correos (coma) de los admins de plataforma del panel `/admin` |
 | `BILLING_EMAIL` | (Opcional) destino de las solicitudes de plan de `/facturacion`; si falta usa el primer `ADMIN_EMAILS` |
+| `OPENROUTER_API_KEY` | Habilita el análisis con IA de las fotos de entrega (bencina/km/limpieza); sin ella el análisis no corre (best-effort) |
+| `OPENROUTER_MODEL` | (Opcional) modelo de OpenRouter a usar; default `google/gemini-2.0-flash-001` |
 
 ## Comandos
 
@@ -62,14 +67,16 @@ npx tsc --noEmit     # typecheck
 Scripts de operación (Admin SDK, cargan credenciales de prod desde `.env.local`):
 
 ```bash
-node --env-file=.env.local scripts/migrate-multitenant.mjs      # migración one-time a multi-tenant (idempotente)
-node --env-file=.env.local scripts/deploy-firestore-rules.mjs   # despliega firestore.rules sin CLI de Firebase
+node --env-file=.env.local scripts/migrate-multitenant.mjs        # migración one-time a multi-tenant (idempotente)
+node --env-file=.env.local scripts/deploy-firestore-rules.mjs     # despliega firestore.rules sin CLI de Firebase
+node --env-file=.env.local scripts/deploy-firestore-indexes.mjs   # crea los 3 índices compuestos de usages (requiere rol datastore.indexAdmin en el service account; también se pueden crear a mano en la consola de Firebase)
 ```
 
 ## Despliegue
 
 - **App:** Vercel auto-despliega al hacer **push a `master`**.
 - **Reglas de Firestore:** Vercel no las despliega. Usa el script `deploy-firestore-rules.mjs` (arriba) o `firebase deploy --only firestore:rules`.
+- **Índices de Firestore:** tampoco los despliega Vercel. Usa `deploy-firestore-indexes.mjs` (arriba) o créalos a mano en la consola de Firebase; sin ellos, la bitácora filtrable de `/reportes` responde 503.
 - **Recordatorios diarios:** configurados vía **Vercel Cron** en `vercel.json` (`GET /api/cron/reminders`, protegido con `Authorization: Bearer ${CRON_SECRET}` que Vercel inyecta).
 
 ## Chip NFC
