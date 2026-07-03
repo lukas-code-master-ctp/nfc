@@ -16,6 +16,7 @@ export default async function ConfiguracionPage() {
 
   const company = await getCompany(m.companyId)
   const esAdmin = can(m.role, 'billing:manage')
+  const puedeGestionarConductores = can(m.role, 'driver:manage')
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
@@ -56,7 +57,7 @@ export default async function ConfiguracionPage() {
       )}
 
       {esAdmin && <TeamCard currentUid={m.uid} />}
-      {esAdmin && <DriversCard />}
+      {puedeGestionarConductores && <DriversCard />}
     </main>
   )
 }

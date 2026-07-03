@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const vehicle = await getVehicleByToken(token)
-  if (!vehicle) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  if (!vehicle) return NextResponse.json({ error: 'Vehículo no encontrado.' }, { status: 404 })
 
   const body = await req.json().catch(() => ({}))
   const driverId = String(body?.driverId ?? '')
