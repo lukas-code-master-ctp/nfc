@@ -5,6 +5,7 @@ import { openUsage } from '@/lib/data/usages'
 import { getCompany } from '@/lib/data/companies'
 import { adminAuth } from '@/lib/firebase/admin'
 import { sendUsageAlertEmail } from '@/lib/email/resend'
+import { createAlerta } from '@/lib/data/alertas'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,6 +42,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
       }
     } catch {
       /* best-effort: el uso ya se abrió */
+    }
+    try {
+      await createAlerta({
+        companyId: vehicle.companyId,
+        vehicleId: vehicle.id,
+        patente: vehicle.patente,
+        usageId: forced.id,
+        tipo: 'sin_entrega',
+        driverNombre: forced.driverNombre,
+      })
+    } catch {
+      /* best-effort */
     }
   }
 
