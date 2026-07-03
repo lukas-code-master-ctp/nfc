@@ -4,9 +4,11 @@ const getVehicleByToken = vi.fn()
 vi.mock('@/lib/data/vehicles', () => ({ getVehicleByToken: (...a: unknown[]) => getVehicleByToken(...a) }))
 const verifyDriverPin = vi.fn()
 const getDriver = vi.fn()
+const incrementDriverStats = vi.fn()
 vi.mock('@/lib/data/drivers', () => ({
   verifyDriverPin: (...a: unknown[]) => verifyDriverPin(...a),
   getDriver: (...a: unknown[]) => getDriver(...a),
+  incrementDriverStats: (...a: unknown[]) => incrementDriverStats(...a),
 }))
 const closeUsage = vi.fn()
 const getUsage = vi.fn()
@@ -30,8 +32,8 @@ function ctx(token: string) { return { params: Promise.resolve({ token }) } }
 
 beforeEach(() => {
   getVehicleByToken.mockReset(); verifyDriverPin.mockReset(); getDriver.mockReset(); closeUsage.mockReset()
-  after.mockReset(); analyzeUsage.mockReset()
-  createAlerta.mockReset(); getUsage.mockReset(); getUsage.mockResolvedValue({ driverNombre: 'Ana' })
+  after.mockReset(); analyzeUsage.mockReset(); incrementDriverStats.mockReset()
+  createAlerta.mockReset(); getUsage.mockReset(); getUsage.mockResolvedValue({ driverNombre: 'Ana', driverId: 'dAna' })
   getVehicleByToken.mockResolvedValue({ id: 'v1', companyId: 'c1' })
   getDriver.mockResolvedValue({ id: 'd1', nombre: 'Ana', companyId: 'c1' })
   verifyDriverPin.mockResolvedValue('ok')
@@ -73,5 +75,6 @@ describe('POST entregar', () => {
     const res = await POST(req({ driverId: 'd1', pin: '1234', fotos: { tablero: 'a', cabina: 'b' }, dano: { hay: true, nota: 'rayón' } }), ctx('t'))
     expect(res.status).toBe(200)
     expect(createAlerta).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'dano', usageId: 'u1', nota: 'rayón', companyId: 'c1', vehicleId: 'v1' }))
+    expect(incrementDriverStats).toHaveBeenCalledWith('dAna', 'danos')
   })
 })

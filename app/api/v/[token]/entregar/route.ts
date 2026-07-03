@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { getVehicleByToken } from '@/lib/data/vehicles'
-import { verifyDriverPin, getDriver } from '@/lib/data/drivers'
+import { verifyDriverPin, getDriver, incrementDriverStats } from '@/lib/data/drivers'
 import { closeUsage, getUsage } from '@/lib/data/usages'
 import { analyzeUsage } from '@/lib/ai/analyzeUsage'
 import { createAlerta } from '@/lib/data/alertas'
@@ -43,8 +43,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
 
   // Alerta best-effort si se reportó daño; se atribuye al conductor que tenía el vehículo.
   if (dano?.hay) {
+    const u = await getUsage(usageId).catch(() => null)
     try {
-      const u = await getUsage(usageId)
       await createAlerta({
         companyId: vehicle.companyId,
         vehicleId: vehicle.id,
@@ -56,6 +56,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
       })
     } catch {
       /* best-effort */
+    }
+    if (u?.driverId) {
+      try { await incrementDriverStats(u.driverId, 'danos') } catch { /* best-effort */ }
     }
   }
 

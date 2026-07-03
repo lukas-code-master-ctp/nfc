@@ -1,4 +1,5 @@
 import { adminDb } from '@/lib/firebase/admin'
+import { FieldValue } from 'firebase-admin/firestore'
 import { hashPin, verifyPin, estaBloqueado, trasIntentoFallido } from '@/lib/drivers/pin'
 import type { Driver } from '@/lib/types'
 
@@ -16,6 +17,11 @@ function toDriver(id: string, d: FirebaseFirestore.DocumentData): Driver {
     createdByUid: d.createdByUid ?? undefined,
     intentosFallidos: d.intentosFallidos ?? 0,
     bloqueadoHasta: d.bloqueadoHasta ?? null,
+    stats: {
+      usos: d.stats?.usos ?? 0,
+      danos: d.stats?.danos ?? 0,
+      sinEntrega: d.stats?.sinEntrega ?? 0,
+    },
   }
 }
 
@@ -42,6 +48,14 @@ export async function createDriver(
 export async function listDrivers(companyId: string): Promise<Driver[]> {
   const snap = await adminDb.collection(COL).where('companyId', '==', companyId).get()
   return snap.docs.map((d) => toDriver(d.id, d.data())).sort((a, b) => a.nombre.localeCompare(b.nombre))
+}
+
+// Incremento best-effort de un contador del conductor (para el reporte de responsabilidad).
+export async function incrementDriverStats(
+  driverId: string,
+  campo: 'usos' | 'danos' | 'sinEntrega',
+): Promise<void> {
+  await adminDb.collection(COL).doc(driverId).update({ [`stats.${campo}`]: FieldValue.increment(1) })
 }
 
 export async function listActiveDrivers(companyId: string): Promise<{ id: string; nombre: string }[]> {

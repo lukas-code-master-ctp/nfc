@@ -148,6 +148,7 @@ export interface Driver {
   createdByUid?: string
   intentosFallidos?: number
   bloqueadoHasta?: string | null
+  stats?: { usos: number; danos: number; sinEntrega: number }
 }
 
 export interface VehicleUsage {
