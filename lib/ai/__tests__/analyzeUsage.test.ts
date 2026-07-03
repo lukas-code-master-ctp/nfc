@@ -46,7 +46,9 @@ describe('analyzeUsage', () => {
     expect(setUsageAnalysis).toHaveBeenCalledWith('u1', { bencina: '1/2', km: 50, limpieza: 'aceptable' })
   })
   it('no lanza si algo falla (best-effort)', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     getUsage.mockRejectedValue(new Error('boom'))
     await expect(analyzeUsage('u1')).resolves.toBeUndefined()
+    expect(spy).toHaveBeenCalled(); spy.mockRestore()
   })
 })

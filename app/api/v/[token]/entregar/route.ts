@@ -5,6 +5,8 @@ import { closeUsage } from '@/lib/data/usages'
 import { analyzeUsage } from '@/lib/ai/analyzeUsage'
 
 export const dynamic = 'force-dynamic'
+// El análisis IA corre post-respuesta vía after(); dale margen a la función.
+export const maxDuration = 30
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params

@@ -17,7 +17,7 @@ export async function analyzeUsage(usageId: string): Promise<void> {
     ])
     const datos = await analyzeUsagePhotos(chatVision, { tableroUrl, cabinaUrl })
     await setUsageAnalysis(usageId, datos)
-  } catch {
-    /* best-effort */
+  } catch (err) {
+    console.error('[analyzeUsage]', usageId, err)
   }
 }
