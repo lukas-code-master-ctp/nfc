@@ -54,7 +54,7 @@ export default async function ConfiguracionPage() {
         </section>
       )}
 
-      {esAdmin && <TeamCard />}
+      {esAdmin && <TeamCard currentUid={m.uid} />}
     </main>
   )
 }

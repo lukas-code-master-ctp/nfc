@@ -13,7 +13,7 @@ function diasRestantes(expiresAt: string): number {
   return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)))
 }
 
-export default function TeamCard() {
+export default function TeamCard({ currentUid }: { currentUid: string }) {
   const [members, setMembers] = useState<Member[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,17 +62,31 @@ export default function TeamCard() {
     load()
   }
   async function cambiarRol(uid: string, nuevo: Role) {
-    await fetch(`/api/company/members/${uid}`, {
+    const res = await fetch(`/api/company/members/${uid}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: nuevo }),
     })
-    load()
+    if (res.ok) {
+      setError(null)
+      load()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'No se pudo cambiar el rol.')
+      load()
+    }
   }
   async function quitar(uid: string) {
     if (!confirm('¿Quitar a este miembro del equipo?')) return
-    await fetch(`/api/company/members/${uid}`, { method: 'DELETE' })
-    load()
+    const res = await fetch(`/api/company/members/${uid}`, { method: 'DELETE' })
+    if (res.ok) {
+      setError(null)
+      load()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'No se pudo quitar al miembro.')
+      load()
+    }
   }
 
   return (
@@ -94,7 +108,7 @@ export default function TeamCard() {
                   <p className="truncate text-sm font-medium text-tinta">{mem.email || mem.displayName || mem.uid}</p>
                   {mem.isOwner && <span className="text-xs text-acero">Dueño</span>}
                 </div>
-                {mem.isOwner ? (
+                {mem.isOwner || mem.uid === currentUid ? (
                   <span className="rounded-full bg-lienzo px-2.5 py-1 text-xs font-medium text-acero">{ROLE_LABELS[mem.role]}</span>
                 ) : (
                   <div className="flex items-center gap-2">
