@@ -22,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
             <nav className="flex items-center gap-3 text-sm font-medium">
               <Link href="/flota" className="text-acero transition-colors hover:text-tinta">Flota</Link>
+              <Link href="/reportes" className="text-acero transition-colors hover:text-tinta">Reportes</Link>
             </nav>
           </div>
           <UserMenu email={user.email} isAdmin={isAdminEmail(user.email)} />
