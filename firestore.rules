@@ -35,5 +35,10 @@ service cloud.firestore {
       allow update: if isMember(resource.data.companyId) && isMember(request.resource.data.companyId);
       allow create: if isMember(request.resource.data.companyId);
     }
+
+    // Invitaciones: solo se acceden server-side (Admin SDK). Cliente sin acceso.
+    match /invitations/{id} {
+      allow read, write: if false;
+    }
   }
 }
