@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { getVehicleByToken } from '@/lib/data/vehicles'
 import { verifyDriverPin, getDriver } from '@/lib/data/drivers'
 import { closeUsage } from '@/lib/data/usages'
+import { analyzeUsage } from '@/lib/ai/analyzeUsage'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,10 +31,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     ? { hay: true, nota: typeof body.dano.nota === 'string' ? body.dano.nota.slice(0, 500) : undefined, fotoPath: typeof body.dano.fotoPath === 'string' ? body.dano.fotoPath : undefined }
     : undefined
 
+  let usageId: string
   try {
-    await closeUsage(vehicle.companyId, vehicle.id, { id: driver.id, nombre: driver.nombre }, { tablero, cabina }, dano)
+    usageId = await closeUsage(vehicle.companyId, vehicle.id, { id: driver.id, nombre: driver.nombre }, { tablero, cabina }, dano)
   } catch {
     return NextResponse.json({ error: 'Este vehículo no tiene un uso abierto.' }, { status: 409 })
   }
+  // Análisis IA en segundo plano (post-respuesta, best-effort).
+  after(() => analyzeUsage(usageId))
   return NextResponse.json({ ok: true })
 }
