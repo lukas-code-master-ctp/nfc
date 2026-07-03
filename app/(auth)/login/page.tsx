@@ -1,7 +1,14 @@
 import LoginForm from '@/components/LoginForm'
+import InvitationBanner from '@/components/InvitationBanner'
 import { TapCarIsotipo, TapCarWordmark } from '@/components/brand/Logo'
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invite?: string }>
+}) {
+  const { invite } = await searchParams
+
   return (
     <main className="flex min-h-dvh items-center justify-center bg-lienzo p-4">
       <div className="w-full max-w-sm">
@@ -10,6 +17,7 @@ export default function LoginPage() {
           <TapCarWordmark className="text-3xl" />
           <p className="mt-2 text-sm text-acero">Ingresa para gestionar la documentación de tus vehículos.</p>
         </div>
+        {invite && <InvitationBanner token={invite} />}
         <div className="rounded-2xl border border-linea bg-superficie p-6 shadow-sm">
           <LoginForm />
         </div>
