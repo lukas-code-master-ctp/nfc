@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 
-const { mockGetSignedUrl, mockFile } = vi.hoisted(() => {
+const { mockFile } = vi.hoisted(() => {
   const mockGetSignedUrl = vi.fn().mockResolvedValue(['https://signed.example/upload'])
   const mockFile = vi.fn(() => ({ getSignedUrl: mockGetSignedUrl }))
   return { mockGetSignedUrl, mockFile }

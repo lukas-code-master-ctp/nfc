@@ -52,8 +52,11 @@ export default function BitacoraFlota({
     setCursor(data.nextCursor)
   }, [driverId, vehicleId, desde, hasta, cursor])
 
-  // Recarga desde cero cuando cambian los filtros.
-  useEffect(() => { cargar(true) /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [driverId, vehicleId, desde, hasta])
+  // Recarga desde cero cuando cambian los filtros. Omitimos `cargar` de las deps a
+  // propósito: incluye `cursor` (cambia al paginar) y volver a agregarlo dispararía
+  // recargas en bucle.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { cargar(true) }, [driverId, vehicleId, desde, hasta])
 
   const sel = 'rounded-lg border border-linea bg-superficie px-2 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none'
 

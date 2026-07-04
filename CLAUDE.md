@@ -26,14 +26,15 @@ Todo el código, UI, comentarios y mensajes en **español neutro (Chile)**. Usa 
 
 ```bash
 npm run dev          # desarrollo local (usa .env.local)
-npm run build        # build de producción (corre lint)
+npm run build        # build de producción — OJO: en Next 16 NO corre ESLint
+npm run lint         # ESLint (aparte del build). Local: linteá solo el código (`npx eslint app components lib`) para no arrastrar artefactos
 npm test             # Vitest (unit/integración)
 npm run test:rules   # reglas Firestore — REQUIERE emulador + Java
 npm run test:e2e     # Playwright — requiere dev server
 npx tsc --noEmit     # typecheck
 ```
 
-Tras cambios de código: corre `npx tsc --noEmit` y `npm run build` antes de commitear. Vercel **auto-despliega** al hacer push a `master`.
+Tras cambios de código: corre `npx tsc --noEmit`, `npm run build` y `npx eslint app components lib` antes de commitear. Vercel corre **Code Checks** separados (Lint + TypeCheck) en cada deploy: no bloquean el despliegue (queda `Ready`) pero salen en rojo si hay errores de ESLint — el build ya **no** los detecta. Vercel **auto-despliega** al hacer push a `master`.
 
 Scripts de operación (Admin SDK, cargan credenciales de prod desde `.env.local`):
 
@@ -105,7 +106,8 @@ Tokens en `app/globals.css` (`@theme`): `tinta` (texto), `acero` (texto 2º), `l
 - **Init lazy de Firebase obligatorio**: `lib/firebase/admin.ts` y `client.ts` difieren la init a primer uso (patrón Proxy). Si se inicializa en module-scope, el build de Vercel falla sin credenciales. Igual `getResend()` en `lib/email/resend.ts`.
 - **CORS de Cloud Storage**: las subidas (`PUT` a signed URL) requieren CORS en el bucket. Ya configurado para el dominio Vercel + localhost. Si cambia el dominio, reaplicar `bucket.setCorsConfiguration`.
 - **Dominios autorizados de Firebase Auth**: cada dominio desde el que se sirve la app (`app.tapcar.cl`, `nfc-roan-nine.vercel.app`, `localhost`) debe estar en Firebase Console → Authentication → Settings → **Authorized domains**, o el login con Google (`signInWithPopup`) falla con `auth/unauthorized-domain` ("current domain is not authorized for OAuth"). El login por correo/contraseña **no** se ve afectado.
-- **Middleware en edge**: `middleware.ts` solo importa `SESSION_COOKIE` de `lib/auth/constants` (sin firebase-admin), o rompe el edge runtime.
+- **Proxy en edge** (antes "middleware"): en Next 16 el archivo se llama `proxy.ts` y la función se exporta como `proxy` (el viejo `middleware.ts`/`export function middleware` quedó **deprecado** y tira warning en el build). Solo importa `SESSION_COOKIE` de `lib/auth/constants` (sin firebase-admin), o rompe el edge runtime.
+- **Regla `react-hooks/set-state-in-effect`**: Next 16 la activa como **error**; marca hasta el patrón idiomático de carga de datos en `useEffect` (fetch + `setLoading`/`setItems`), incluso tras `await`. En `eslint.config.mjs` la bajamos a `warn` a propósito. NO mutar props/estado directamente (`react-hooks/immutability`): usar estado local (ver `components/admin/AdminCompaniesTable.tsx`).
 - **Vitest 4**: mocks compartidos dentro de `vi.mock(...)` requieren `vi.hoisted(() => ({...}))`.
 - **Tests de reglas/E2E**: requieren emulador de Firestore (Java) o credenciales reales; corren en CI, no necesariamente en local.
 - **`after()` de `next/server` para trabajo post-respuesta**: se usa para disparar el análisis de IA (`analyzeUsage`) sin bloquear la respuesta de `entregar`; la ruta que lo usa fija `export const maxDuration` explícito (30s) porque el trabajo en background sigue contando contra el límite de ejecución.

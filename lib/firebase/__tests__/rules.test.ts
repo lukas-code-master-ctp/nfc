@@ -1,7 +1,7 @@
 // TODO(task-12): actualizado al modelo multi-tenant (companyId) sin correr el
 // emulador (no disponible en este entorno — requiere Java). Revisar que
 // `npm run test:rules` pase en un entorno con emulador antes del cutover.
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, beforeAll, afterAll } from 'vitest'
 import {
   initializeTestEnvironment,
   assertFails,

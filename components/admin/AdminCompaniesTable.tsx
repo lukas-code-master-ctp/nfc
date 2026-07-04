@@ -4,13 +4,16 @@ import type { AdminCompanyRow } from '@/lib/data/admin'
 
 function Row({ c }: { c: AdminCompanyRow }) {
   const [value, setValue] = useState(String(c.maxVehiculos))
+  // Cupo ya guardado (parte del valor del servidor y se actualiza al guardar).
+  // Estado local en vez de mutar el prop `c`.
+  const [savedMax, setSavedMax] = useState(c.maxVehiculos)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const n = Number(value)
   const invalid = !Number.isInteger(n) || n < 1
-  const dirty = n !== c.maxVehiculos
+  const dirty = n !== savedMax
 
   async function save() {
     if (invalid || !dirty) return
@@ -27,7 +30,7 @@ function Row({ c }: { c: AdminCompanyRow }) {
       setError('No se pudo guardar.')
       return
     }
-    c.maxVehiculos = n
+    setSavedMax(n)
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -70,7 +73,7 @@ function Row({ c }: { c: AdminCompanyRow }) {
         {invalid && <span className="text-vencido">Mínimo 1.</span>}
         {!invalid && error && <span className="text-vencido">{error}</span>}
         {!invalid && !error && saved && <span className="text-[#15803D]">Guardado ✓</span>}
-        {!invalid && !error && !saved && c.vehicleCount > c.maxVehiculos && (
+        {!invalid && !error && !saved && c.vehicleCount > savedMax && (
           <span className="text-acero">Usa {c.vehicleCount}, sobre el cupo (no podrá agregar más).</span>
         )}
       </div>
