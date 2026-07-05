@@ -16,7 +16,14 @@ vi.mock('@/lib/firebase/admin', () => ({
   adminAuth: { getUser: (...a: unknown[]) => getUser(...a) },
 }))
 
-import { listMembers, countMembers, changeMemberRole, removeMember, resolveRecibeAlertas } from '@/lib/data/members'
+import {
+  listMembers,
+  countMembers,
+  changeMemberRole,
+  removeMember,
+  resolveRecibeAlertas,
+  pickRecipientEmails,
+} from '@/lib/data/members'
 
 beforeEach(() => {
   usersWhereGet.mockReset(); docUpdate.mockReset(); docDelete.mockReset(); docGet.mockReset(); getUser.mockReset()
@@ -70,6 +77,22 @@ describe('removeMember', () => {
     docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1' }) })
     await removeMember('c1', 'u2')
     expect(docDelete).toHaveBeenCalled()
+  })
+})
+
+describe('pickRecipientEmails', () => {
+  const base = { displayName: '', role: 'viewer' as const, isOwner: false }
+  it('toma solo los que reciben y tienen email, deduplicado', () => {
+    const emails = pickRecipientEmails([
+      { uid: 'a', email: 'a@x.cl', recibeAlertas: true, ...base },
+      { uid: 'b', email: 'b@x.cl', recibeAlertas: false, ...base },
+      { uid: 'c', email: '', recibeAlertas: true, ...base },
+      { uid: 'd', email: 'a@x.cl', recibeAlertas: true, ...base },
+    ])
+    expect(emails).toEqual(['a@x.cl'])
+  })
+  it('lista vacía si nadie recibe', () => {
+    expect(pickRecipientEmails([{ uid: 'a', email: 'a@x.cl', recibeAlertas: false, ...base }])).toEqual([])
   })
 })
 

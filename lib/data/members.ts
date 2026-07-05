@@ -63,3 +63,25 @@ export async function removeMember(companyId: string, targetUid: string): Promis
   const ref = await assertSameCompany(targetUid, companyId)
   await ref.delete()
 }
+
+/** Filtra los emails de los miembros que reciben alertas (dedup, sin vacíos). */
+export function pickRecipientEmails(members: Member[]): string[] {
+  const emails = members.filter((m) => m.recibeAlertas && m.email).map((m) => m.email)
+  return [...new Set(emails)]
+}
+
+/** Emails de los miembros de la empresa que reciben notificaciones. */
+export async function alertRecipientEmails(companyId: string, ownerUid: string): Promise<string[]> {
+  const members = await listMembers(companyId, ownerUid)
+  return pickRecipientEmails(members)
+}
+
+/** Activa/desactiva las notificaciones de un miembro. */
+export async function setMemberNotificaciones(
+  companyId: string,
+  targetUid: string,
+  value: boolean,
+): Promise<void> {
+  const ref = await assertSameCompany(targetUid, companyId)
+  await ref.update({ recibeAlertas: value })
+}
