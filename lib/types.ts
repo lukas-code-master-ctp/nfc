@@ -105,6 +105,9 @@ export interface UserProfile {
   createdAt: string | null
   companyId: string
   role: Role
+  /** Si el miembro recibe las notificaciones por email (vencimientos + alertas de flota).
+   *  Ausente = default: lo recibe solo el dueño de la empresa. */
+  recibeAlertas?: boolean
 }
 
 export interface VehicleDocument {

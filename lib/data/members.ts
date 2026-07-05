@@ -7,9 +7,15 @@ export interface Member {
   displayName: string
   role: Role
   isOwner: boolean
+  recibeAlertas: boolean
 }
 
 const COL = 'users'
+
+/** Resuelve si un miembro recibe alertas. Ausente = solo el dueño por defecto. */
+export function resolveRecibeAlertas(stored: unknown, isOwner: boolean): boolean {
+  return typeof stored === 'boolean' ? stored : isOwner
+}
 
 export async function listMembers(companyId: string, ownerUid: string): Promise<Member[]> {
   const snap = await adminDb.collection(COL).where('companyId', '==', companyId).get()
@@ -30,6 +36,7 @@ export async function listMembers(companyId: string, ownerUid: string): Promise<
       displayName: data.displayName ?? '',
       role: data.role,
       isOwner: d.id === ownerUid,
+      recibeAlertas: resolveRecibeAlertas(data.recibeAlertas, d.id === ownerUid),
     })
   }
   return members

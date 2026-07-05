@@ -16,7 +16,7 @@ vi.mock('@/lib/firebase/admin', () => ({
   adminAuth: { getUser: (...a: unknown[]) => getUser(...a) },
 }))
 
-import { listMembers, countMembers, changeMemberRole, removeMember } from '@/lib/data/members'
+import { listMembers, countMembers, changeMemberRole, removeMember, resolveRecibeAlertas } from '@/lib/data/members'
 
 beforeEach(() => {
   usersWhereGet.mockReset(); docUpdate.mockReset(); docDelete.mockReset(); docGet.mockReset(); getUser.mockReset()
@@ -70,5 +70,20 @@ describe('removeMember', () => {
     docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1' }) })
     await removeMember('c1', 'u2')
     expect(docDelete).toHaveBeenCalled()
+  })
+})
+
+describe('resolveRecibeAlertas', () => {
+  it('respeta el valor explícito true', () => {
+    expect(resolveRecibeAlertas(true, false)).toBe(true)
+  })
+  it('respeta el valor explícito false aunque sea el dueño', () => {
+    expect(resolveRecibeAlertas(false, true)).toBe(false)
+  })
+  it('sin valor: el dueño recibe por defecto', () => {
+    expect(resolveRecibeAlertas(undefined, true)).toBe(true)
+  })
+  it('sin valor: un no-dueño no recibe por defecto', () => {
+    expect(resolveRecibeAlertas(undefined, false)).toBe(false)
   })
 })
