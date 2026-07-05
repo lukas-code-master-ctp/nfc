@@ -5,7 +5,7 @@ type Role = 'admin' | 'editor' | 'viewer'
 const ROLE_LABELS: Record<Role, string> = { admin: 'Administrador', editor: 'Editor', viewer: 'Visor' }
 const ROLE_OPTIONS: Role[] = ['viewer', 'editor', 'admin']
 
-interface Member { uid: string; email: string; displayName: string; role: Role; isOwner: boolean }
+interface Member { uid: string; email: string; displayName: string; role: Role; isOwner: boolean; recibeAlertas: boolean }
 interface Invitation { id: string; email: string; role: Role; expiresAt: string }
 
 function diasRestantes(expiresAt: string): number {
@@ -76,6 +76,21 @@ export default function TeamCard({ currentUid }: { currentUid: string }) {
       load()
     }
   }
+  async function toggleNotif(uid: string, value: boolean) {
+    const res = await fetch(`/api/company/members/${uid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recibeAlertas: value }),
+    })
+    if (res.ok) {
+      setError(null)
+      load()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'No se pudo cambiar las notificaciones.')
+      load()
+    }
+  }
   async function quitar(uid: string) {
     if (!confirm('¿Quitar a este miembro del equipo?')) return
     const res = await fetch(`/api/company/members/${uid}`, { method: 'DELETE' })
@@ -108,20 +123,39 @@ export default function TeamCard({ currentUid }: { currentUid: string }) {
                   <p className="truncate text-sm font-medium text-tinta">{mem.email || mem.displayName || mem.uid}</p>
                   {mem.isOwner && <span className="text-xs text-acero">Dueño</span>}
                 </div>
-                {mem.isOwner || mem.uid === currentUid ? (
-                  <span className="rounded-full bg-lienzo px-2.5 py-1 text-xs font-medium text-acero">{ROLE_LABELS[mem.role]}</span>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={mem.role}
-                      onChange={(e) => cambiarRol(mem.uid, e.target.value as Role)}
-                      className="rounded-lg border border-linea bg-superficie px-2 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none"
-                    >
-                      {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                    </select>
-                    <button onClick={() => quitar(mem.uid)} className="text-sm text-vencido hover:underline">Quitar</button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleNotif(mem.uid, !mem.recibeAlertas)}
+                    aria-pressed={mem.recibeAlertas}
+                    title={mem.recibeAlertas ? 'Recibe notificaciones por email' : 'No recibe notificaciones'}
+                    className={
+                      mem.recibeAlertas
+                        ? 'flex items-center gap-1 rounded-full border border-azul/30 bg-azul/10 px-2.5 py-1 text-xs font-medium text-azul'
+                        : 'flex items-center gap-1 rounded-full border border-linea px-2.5 py-1 text-xs font-medium text-acero hover:text-tinta'
+                    }
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5" aria-hidden="true">
+                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                    </svg>
+                    Avisos
+                  </button>
+                  {mem.isOwner || mem.uid === currentUid ? (
+                    <span className="rounded-full bg-lienzo px-2.5 py-1 text-xs font-medium text-acero">{ROLE_LABELS[mem.role]}</span>
+                  ) : (
+                    <>
+                      <select
+                        value={mem.role}
+                        onChange={(e) => cambiarRol(mem.uid, e.target.value as Role)}
+                        className="rounded-lg border border-linea bg-superficie px-2 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none"
+                      >
+                        {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                      </select>
+                      <button onClick={() => quitar(mem.uid)} className="text-sm text-vencido hover:underline">Quitar</button>
+                    </>
+                  )}
+                </div>
               </li>
             ))}
 
@@ -135,6 +169,12 @@ export default function TeamCard({ currentUid }: { currentUid: string }) {
               </li>
             ))}
           </ul>
+
+          {members.length > 0 && members.every((m) => !m.recibeAlertas) && (
+            <p className="mt-3 rounded-lg bg-[#FEF3C7] px-3 py-2 text-xs text-[#92400E]">
+              Nadie recibirá las notificaciones de vencimiento ni las alertas de flota.
+            </p>
+          )}
 
           {lleno ? (
             <p className="mt-4 text-sm text-acero">Alcanzaste el máximo de 5 miembros.</p>
