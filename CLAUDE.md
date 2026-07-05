@@ -42,6 +42,7 @@ Scripts de operación (Admin SDK, cargan credenciales de prod desde `.env.local`
 node --env-file=.env.local scripts/migrate-multitenant.mjs        # migración one-time a multi-tenant (idempotente; ya corrida en prod)
 node --env-file=.env.local scripts/deploy-firestore-rules.mjs     # despliega firestore.rules sin CLI de Firebase
 node --env-file=.env.local scripts/deploy-firestore-indexes.mjs   # crea los 3 índices compuestos de usages (requiere rol datastore.indexAdmin en el service account)
+node --env-file=.env.local scripts/set-storage-cors.mjs           # reaplica el CORS del bucket (union idempotente); correr al cambiar de dominio
 ```
 
 ## Arquitectura
@@ -104,7 +105,7 @@ Tokens en `app/globals.css` (`@theme`): `tinta` (texto), `acero` (texto 2º), `l
 - **Next 16 `params` es async**: en páginas y route handlers dinámicos, `params` (y `searchParams`) son `Promise`. Tipar `params: Promise<{ id: string }>` y `await params`. Igual `cookies()` es async (`await cookies()`).
 - **`jose` debe quedar en v5**: `package.json` tiene `overrides: { jose: "^5.9.6" }`. firebase-admin → jwks-rsa hace `require()` de `jose`, y `jose@6` es ESM-only → rompe en el runtime de Vercel con `ERR_REQUIRE_ESM` (500 en `/api/session`). NO actualizar jose a 6 sin que jwks-rsa use `import()` dinámico. `next.config.ts` también externaliza estos paquetes (`serverExternalPackages`).
 - **Init lazy de Firebase obligatorio**: `lib/firebase/admin.ts` y `client.ts` difieren la init a primer uso (patrón Proxy). Si se inicializa en module-scope, el build de Vercel falla sin credenciales. Igual `getResend()` en `lib/email/resend.ts`.
-- **CORS de Cloud Storage**: las subidas (`PUT` a signed URL) requieren CORS en el bucket. Ya configurado para el dominio Vercel + localhost. Si cambia el dominio, reaplicar `bucket.setCorsConfiguration`.
+- **CORS de Cloud Storage**: las subidas (`PUT` a signed URL) requieren CORS en el bucket con el origin de la app. Ya incluye `app.tapcar.cl` + `nfc-roan-nine.vercel.app` + localhost. Si el `PUT` falla con "CORS error" (el `upload-url` da 200 pero la subida no), falta el origin: correr `scripts/set-storage-cors.mjs` (union idempotente). Reaplicar al cambiar de dominio.
 - **Dominios autorizados de Firebase Auth**: cada dominio desde el que se sirve la app (`app.tapcar.cl`, `nfc-roan-nine.vercel.app`, `localhost`) debe estar en Firebase Console → Authentication → Settings → **Authorized domains**, o el login con Google (`signInWithPopup`) falla con `auth/unauthorized-domain` ("current domain is not authorized for OAuth"). El login por correo/contraseña **no** se ve afectado.
 - **Proxy en edge** (antes "middleware"): en Next 16 el archivo se llama `proxy.ts` y la función se exporta como `proxy` (el viejo `middleware.ts`/`export function middleware` quedó **deprecado** y tira warning en el build). Solo importa `SESSION_COOKIE` de `lib/auth/constants` (sin firebase-admin), o rompe el edge runtime.
 - **Regla `react-hooks/set-state-in-effect`**: Next 16 la activa como **error**; marca hasta el patrón idiomático de carga de datos en `useEffect` (fetch + `setLoading`/`setItems`), incluso tras `await`. En `eslint.config.mjs` la bajamos a `warn` a propósito. NO mutar props/estado directamente (`react-hooks/immutability`): usar estado local (ver `components/admin/AdminCompaniesTable.tsx`).
