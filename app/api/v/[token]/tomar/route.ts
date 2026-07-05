@@ -3,7 +3,7 @@ import { getVehicleByToken } from '@/lib/data/vehicles'
 import { verifyDriverPin, getDriver, incrementDriverStats } from '@/lib/data/drivers'
 import { openUsage } from '@/lib/data/usages'
 import { getCompany } from '@/lib/data/companies'
-import { adminAuth } from '@/lib/firebase/admin'
+import { alertRecipientEmails } from '@/lib/data/members'
 import { sendUsageAlertEmail } from '@/lib/email/resend'
 import { createAlerta } from '@/lib/data/alertas'
 
@@ -33,8 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   if (forced) {
     try {
       const company = await getCompany(vehicle.companyId)
-      const to = company ? (await adminAuth.getUser(company.ownerUid)).email : null
-      if (to) {
+      const emails = company ? await alertRecipientEmails(vehicle.companyId, company.ownerUid) : []
+      for (const to of emails) {
         await sendUsageAlertEmail(to, {
           patente: vehicle.patente,
           driverNombre: forced.driverNombre,

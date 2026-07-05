@@ -14,7 +14,7 @@ const openUsage = vi.fn()
 vi.mock('@/lib/data/usages', () => ({ openUsage: (...a: unknown[]) => openUsage(...a) }))
 vi.mock('@/lib/data/companies', () => ({ getCompany: () => Promise.resolve({ ownerUid: 'o1' }) }))
 vi.mock('@/lib/email/resend', () => ({ sendUsageAlertEmail: vi.fn() }))
-vi.mock('@/lib/firebase/admin', () => ({ adminAuth: { getUser: () => Promise.resolve({ email: 'o@b.cl' }) } }))
+vi.mock('@/lib/data/members', () => ({ alertRecipientEmails: () => Promise.resolve(['o@b.cl']) }))
 const createAlerta = vi.fn()
 vi.mock('@/lib/data/alertas', () => ({ createAlerta: (...a: unknown[]) => createAlerta(...a) }))
 
