@@ -3,7 +3,7 @@ import { DOCUMENT_TYPE_LABELS, type VehicleDocument } from '@/lib/types'
 
 export interface ReminderDeps {
   allDocuments: () => Promise<VehicleDocument[]>
-  vehicleInfo: (vehicleId: string) => Promise<{ patente: string; email: string } | null>
+  vehicleInfo: (vehicleId: string) => Promise<{ patente: string; emails: string[] } | null>
   sendReminderEmail: (
     to: string,
     params: { patente: string; label: string; fechaVencimiento: string; milestone: string },
@@ -18,14 +18,16 @@ export async function processReminders(deps: ReminderDeps, now: Date): Promise<{
     const milestone = dueReminder(d.fechaVencimiento, d.remindersSent, now)
     if (!milestone) continue
     const info = await deps.vehicleInfo(d.vehicleId)
-    if (!info?.email) continue
+    if (!info || info.emails.length === 0) continue
     const label = d.tipo === 'otro' ? d.nombrePersonalizado ?? 'Documento' : DOCUMENT_TYPE_LABELS[d.tipo]
-    await deps.sendReminderEmail(info.email, {
-      patente: info.patente,
-      label,
-      fechaVencimiento: d.fechaVencimiento!,
-      milestone,
-    })
+    for (const email of info.emails) {
+      await deps.sendReminderEmail(email, {
+        patente: info.patente,
+        label,
+        fechaVencimiento: d.fechaVencimiento!,
+        milestone,
+      })
+    }
     await deps.markReminderSent(d.id, d.companyId, [...d.remindersSent, milestone])
     sent++
   }

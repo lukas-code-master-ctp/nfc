@@ -1,7 +1,8 @@
-import { adminDb, adminAuth } from '@/lib/firebase/admin'
+import { adminDb } from '@/lib/firebase/admin'
 import { nanoid } from 'nanoid'
 import { listDocuments, deleteDocument } from '@/lib/data/documents'
 import { getCompany } from '@/lib/data/companies'
+import { alertRecipientEmails } from '@/lib/data/members'
 import type { Vehicle } from '@/lib/types'
 
 const COL = 'vehicles'
@@ -87,15 +88,15 @@ export async function regenerateToken(vehicleId: string, companyId: string): Pro
 
 export async function vehicleInfoForReminder(
   vehicleId: string,
-): Promise<{ patente: string; email: string } | null> {
+): Promise<{ patente: string; emails: string[] } | null> {
   const v = await getVehicle(vehicleId)
   if (!v || !v.companyId) return null
   try {
     const company = await getCompany(v.companyId)
-    if (!company) return { patente: v.patente, email: '' }
-    const u = await adminAuth.getUser(company.ownerUid)
-    return { patente: v.patente, email: u.email ?? '' }
+    if (!company) return { patente: v.patente, emails: [] }
+    const emails = await alertRecipientEmails(v.companyId, company.ownerUid)
+    return { patente: v.patente, emails }
   } catch {
-    return { patente: v.patente, email: '' }
+    return { patente: v.patente, emails: [] }
   }
 }

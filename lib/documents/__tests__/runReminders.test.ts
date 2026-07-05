@@ -18,13 +18,15 @@ describe('processReminders', () => {
     const mark = vi.fn().mockResolvedValue(undefined)
     const deps = {
       allDocuments: async () => [doc({})],
-      vehicleInfo: async () => ({ patente: 'ABCD12', email: 'a@b.cl' }),
+      vehicleInfo: async () => ({ patente: 'ABCD12', emails: ['a@b.cl', 'c@d.cl'] }),
       sendReminderEmail: send,
       markReminderSent: mark,
     }
     const res = await processReminders(deps, now)
     expect(res.sent).toBe(1)
+    expect(send).toHaveBeenCalledTimes(2)
     expect(send).toHaveBeenCalledWith('a@b.cl', expect.objectContaining({ patente: 'ABCD12', milestone: '30' }))
+    expect(send).toHaveBeenCalledWith('c@d.cl', expect.objectContaining({ milestone: '30' }))
     expect(mark).toHaveBeenCalledWith('d1', 'c1', ['30'])
   })
 
@@ -32,7 +34,7 @@ describe('processReminders', () => {
     const send = vi.fn()
     const deps = {
       allDocuments: async () => [doc({ remindersSent: ['30'] })],
-      vehicleInfo: async () => ({ patente: 'ABCD12', email: 'a@b.cl' }),
+      vehicleInfo: async () => ({ patente: 'ABCD12', emails: ['a@b.cl'] }),
       sendReminderEmail: send,
       markReminderSent: vi.fn(),
     }
@@ -45,7 +47,19 @@ describe('processReminders', () => {
     const send = vi.fn()
     const deps = {
       allDocuments: async () => [doc({ fechaVencimiento: null })],
-      vehicleInfo: async () => ({ patente: 'X', email: 'a@b.cl' }),
+      vehicleInfo: async () => ({ patente: 'X', emails: ['a@b.cl'] }),
+      sendReminderEmail: send,
+      markReminderSent: vi.fn(),
+    }
+    expect((await processReminders(deps, now)).sent).toBe(0)
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('no envía si no hay destinatarios', async () => {
+    const send = vi.fn()
+    const deps = {
+      allDocuments: async () => [doc({})],
+      vehicleInfo: async () => ({ patente: 'ABCD12', emails: [] }),
       sendReminderEmail: send,
       markReminderSent: vi.fn(),
     }
