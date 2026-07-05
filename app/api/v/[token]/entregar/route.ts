@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import { getVehicleByToken } from '@/lib/data/vehicles'
 import { verifyDriverPin, getDriver, incrementDriverStats } from '@/lib/data/drivers'
 import { closeUsage, getUsage } from '@/lib/data/usages'
+import { buildDano } from '@/lib/usages/dano'
 import { analyzeUsage } from '@/lib/ai/analyzeUsage'
 import { createAlerta } from '@/lib/data/alertas'
 
@@ -30,15 +31,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   const driver = await getDriver(driverId)
   if (!driver) return NextResponse.json({ error: 'Conductor no encontrado.' }, { status: 404 })
 
-  const dano = body?.dano?.hay
-    ? { hay: true, nota: typeof body.dano.nota === 'string' ? body.dano.nota.slice(0, 500) : undefined, fotoPath: typeof body.dano.fotoPath === 'string' ? body.dano.fotoPath : undefined }
-    : undefined
+  // `buildDano` nunca emite claves con `undefined` (Firestore las rechaza).
+  const dano = buildDano(body?.dano)
 
   let usageId: string
   try {
     usageId = await closeUsage(vehicle.companyId, vehicle.id, { id: driver.id, nombre: driver.nombre }, { tablero, cabina }, dano)
-  } catch {
-    return NextResponse.json({ error: 'Este vehículo no tiene un uso abierto.' }, { status: 409 })
+  } catch (e) {
+    // `closeUsage` lanza 'no_open' solo cuando no hay uso abierto (409). Cualquier
+    // otro error es un fallo real: 500 + log, no lo enmascaramos como 409.
+    if (e instanceof Error && e.message === 'no_open') {
+      return NextResponse.json({ error: 'Este vehículo no tiene un uso abierto.' }, { status: 409 })
+    }
+    console.error('[entregar]', e)
+    return NextResponse.json({ error: 'No se pudo registrar la entrega. Inténtalo de nuevo.' }, { status: 500 })
   }
 
   // Alerta best-effort si se reportó daño; se atribuye al conductor que tenía el vehículo.
