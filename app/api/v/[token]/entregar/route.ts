@@ -35,8 +35,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   const dano = buildDano(body?.dano)
 
   let usageId: string
+  let cierre: Awaited<ReturnType<typeof closeUsage>>
   try {
-    usageId = await closeUsage(vehicle.companyId, vehicle.id, { id: driver.id, nombre: driver.nombre }, { tablero, cabina }, dano)
+    cierre = await closeUsage(vehicle.companyId, vehicle.id, { id: driver.id, nombre: driver.nombre }, { tablero, cabina }, dano)
+    usageId = cierre.id
   } catch (e) {
     // `closeUsage` lanza 'no_open' solo cuando no hay uso abierto (409). Cualquier
     // otro error es un fallo real: 500 + log, no lo enmascaramos como 409.

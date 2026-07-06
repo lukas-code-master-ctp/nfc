@@ -63,6 +63,20 @@ describe('closeUsage', () => {
       estado: 'cerrado', entregadoPorDriverId: 'd1', fotos: { tablero: 'a', cabina: 'b' },
     }))
   })
+  it('marca entregaIrregular cuando entrega otro conductor', async () => {
+    whereGet.mockResolvedValue({ docs: [
+      { id: 'u1', data: () => ({ vehicleId: 'v1', estado: 'abierto', companyId: 'c1', driverId: 'd1', driverNombre: 'Ana', tomadoEn: '2026-01-01' }) },
+    ] })
+    const r = await closeUsage('c1', 'v1', { id: 'd2', nombre: 'Beto' }, { tablero: 'a', cabina: 'b' })
+    expect(r).toEqual({ id: 'u1', entregaIrregular: true, driverOriginal: { id: 'd1', nombre: 'Ana' }, tomadoEn: '2026-01-01' })
+  })
+  it('entregaIrregular es falso cuando entrega el mismo conductor', async () => {
+    whereGet.mockResolvedValue({ docs: [
+      { id: 'u1', data: () => ({ vehicleId: 'v1', estado: 'abierto', companyId: 'c1', driverId: 'd1', driverNombre: 'Ana', tomadoEn: '2026-01-01' }) },
+    ] })
+    const r = await closeUsage('c1', 'v1', { id: 'd1', nombre: 'Ana' }, { tablero: 'a', cabina: 'b' })
+    expect(r.entregaIrregular).toBe(false)
+  })
 })
 
 describe('listUsages', () => {

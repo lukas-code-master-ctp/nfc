@@ -37,7 +37,7 @@ beforeEach(() => {
   getVehicleByToken.mockResolvedValue({ id: 'v1', companyId: 'c1' })
   getDriver.mockResolvedValue({ id: 'd1', nombre: 'Ana', companyId: 'c1' })
   verifyDriverPin.mockResolvedValue('ok')
-  closeUsage.mockResolvedValue('u1')
+  closeUsage.mockResolvedValue({ id: 'u1', entregaIrregular: false, driverOriginal: { id: 'd1', nombre: 'Ana' }, tomadoEn: '2026-01-01' })
 })
 
 describe('POST entregar', () => {
@@ -61,7 +61,7 @@ describe('POST entregar', () => {
     expect(closeUsage).toHaveBeenCalledWith('c1', 'v1', { id: 'd1', nombre: 'Ana' }, { tablero: 'a', cabina: 'b' }, { hay: true, nota: 'rayón' })
   })
   it('agenda el análisis IA tras cerrar el uso', async () => {
-    closeUsage.mockResolvedValue('u1')
+    closeUsage.mockResolvedValue({ id: 'u1', entregaIrregular: false, driverOriginal: { id: 'd1', nombre: 'Ana' }, tomadoEn: '2026-01-01' })
     const res = await POST(req({ driverId: 'd1', pin: '1234', fotos: { tablero: 'a', cabina: 'b' } }), ctx('t'))
     expect(res.status).toBe(200)
     expect(after).toHaveBeenCalledTimes(1)
@@ -71,7 +71,7 @@ describe('POST entregar', () => {
     expect(analyzeUsage).toHaveBeenCalledWith('u1')
   })
   it('crea una alerta de daño cuando se reporta daño', async () => {
-    closeUsage.mockResolvedValue('u1')
+    closeUsage.mockResolvedValue({ id: 'u1', entregaIrregular: false, driverOriginal: { id: 'd1', nombre: 'Ana' }, tomadoEn: '2026-01-01' })
     const res = await POST(req({ driverId: 'd1', pin: '1234', fotos: { tablero: 'a', cabina: 'b' }, dano: { hay: true, nota: 'rayón' } }), ctx('t'))
     expect(res.status).toBe(200)
     expect(createAlerta).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'dano', usageId: 'u1', nota: 'rayón', companyId: 'c1', vehicleId: 'v1' }))

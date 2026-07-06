@@ -79,7 +79,7 @@ export async function closeUsage(
   entregadoPor: { id: string; nombre: string },
   fotos: { tablero: string; cabina: string },
   dano?: { hay: boolean; nota?: string; fotoPath?: string },
-): Promise<string> {
+): Promise<{ id: string; entregaIrregular: boolean; driverOriginal: { id: string; nombre: string }; tomadoEn: string }> {
   const open = await getOpenUsage(vehicleId)
   if (!open || open.companyId !== companyId) throw new Error('no_open')
   await adminDb.collection(COL).doc(open.id).update({
@@ -95,7 +95,12 @@ export async function closeUsage(
   } catch {
     /* best-effort: la denormalización no debe romper el flujo del conductor */
   }
-  return open.id
+  return {
+    id: open.id,
+    entregaIrregular: entregadoPor.id !== open.driverId,
+    driverOriginal: { id: open.driverId, nombre: open.driverNombre },
+    tomadoEn: open.tomadoEn,
+  }
 }
 
 export async function getUsage(id: string): Promise<VehicleUsage | null> {
