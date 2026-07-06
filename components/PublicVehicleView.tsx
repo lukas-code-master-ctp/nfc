@@ -127,6 +127,30 @@ function SobreVehiculoView({ vehicle }: { vehicle: Vehicle }) {
   )
 }
 
+function hora(iso: string): string {
+  return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
+}
+
+function MenuBoton({ titulo, subtitulo, onClick }: { titulo: string; subtitulo: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full rounded-2xl border border-linea bg-superficie p-5 text-left shadow-sm transition-colors hover:border-azul/40"
+    >
+      <span className="flex items-center justify-between gap-3">
+        <span className="min-w-0">
+          <span className="block text-lg font-semibold text-tinta">{titulo}</span>
+          <span className="mt-0.5 block text-sm text-acero">{subtitulo}</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0 text-acero" aria-hidden="true">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </span>
+    </button>
+  )
+}
+
 export default function PublicVehicleView({
   vehicle, documents, token, drivers, enUso,
 }: {
@@ -136,12 +160,7 @@ export default function PublicVehicleView({
   drivers: { id: string; nombre: string }[]
   enUso: { driverNombre: string; tomadoEn: string } | null
 }) {
-  const [tab, setTab] = useState<'docs' | 'info'>('docs')
-
-  const pill = (active: boolean) =>
-    `rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-      active ? 'bg-azul text-white shadow-sm' : 'text-acero hover:text-tinta'
-    }`
+  const [vista, setVista] = useState<'menu' | 'uso' | 'docs' | 'info'>('menu')
 
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-6 px-4 py-10">
@@ -161,20 +180,43 @@ export default function PublicVehicleView({
         </div>
       </div>
 
-      <UsoPanel token={token} drivers={drivers} enUso={enUso} />
-
-      <div className="flex justify-center">
-        <div className="inline-flex items-center gap-1 rounded-full border border-linea bg-superficie p-1 shadow-sm">
-          <button type="button" onClick={() => setTab('docs')} className={pill(tab === 'docs')} aria-pressed={tab === 'docs'}>
-            Documentación
-          </button>
-          <button type="button" onClick={() => setTab('info')} className={pill(tab === 'info')} aria-pressed={tab === 'info'}>
-            Sobre el vehículo
-          </button>
+      {vista === 'menu' ? (
+        <div className="space-y-3">
+          {drivers.length > 0 && (
+            <MenuBoton
+              titulo={enUso ? 'Entregar vehículo' : 'Tomar vehículo'}
+              subtitulo={enUso ? `En uso por ${enUso.driverNombre} · desde ${hora(enUso.tomadoEn)}` : 'Disponible · registra quién lo usa'}
+              onClick={() => setVista('uso')}
+            />
+          )}
+          <MenuBoton
+            titulo="Documentos del vehículo"
+            subtitulo="Permiso de circulación, revisión técnica, SOAP y más"
+            onClick={() => setVista('docs')}
+          />
+          <MenuBoton
+            titulo="Información del vehículo"
+            subtitulo="Datos útiles para quien lo conduce"
+            onClick={() => setVista('info')}
+          />
         </div>
-      </div>
-
-      {tab === 'docs' ? <DocumentosView documents={documents} /> : <SobreVehiculoView vehicle={vehicle} />}
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={() => setVista('menu')}
+            className="flex items-center gap-1 text-sm font-medium text-azul hover:underline"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            Volver
+          </button>
+          {vista === 'uso' && <UsoPanel token={token} drivers={drivers} enUso={enUso} />}
+          {vista === 'docs' && <DocumentosView documents={documents} />}
+          {vista === 'info' && <SobreVehiculoView vehicle={vehicle} />}
+        </>
+      )}
 
       <p className="pt-2 text-center text-xs text-acero">Ficha de fiscalización · solo lectura</p>
     </main>
