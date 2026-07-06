@@ -21,9 +21,11 @@ async function subirFoto(token: string, driverId: string, pin: string, tipo: str
   return filePath
 }
 
-export default function UsoPanel({ token, drivers, enUso }: { token: string; drivers: Driver[]; enUso: { driverNombre: string; tomadoEn: string } | null }) {
+export default function UsoPanel({ token, drivers, enUso, autoAbrir = false }: { token: string; drivers: Driver[]; enUso: { driverNombre: string; tomadoEn: string } | null; autoAbrir?: boolean }) {
   const router = useRouter()
-  const [modo, setModo] = useState<Modo>('idle')
+  // Al entrar desde el menú de la ficha, abre directo el formulario que corresponde
+  // (evita el doble tap: el usuario ya eligió "Tomar/Entregar" en el menú).
+  const [modo, setModo] = useState<Modo>(autoAbrir ? (enUso ? 'entregar' : 'tomar') : 'idle')
   const [driverId, setDriverId] = useState('')
   const [pin, setPin] = useState('')
   const [tablero, setTablero] = useState<File | null>(null)

@@ -212,7 +212,7 @@ export default function PublicVehicleView({
             </svg>
             Volver
           </button>
-          {vista === 'uso' && <UsoPanel token={token} drivers={drivers} enUso={enUso} />}
+          {vista === 'uso' && <UsoPanel token={token} drivers={drivers} enUso={enUso} autoAbrir />}
           {vista === 'docs' && <DocumentosView documents={documents} />}
           {vista === 'info' && <SobreVehiculoView vehicle={vehicle} />}
         </>
