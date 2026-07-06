@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { parseImportacion } from '@/lib/drivers/importar'
 
 interface Driver { id: string; nombre: string; rut: string | null; activo: boolean; pin: string | null }
 
@@ -35,6 +36,9 @@ export default function DriversCard() {
   const [pinVisibleDe, setPinVisibleDe] = useState<string | null>(null)
   const [editandoPinDe, setEditandoPinDe] = useState<string | null>(null)
   const [nuevoPin, setNuevoPin] = useState('')
+  const [importando, setImportando] = useState(false)
+  const [textoImport, setTextoImport] = useState('')
+  const [resumenImport, setResumenImport] = useState<string | null>(null)
 
   async function load() {
     const res = await fetch('/api/conductores')
@@ -76,6 +80,37 @@ export default function DriversCard() {
     if (!confirm(`¿Eliminar a ${d.nombre} del padrón? Su historial de usos se conserva.`)) return
     await fetch(`/api/conductores/${d.id}`, { method: 'DELETE' })
     load()
+  }
+
+  const filasImport = useMemo(
+    () => parseImportacion(textoImport, drivers.map((d) => d.nombre)),
+    [textoImport, drivers],
+  )
+  const filasOk = filasImport.filter((f) => f.estado === 'ok')
+
+  async function importar() {
+    setBusy(true); setError(null); setResumenImport(null)
+    const res = await fetch('/api/conductores/import', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filas: filasOk.map((f) => ({ nombre: f.nombre, rut: f.rut, pin: f.pin })) }),
+    })
+    setBusy(false)
+    if (res.ok) {
+      const data = await res.json()
+      setResumenImport(`${data.creados} conductor${data.creados === 1 ? '' : 'es'} creado${data.creados === 1 ? '' : 's'}${data.omitidos ? `, ${data.omitidos} omitido${data.omitidos === 1 ? '' : 's'}` : ''}.`)
+      setTextoImport('')
+      setImportando(false)
+      load()
+    } else {
+      setError((await res.json().catch(() => ({}))).error ?? 'No se pudo importar.')
+    }
+  }
+
+  const ESTADO_LABEL: Record<string, string> = {
+    ok: 'Se creará',
+    sin_nombre: 'Falta el nombre',
+    pin_invalido: 'PIN inválido (4 dígitos)',
+    duplicado: 'Ya existe — se omitirá',
   }
 
   const inputCls = 'w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero/45 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20'
@@ -148,6 +183,53 @@ export default function DriversCard() {
             </div>
             {error && <p className="text-sm text-vencido">{error}</p>}
           </form>
+
+          <div className="mt-3">
+            {!importando ? (
+              <div className="flex items-center gap-3">
+                <button onClick={() => { setImportando(true); setResumenImport(null) }} className="text-sm font-medium text-azul hover:underline">
+                  Importar desde Excel
+                </button>
+                {resumenImport && <span className="text-sm text-[#15803D]">{resumenImport}</span>}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-linea p-3">
+                <p className="text-sm font-medium text-tinta">Importar conductores</p>
+                <p className="mt-1 text-xs text-acero">
+                  Copia las filas desde Excel o Sheets y pégalas aquí. Columnas: nombre, RUT (opcional) y PIN (opcional — si falta, se genera uno de 4 dígitos).
+                </p>
+                <textarea
+                  value={textoImport}
+                  onChange={(e) => setTextoImport(e.target.value)}
+                  rows={5}
+                  placeholder={'Juan Soto\t11.111.111-1\t1234\nMaría Rojas'}
+                  className="mt-2 w-full rounded-lg border border-linea bg-superficie px-3 py-2 font-mono text-sm text-tinta placeholder:text-acero/45 focus:border-azul focus:outline-none"
+                />
+                {filasImport.length > 0 && (
+                  <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto text-xs">
+                    {filasImport.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 rounded border border-linea px-2 py-1">
+                        <span className="truncate text-tinta">{f.nombre || '(sin nombre)'}{f.rut ? ` · ${f.rut}` : ''}{f.estado === 'ok' ? ` · PIN ${f.pin}${f.pinGenerado ? ' (generado)' : ''}` : ''}</span>
+                        <span className={f.estado === 'ok' ? 'shrink-0 text-[#15803D]' : 'shrink-0 text-vencido'}>{ESTADO_LABEL[f.estado]}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={importar}
+                    disabled={busy || filasOk.length === 0}
+                    className="rounded-lg bg-azul px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-azul-press disabled:opacity-50"
+                  >
+                    {busy ? 'Importando…' : `Crear ${filasOk.length} conductor${filasOk.length === 1 ? '' : 'es'}`}
+                  </button>
+                  <button onClick={() => { setImportando(false); setTextoImport('') }} className="rounded-lg border border-linea px-4 py-2 text-sm font-medium text-tinta transition-colors hover:bg-lienzo">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
     </section>
