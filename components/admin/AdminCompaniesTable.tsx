@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import type { AdminCompanyRow } from '@/lib/data/admin'
 
-function Row({ c }: { c: AdminCompanyRow }) {
+function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => void }) {
   const [value, setValue] = useState(String(c.maxVehiculos))
   // Cupo ya guardado (parte del valor del servidor y se actualiza al guardar).
   // Estado local en vez de mutar el prop `c`.
@@ -10,6 +10,10 @@ function Row({ c }: { c: AdminCompanyRow }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmando, setConfirmando] = useState(false)
+  const [textoConfirm, setTextoConfirm] = useState('')
+  const [borrando, setBorrando] = useState(false)
+  const [errorBorrar, setErrorBorrar] = useState<string | null>(null)
 
   const n = Number(value)
   const invalid = !Number.isInteger(n) || n < 1
@@ -33,6 +37,15 @@ function Row({ c }: { c: AdminCompanyRow }) {
     setSavedMax(n)
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
+  }
+
+  async function eliminar() {
+    setBorrando(true)
+    setErrorBorrar(null)
+    const res = await fetch(`/api/admin/companies/${c.companyId}`, { method: 'DELETE' })
+    setBorrando(false)
+    if (res.ok) onDeleted(c.companyId)
+    else setErrorBorrar('No se pudo eliminar la empresa.')
   }
 
   return (
@@ -66,6 +79,12 @@ function Row({ c }: { c: AdminCompanyRow }) {
           >
             {saving ? '…' : 'Guardar'}
           </button>
+          <button
+            onClick={() => { setConfirmando(!confirmando); setTextoConfirm(''); setErrorBorrar(null) }}
+            className="text-sm font-medium text-vencido hover:underline"
+          >
+            Eliminar
+          </button>
         </div>
       </div>
 
@@ -77,12 +96,48 @@ function Row({ c }: { c: AdminCompanyRow }) {
           <span className="text-acero">Usa {c.vehicleCount}, sobre el cupo (no podrá agregar más).</span>
         )}
       </div>
+
+      {confirmando && (
+        <div className="mt-3 rounded-xl border border-vencido/30 bg-[#FCE7E7]/40 p-3">
+          <p className="text-sm text-tinta">
+            Se eliminará <span className="font-semibold">{c.razonSocial || c.ownerEmail || 'esta empresa'}</span> con{' '}
+            <span className="font-semibold">{c.vehicleCount} {c.vehicleCount === 1 ? 'vehículo' : 'vehículos'}</span>, sus documentos,
+            conductores, historial de usos y las cuentas de sus miembros. <span className="font-semibold">No se puede deshacer.</span>
+          </p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              value={textoConfirm}
+              onChange={(e) => setTextoConfirm(e.target.value)}
+              placeholder="Escribe ELIMINAR para confirmar"
+              className="w-full rounded-lg border border-linea bg-superficie px-3 py-2 text-sm text-tinta placeholder:text-acero/45 focus:border-vencido focus:outline-none sm:max-w-xs"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={eliminar}
+                disabled={textoConfirm !== 'ELIMINAR' || borrando}
+                className="rounded-lg bg-vencido px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#B91C1C] disabled:opacity-50"
+              >
+                {borrando ? 'Eliminando…' : 'Eliminar definitivamente'}
+              </button>
+              <button
+                onClick={() => { setConfirmando(false); setTextoConfirm('') }}
+                className="rounded-lg border border-linea bg-superficie px-3 py-2 text-sm font-medium text-tinta transition-colors hover:bg-lienzo"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+          {errorBorrar && <p className="mt-2 text-sm text-vencido">{errorBorrar}</p>}
+        </div>
+      )}
     </li>
   )
 }
 
 export default function AdminCompaniesTable({ companies }: { companies: AdminCompanyRow[] }) {
-  if (companies.length === 0) {
+  const [rows, setRows] = useState(companies)
+
+  if (rows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-12 text-center">
         <p className="text-sm text-acero">No hay empresas todavía.</p>
@@ -91,8 +146,8 @@ export default function AdminCompaniesTable({ companies }: { companies: AdminCom
   }
   return (
     <ul className="space-y-3">
-      {companies.map((c) => (
-        <Row key={c.companyId} c={c} />
+      {rows.map((c) => (
+        <Row key={c.companyId} c={c} onDeleted={(id) => setRows((prev) => prev.filter((r) => r.companyId !== id))} />
       ))}
     </ul>
   )
