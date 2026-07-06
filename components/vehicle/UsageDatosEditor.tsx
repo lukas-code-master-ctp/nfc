@@ -18,21 +18,32 @@ export default function UsageDatosEditor({
   const [k, setK] = useState(km != null ? String(km) : '')
   const [l, setL] = useState(limpieza ?? '')
   const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function guardar() {
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setSaved(false)
     const payload: Record<string, unknown> = {}
     if (b) payload.bencina = b
     if (k) payload.km = Number(k)
     if (l) payload.limpieza = l
-    const res = await fetch(`/api/usages/${usageId}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    setBusy(false)
-    if (res.ok) router.refresh()
-    else setError((await res.json().catch(() => ({}))).error ?? 'No se pudo guardar.')
+    try {
+      const res = await fetch(`/api/usages/${usageId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2500)
+        router.refresh()
+      } else {
+        setError((await res.json().catch(() => ({}))).error ?? 'No se pudo guardar.')
+      }
+    } catch {
+      setError('No se pudo guardar. Revisa tu conexión.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const sel = 'rounded-lg border border-linea bg-superficie px-2 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none'
@@ -57,6 +68,7 @@ export default function UsageDatosEditor({
         {busy ? 'Guardando…' : 'Guardar'}
       </button>
       {error && <span className="text-xs text-vencido">{error}</span>}
+      {saved && <span className="text-xs text-[#15803D]">Guardado ✓</span>}
     </div>
   )
 }
