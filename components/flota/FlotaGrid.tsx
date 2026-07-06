@@ -7,6 +7,8 @@ interface VehiculoItem {
   modelo: string
   usoActual: { driverNombre: string; tomadoEn: string } | null
   tiposAlerta: ('dano' | 'sin_entrega')[]
+  prolongado: boolean
+  horasUso: number
 }
 
 function hora(iso: string): string {
@@ -41,7 +43,14 @@ export default function FlotaGrid({ vehiculos }: { vehiculos: VehiculoItem[] }) 
                 <p className="mt-0.5 text-sm text-acero">{v.marca} {v.modelo}</p>
                 <p className="mt-2 text-sm">
                   {v.usoActual ? (
-                    <span className="text-tinta">En uso por <span className="font-medium">{v.usoActual.driverNombre}</span> · desde {hora(v.usoActual.tomadoEn)}</span>
+                    <span className="text-tinta">
+                      En uso por <span className="font-medium">{v.usoActual.driverNombre}</span> · desde {hora(v.usoActual.tomadoEn)}
+                      {v.prolongado && (
+                        <span className="ml-2 whitespace-nowrap rounded-full bg-[#FDF1DC] px-2 py-0.5 text-xs font-medium text-[#B45309]">
+                          Sin entregar hace {v.horasUso}h
+                        </span>
+                      )}
+                    </span>
                   ) : (
                     <span className="text-[#15803D]">Disponible</span>
                   )}
