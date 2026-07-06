@@ -51,7 +51,7 @@ Copia `.env.example` a `.env.local` y complétalo (`cp .env.example .env.local`)
 | `ADMIN_EMAILS` | Correos (coma) de los admins de plataforma del panel `/admin` |
 | `BILLING_EMAIL` | (Opcional) destino de las solicitudes de plan de `/facturacion`; si falta usa el primer `ADMIN_EMAILS` |
 | `OPENROUTER_API_KEY` | Habilita el análisis con IA de las fotos de entrega (bencina/km/limpieza); sin ella el análisis no corre (best-effort) |
-| `OPENROUTER_MODEL` | (Opcional) modelo de OpenRouter a usar; default `google/gemini-2.0-flash-001` |
+| `OPENROUTER_MODEL` | (Opcional) modelo de OpenRouter a usar; default `google/gemini-2.5-flash` |
 
 ## Comandos
 
