@@ -50,7 +50,7 @@ export async function sendInvitationEmail(
 
 export async function sendUsageAlertEmail(
   to: string,
-  p: { patente: string; driverNombre: string; tomadoEn: string },
+  p: { patente: string; driverNombre: string; tomadoEn: string; entregadoPorNombre?: string },
 ): Promise<void> {
   await getResend().emails.send({
     from: process.env.RESEND_FROM!,
