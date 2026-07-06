@@ -1,28 +1,28 @@
 import { NextResponse } from 'next/server'
 import { getMembership } from '@/lib/auth/membership'
 import { SESSION_COOKIE } from '@/lib/auth/constants'
-import { listVehicles, deleteVehicle } from '@/lib/data/vehicles'
+import { getCompany } from '@/lib/data/companies'
+import { deleteCompanyCascade } from '@/lib/data/deleteCompany'
 import { deleteProfile } from '@/lib/data/profile'
-import { adminDb, adminAuth } from '@/lib/firebase/admin'
+import { adminAuth } from '@/lib/firebase/admin'
 
 export const dynamic = 'force-dynamic'
 
-// Elimina la cuenta y TODOS sus datos (empresa, vehículos, documentos, archivos,
-// perfil) y luego el usuario de Firebase Auth. El Admin SDK borra el usuario
-// sin requerir reautenticación reciente del cliente.
-// En esta base 1 empresa = 1 usuario, así que borrar la cuenta borra la
-// empresa completa.
+// Dueño de la empresa: borra la empresa COMPLETA (cascade: vehículos, documentos,
+// archivos, conductores, usos, alertas, invitaciones, miembros + sus usuarios de
+// Auth). Miembro no-dueño: borra SOLO su perfil y su usuario de Auth — la empresa
+// y los demás miembros quedan intactos.
 export async function DELETE() {
   const m = await getMembership()
   if (!m) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const vehicles = await listVehicles(m.companyId)
-  for (const v of vehicles) {
-    await deleteVehicle(v.id, m.companyId) // cascada: borra documentos + archivos en Storage
+  const company = await getCompany(m.companyId)
+  if (company && company.ownerUid === m.uid) {
+    await deleteCompanyCascade(m.companyId)
+  } else {
+    await deleteProfile(m.uid)
+    await adminAuth.deleteUser(m.uid)
   }
-  await adminDb.collection('companies').doc(m.companyId).delete()
-  await deleteProfile(m.uid)
-  await adminAuth.deleteUser(m.uid)
 
   const res = NextResponse.json({ ok: true })
   res.cookies.delete(SESSION_COOKIE)
