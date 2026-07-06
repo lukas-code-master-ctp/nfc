@@ -20,7 +20,7 @@ export default function FlotaGrid({ vehiculos }: { vehiculos: VehiculoItem[] }) 
       {vehiculos.length === 0 ? (
         <p className="text-sm text-acero">Aún no hay vehículos.</p>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-3">
           {vehiculos.map((v) => (
             <li key={v.id}>
               <Link
