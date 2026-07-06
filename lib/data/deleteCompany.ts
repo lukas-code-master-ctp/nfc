@@ -1,0 +1,37 @@
+import { adminDb, adminAuth } from '@/lib/firebase/admin'
+import { listVehicles, deleteVehicle } from '@/lib/data/vehicles'
+
+// Colecciones de nivel superior scopeadas por companyId (además de vehicles/documents,
+// que se borran vía deleteVehicle para cascadear también los archivos de Storage).
+const COLECCIONES_POR_EMPRESA = ['drivers', 'usages', 'alertas', 'invitations', 'billingRequests']
+
+async function deleteByCompany(col: string, companyId: string): Promise<void> {
+  const snap = await adminDb.collection(col).where('companyId', '==', companyId).get()
+  for (const d of snap.docs) await d.ref.delete()
+}
+
+/**
+ * Borra una empresa COMPLETA: vehículos (cascada: documentos + archivos),
+ * conductores, usos, alertas, invitaciones, solicitudes de facturación,
+ * perfiles de los miembros + sus usuarios de Firebase Auth (best-effort por
+ * usuario), y el doc de la empresa. Irreversible. Solo llamar server-side
+ * tras validar admin de plataforma o dueño de la empresa.
+ */
+export async function deleteCompanyCascade(companyId: string): Promise<void> {
+  const vehicles = await listVehicles(companyId)
+  for (const v of vehicles) await deleteVehicle(v.id, companyId)
+
+  for (const col of COLECCIONES_POR_EMPRESA) await deleteByCompany(col, companyId)
+
+  const users = await adminDb.collection('users').where('companyId', '==', companyId).get()
+  for (const u of users.docs) {
+    await u.ref.delete()
+    try {
+      await adminAuth.deleteUser(u.id)
+    } catch {
+      /* best-effort: el usuario de Auth puede no existir o fallar; el perfil ya se borró */
+    }
+  }
+
+  await adminDb.collection('companies').doc(companyId).delete()
+}
