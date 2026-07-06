@@ -218,7 +218,15 @@ export default function PublicVehicleView({
         </>
       )}
 
-      <p className="pt-2 text-center text-xs text-acero">Ficha de fiscalización · solo lectura</p>
+      <p className="pt-2 text-center text-xs text-acero">
+        {vista === 'uso'
+          ? 'Registro de uso · se confirma con tu PIN'
+          : vista === 'docs'
+            ? 'Ficha de fiscalización · solo lectura'
+            : vista === 'info'
+              ? 'Información de referencia · solo lectura'
+              : 'Ficha pública del vehículo'}
+      </p>
     </main>
   )
 }

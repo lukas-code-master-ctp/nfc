@@ -6,7 +6,7 @@ export interface ReminderDeps {
   vehicleInfo: (vehicleId: string) => Promise<{ patente: string; emails: string[] } | null>
   sendReminderEmail: (
     to: string,
-    params: { patente: string; label: string; fechaVencimiento: string; milestone: string },
+    params: { patente: string; label: string; fechaVencimiento: string; milestone: string; vehicleId: string },
   ) => Promise<void>
   markReminderSent: (documentId: string, companyId: string, remindersSent: string[]) => Promise<void>
 }
@@ -26,6 +26,7 @@ export async function processReminders(deps: ReminderDeps, now: Date): Promise<{
         label,
         fechaVencimiento: d.fechaVencimiento!,
         milestone,
+        vehicleId: d.vehicleId,
       })
     }
     await deps.markReminderSent(d.id, d.companyId, [...d.remindersSent, milestone])
