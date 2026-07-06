@@ -13,6 +13,7 @@ export async function getCompany(companyId: string): Promise<Company | null> {
     ownerUid: d.ownerUid,
     company: { ...EMPTY_COMPANY, ...(d.company ?? {}) },
     plan: { ...DEFAULT_PLAN, ...(d.plan ?? {}) },
+    avisoUsoHoras: d.avisoUsoHoras,
     createdAt: d.createdAt ?? null,
   }
 }
@@ -33,11 +34,12 @@ export async function createCompany(
 // Solo un Administrador de la empresa llama esto (validado en la capa /api).
 export async function saveCompany(
   companyId: string,
-  patch: { company?: CompanyData; plan?: PlanData },
+  patch: { company?: CompanyData; plan?: PlanData; avisoUsoHoras?: number },
 ): Promise<void> {
   const data: Record<string, unknown> = {}
   if (patch.company !== undefined) data.company = patch.company
   if (patch.plan !== undefined) data.plan = { maxVehiculos: Math.max(1, Math.floor(patch.plan.maxVehiculos)) }
+  if (patch.avisoUsoHoras !== undefined) data.avisoUsoHoras = Math.max(1, Math.floor(patch.avisoUsoHoras))
   await adminDb.collection(COL).doc(companyId).set(data, { merge: true })
 }
 

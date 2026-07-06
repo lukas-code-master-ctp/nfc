@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { saveCompany } from '@/lib/data/companies'
+import { parseAvisoUsoHoras } from '@/lib/usages/prolongado'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,15 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'company inválido' }, { status: 400 })
   }
 
-  await saveCompany(m.companyId, { company: sanitizeCompany(body.company) })
+  const aviso = parseAvisoUsoHoras(body.avisoUsoHoras)
+  if (aviso === 'invalid') {
+    return NextResponse.json({ error: 'avisoUsoHoras inválido' }, { status: 400 })
+  }
+
+  await saveCompany(m.companyId, {
+    company: sanitizeCompany(body.company),
+    ...(aviso !== 'absent' ? { avisoUsoHoras: aviso } : {}),
+  })
   return NextResponse.json({ ok: true })
 }
 
