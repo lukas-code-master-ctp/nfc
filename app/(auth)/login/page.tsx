@@ -15,7 +15,7 @@ export default async function LoginPage({
         <div className="mb-6 text-center">
           <TapCarIsotipo className="mx-auto mb-2 size-14" />
           <TapCarWordmark className="text-3xl" />
-          <p className="mt-2 text-sm text-acero">Ingresa para gestionar la documentación de tus vehículos.</p>
+          <p className="mt-2 text-sm text-acero">Ingresa para gestionar tu flota: documentos, uso y estado de cada vehículo.</p>
         </div>
         {invite && <InvitationBanner token={invite} />}
         <div className="rounded-2xl border border-linea bg-superficie p-6 shadow-sm">

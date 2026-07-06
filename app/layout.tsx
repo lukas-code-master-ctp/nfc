@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TapCar — Documentos vehiculares",
-  description: "Gestiona la documentación de tu flota y mantenla al día. Acerca el teléfono al chip NFC y revisa los documentos al instante.",
+  title: "TapCar — Tu flota a un Tap",
+  description: "Opera tu flota completa con un toque: documentos al día, quién usa cada vehículo y el estado de toda tu flota. Acerca el teléfono al chip NFC y listo.",
 };
 
 export default function RootLayout({
