@@ -146,6 +146,9 @@ export interface Driver {
   nombre: string
   rut?: string
   pinHash: string // hash del PIN de 4 dígitos; nunca se devuelve al cliente
+  /** PIN recuperable para mostrarlo al Administrador (decisión de producto).
+   *  Ausente en conductores creados antes de este campo. La verificación usa pinHash. */
+  pin?: string
   activo: boolean
   createdAt: string // ISO
   createdByUid?: string

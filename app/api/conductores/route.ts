@@ -12,7 +12,7 @@ export async function GET() {
   if (!can(m.role, 'driver:manage')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const drivers = await listDrivers(m.companyId)
   return NextResponse.json({
-    drivers: drivers.map((d) => ({ id: d.id, nombre: d.nombre, rut: d.rut ?? null, activo: d.activo, createdAt: d.createdAt })),
+    drivers: drivers.map((d) => ({ id: d.id, nombre: d.nombre, rut: d.rut ?? null, activo: d.activo, createdAt: d.createdAt, pin: d.pin ?? null })),
   })
 }
 

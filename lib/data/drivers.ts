@@ -12,6 +12,7 @@ function toDriver(id: string, d: FirebaseFirestore.DocumentData): Driver {
     nombre: d.nombre,
     rut: d.rut ?? undefined,
     pinHash: d.pinHash,
+    pin: d.pin ?? undefined,
     activo: d.activo !== false,
     createdAt: d.createdAt,
     createdByUid: d.createdByUid ?? undefined,
@@ -35,6 +36,7 @@ export async function createDriver(
     nombre: input.nombre.trim(),
     rut: input.rut?.trim() || null,
     pinHash: hashPin(input.pin),
+    pin: input.pin,
     activo: true,
     intentosFallidos: 0,
     bloqueadoHasta: null,
@@ -94,7 +96,7 @@ export async function updateDriver(
 
 export async function resetDriverPin(companyId: string, driverId: string, pin: string): Promise<void> {
   const ref = await assertCompany(driverId, companyId)
-  await ref.update({ pinHash: hashPin(pin), intentosFallidos: 0, bloqueadoHasta: null })
+  await ref.update({ pinHash: hashPin(pin), pin, intentosFallidos: 0, bloqueadoHasta: null })
 }
 
 export async function deleteDriver(companyId: string, driverId: string): Promise<void> {
