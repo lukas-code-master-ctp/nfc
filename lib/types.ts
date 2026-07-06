@@ -91,11 +91,15 @@ export interface PlanData {
 
 export const DEFAULT_PLAN: PlanData = { maxVehiculos: 3 }
 
+/** Horas por default antes de avisar que un vehículo lleva mucho en uso sin entregar. */
+export const DEFAULT_AVISO_USO_HORAS = 12
+
 export interface Company {
   id: string
   ownerUid: string // Administrador que la creó
   company: CompanyData
   plan: PlanData
+  avisoUsoHoras?: number // horas antes de avisar "uso sin entregar" en /flota
   createdAt: string | null
 }
 
