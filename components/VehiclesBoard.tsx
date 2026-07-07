@@ -7,7 +7,7 @@ import { planCapacity } from '@/lib/plan'
 import type { Vehicle } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 
-type Item = { vehicle: Vehicle; status: DocStatus; docCount: number }
+type Item = { vehicle: Vehicle; status: DocStatus; docCount: number; prolongado: boolean; horasUso: number; danoUsageId: string | null }
 
 // Tope de slots fantasma a dibujar (para flotas grandes no tiene sentido
 // pintar decenas; el texto del pie comunica el total real disponible).
@@ -198,8 +198,8 @@ export default function VehiclesBoard({
               </div>
             ) : (
               <div className="space-y-3">
-                {visible.map(({ vehicle, status, docCount }) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} />
+                {visible.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId }) => (
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} />
                 ))}
                 {canWrite && filter === 'todos' && ghostsBlock}
               </div>
