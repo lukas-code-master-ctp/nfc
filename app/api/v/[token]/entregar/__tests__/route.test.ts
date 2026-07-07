@@ -75,12 +75,15 @@ describe('POST entregar', () => {
     cb()
     expect(analyzeUsage).toHaveBeenCalledWith('u1')
   })
-  it('con daño: alerta dano + contador danos + email de daño', async () => {
+  it('con daño: alerta dano + contador danos + email de daño en after()', async () => {
     getVehicleByToken.mockResolvedValue({ id: 'v1', companyId: 'c1', patente: 'ABCD12' })
     closeUsage.mockResolvedValue({ id: 'u1', entregaIrregular: false, driverOriginal: { id: 'd1', nombre: 'Ana' }, tomadoEn: 't' })
     const res = await POST(req({ driverId: 'd1', pin: '1234', fotos: { tablero: 'a', cabina: 'b' }, dano: { hay: true, nota: 'rayón' } }), ctx('t'))
     expect(res.status).toBe(200)
     expect(createAlerta).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'dano', usageId: 'u1', nota: 'rayón' }))
+    expect(incrementDriverStats).toHaveBeenCalledWith('dAna', 'danos')
+    // El email se agenda en after(); ejecutar los callbacks agendados y verificarlo.
+    await Promise.all(after.mock.calls.map((c) => c[0]()))
     expect(sendDanoEmail).toHaveBeenCalledWith('o@b.cl', expect.objectContaining({ patente: 'ABCD12', vehicleId: 'v1', usageId: 'u1' }))
   })
   it('entrega irregular: solo incrementa sinEntrega (sin alerta ni email)', async () => {

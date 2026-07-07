@@ -72,21 +72,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     if (u?.driverId) {
       try { await incrementDriverStats(u.driverId, 'danos') } catch { /* best-effort */ }
     }
-    try {
-      const company = await getCompany(vehicle.companyId)
-      const emails = company ? await alertRecipientEmails(vehicle.companyId, company.ownerUid) : []
-      for (const to of emails) {
-        await sendDanoEmail(to, {
-          patente: vehicle.patente,
-          vehicleId: vehicle.id,
-          usageId,
-          driverNombre,
-          nota: dano.nota,
-        })
+    // Email de aviso post-respuesta (vía after()) para no bloquear al conductor.
+    const notaDano = dano.nota
+    after(async () => {
+      try {
+        const company = await getCompany(vehicle.companyId)
+        const emails = company ? await alertRecipientEmails(vehicle.companyId, company.ownerUid) : []
+        for (const to of emails) {
+          await sendDanoEmail(to, {
+            patente: vehicle.patente,
+            vehicleId: vehicle.id,
+            usageId,
+            driverNombre,
+            nota: notaDano,
+          })
+        }
+      } catch {
+        /* best-effort */
       }
-    } catch {
-      /* best-effort */
-    }
+    })
   }
 
   // Entrega irregular (la cerró otro conductor): solo cuenta para el reporte de

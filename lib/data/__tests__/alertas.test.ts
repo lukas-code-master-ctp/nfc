@@ -2,16 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const whereGet = vi.fn()
 const add = vi.fn()
-const docGet = vi.fn()
-const docDelete = vi.fn()
 const refDelete = vi.fn()
 vi.mock('@/lib/firebase/admin', () => ({
-  adminDb: { collection: () => ({ where: () => ({ get: whereGet }), add, doc: () => ({ get: docGet, delete: docDelete }) }) },
+  adminDb: { collection: () => ({ where: () => ({ get: whereGet }), add }) },
 }))
 
 import { createAlerta, listAlertas, deleteDanoAlertaByUsage } from '@/lib/data/alertas'
 
-beforeEach(() => { whereGet.mockReset(); add.mockReset(); docGet.mockReset(); docDelete.mockReset(); refDelete.mockReset() })
+beforeEach(() => { whereGet.mockReset(); add.mockReset(); refDelete.mockReset() })
 
 describe('createAlerta', () => {
   it('escribe los campos + creadaEn', async () => {

@@ -22,7 +22,7 @@ export async function createAlerta(input: {
   vehicleId: string
   patente: string
   usageId: string
-  tipo: 'dano' | 'sin_entrega'
+  tipo: 'dano' // ya no se crean alertas 'sin_entrega'; el compilador atrapa usos accidentales
   driverNombre: string
   nota?: string
 }): Promise<void> {
