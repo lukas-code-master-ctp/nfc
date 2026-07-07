@@ -108,6 +108,26 @@ export async function getUsage(id: string): Promise<VehicleUsage | null> {
   return doc.exists ? toUsage(doc.id, doc.data()!) : null
 }
 
+/**
+ * Cierre forzado manual de un uso abierto (botón "Forzar entrega"): lo marca
+ * cerrado + `cierreForzado`, libera el vehículo y devuelve el `driverId` (para
+ * sumarle `sinEntrega`). Espeja el force-close que hace `openUsage`.
+ */
+export async function forzarCierreUsage(companyId: string, usageId: string): Promise<{ driverId: string }> {
+  const ref = adminDb.collection(COL).doc(usageId)
+  const doc = await ref.get()
+  if (!doc.exists || doc.data()?.companyId !== companyId) throw new Error('forbidden')
+  const d = doc.data()!
+  if (d.estado !== 'abierto') throw new Error('no_abierto')
+  await ref.update({ estado: 'cerrado', cierreForzado: true })
+  try {
+    await adminDb.collection('vehicles').doc(d.vehicleId).update({ usoActual: null })
+  } catch {
+    /* best-effort: la denormalización no debe romper el cierre */
+  }
+  return { driverId: d.driverId }
+}
+
 export async function setUsageAnalysis(
   id: string,
   datos: { bencina: string | null; km: number | null; limpieza: string | null },

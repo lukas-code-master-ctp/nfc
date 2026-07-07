@@ -1,5 +1,6 @@
 import UsageDatosEditor from '@/components/vehicle/UsageDatosEditor'
 import RevisarDanoButton from '@/components/vehicle/RevisarDanoButton'
+import ForzarEntregaButton from '@/components/vehicle/ForzarEntregaButton'
 
 interface UsageRow {
   id: string
@@ -48,6 +49,7 @@ export default function BitacoraUso({ usos, puedeEditar }: { usos: UsageRow[]; p
                 {u.entregadoEn ? ` · Entregó: ${fecha(u.entregadoEn)}` : ''}
                 {u.entregadoPorNombre && u.entregadoPorNombre !== u.driverNombre ? ` (por ${u.entregadoPorNombre})` : ''}
               </p>
+              {u.estado === 'abierto' && puedeEditar && <ForzarEntregaButton usageId={u.id} />}
               {u.dano?.nota && <p className="mt-1 text-xs text-[#C81E1E]">Daño: {u.dano.nota}</p>}
               {u.dano?.hay && (
                 u.dano.revisadoPorNombre

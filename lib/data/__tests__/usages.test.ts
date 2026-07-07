@@ -14,9 +14,27 @@ vi.mock('@/lib/firebase/admin', () => ({
   },
 }))
 
-import { openUsage, closeUsage, getOpenUsage, listUsages, marcarDanoRevisado } from '@/lib/data/usages'
+import { openUsage, closeUsage, getOpenUsage, listUsages, marcarDanoRevisado, forzarCierreUsage } from '@/lib/data/usages'
 
 beforeEach(() => { whereGet.mockReset(); add.mockReset(); docUpdate.mockReset(); docGet.mockReset() })
+
+describe('forzarCierreUsage', () => {
+  it('cierra forzado, libera el vehículo y devuelve el driverId', async () => {
+    docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1', estado: 'abierto', vehicleId: 'v1', driverId: 'd1' }) })
+    const r = await forzarCierreUsage('c1', 'u1')
+    expect(docUpdate).toHaveBeenCalledWith({ estado: 'cerrado', cierreForzado: true })
+    expect(docUpdate).toHaveBeenCalledWith({ usoActual: null })
+    expect(r).toEqual({ driverId: 'd1' })
+  })
+  it('lanza forbidden si el uso es de otra empresa', async () => {
+    docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'otra', estado: 'abierto', vehicleId: 'v1', driverId: 'd1' }) })
+    await expect(forzarCierreUsage('c1', 'u1')).rejects.toThrow('forbidden')
+  })
+  it('lanza no_abierto si el uso ya está cerrado', async () => {
+    docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1', estado: 'cerrado', vehicleId: 'v1', driverId: 'd1' }) })
+    await expect(forzarCierreUsage('c1', 'u1')).rejects.toThrow('no_abierto')
+  })
+})
 
 describe('getOpenUsage', () => {
   it('devuelve el uso abierto (filtra cerrados en memoria)', async () => {
