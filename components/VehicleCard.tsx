@@ -3,6 +3,10 @@ import StatusBadge from '@/components/StatusBadge'
 import type { DocStatus } from '@/lib/documents/status'
 import type { Vehicle } from '@/lib/types'
 
+function horaUso(iso: string): string {
+  return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
+}
+
 function CarIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -37,8 +41,17 @@ export default function VehicleCard({
       href={`/vehiculos/${vehicle.id}`}
       className="group flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
     >
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-azul/10 text-azul">
+      <span className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-azul/10 text-azul">
         <CarIcon className="size-6" />
+        {vehicle.usoActual && (
+          <span
+            className="absolute -right-1 -top-1 flex size-3"
+            title={`En uso por ${vehicle.usoActual.driverNombre} · desde ${horaUso(vehicle.usoActual.tomadoEn)}`}
+          >
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#15803D] opacity-60" />
+            <span className="relative inline-flex size-3 rounded-full border-2 border-superficie bg-[#15803D]" />
+          </span>
+        )}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold text-tinta">
