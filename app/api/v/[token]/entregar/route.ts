@@ -7,7 +7,7 @@ import { analyzeUsage } from '@/lib/ai/analyzeUsage'
 import { createAlerta } from '@/lib/data/alertas'
 import { getCompany } from '@/lib/data/companies'
 import { alertRecipientEmails } from '@/lib/data/members'
-import { sendUsageAlertEmail } from '@/lib/email/resend'
+import { sendDanoEmail } from '@/lib/email/resend'
 
 export const dynamic = 'force-dynamic'
 // El análisis IA corre post-respuesta vía after(); dale margen a la función.
@@ -52,9 +52,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     return NextResponse.json({ error: 'No se pudo registrar la entrega. Inténtalo de nuevo.' }, { status: 500 })
   }
 
-  // Alerta best-effort si se reportó daño; se atribuye al conductor que tenía el vehículo.
+  // Daño reportado: alerta in-app (pill del dashboard), contador y email de aviso.
   if (dano?.hay) {
     const u = await getUsage(usageId).catch(() => null)
+    const driverNombre = u?.driverNombre ?? driver.nombre
     try {
       await createAlerta({
         companyId: vehicle.companyId,
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
         patente: vehicle.patente,
         usageId,
         tipo: 'dano',
-        driverNombre: u?.driverNombre ?? driver.nombre,
+        driverNombre,
         nota: dano.nota,
       })
     } catch {
@@ -71,40 +72,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     if (u?.driverId) {
       try { await incrementDriverStats(u.driverId, 'danos') } catch { /* best-effort */ }
     }
-  }
-
-  // Entrega irregular: quien entrega no es quien tomó el vehículo → el conductor
-  // original nunca cerró su propio uso. Simétrico con el force-close de `tomar`.
-  // Un uso se cierra por un solo camino (esta entrega o el force-close), así que
-  // `sinEntrega` suma como máximo una vez por uso.
-  if (cierre.entregaIrregular) {
-    try {
-      await createAlerta({
-        companyId: vehicle.companyId,
-        vehicleId: vehicle.id,
-        patente: vehicle.patente,
-        usageId: cierre.id,
-        tipo: 'sin_entrega',
-        driverNombre: cierre.driverOriginal.nombre,
-        nota: `Lo entregó ${driver.nombre} en su lugar.`,
-      })
-    } catch {
-      /* best-effort */
-    }
     try {
       const company = await getCompany(vehicle.companyId)
       const emails = company ? await alertRecipientEmails(vehicle.companyId, company.ownerUid) : []
       for (const to of emails) {
-        await sendUsageAlertEmail(to, {
+        await sendDanoEmail(to, {
           patente: vehicle.patente,
-          driverNombre: cierre.driverOriginal.nombre,
-          tomadoEn: cierre.tomadoEn,
-          entregadoPorNombre: driver.nombre,
+          vehicleId: vehicle.id,
+          usageId,
+          driverNombre,
+          nota: dano.nota,
         })
       }
     } catch {
       /* best-effort */
     }
+  }
+
+  // Entrega irregular (la cerró otro conductor): solo cuenta para el reporte de
+  // responsabilidad del conductor original. Ya no genera alerta ni email.
+  if (cierre.entregaIrregular) {
     try { await incrementDriverStats(cierre.driverOriginal.id, 'sinEntrega') } catch { /* best-effort */ }
   }
 

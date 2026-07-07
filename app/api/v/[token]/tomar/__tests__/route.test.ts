@@ -12,9 +12,6 @@ vi.mock('@/lib/data/drivers', () => ({
 }))
 const openUsage = vi.fn()
 vi.mock('@/lib/data/usages', () => ({ openUsage: (...a: unknown[]) => openUsage(...a) }))
-vi.mock('@/lib/data/companies', () => ({ getCompany: () => Promise.resolve({ ownerUid: 'o1' }) }))
-vi.mock('@/lib/email/resend', () => ({ sendUsageAlertEmail: vi.fn() }))
-vi.mock('@/lib/data/members', () => ({ alertRecipientEmails: () => Promise.resolve(['o@b.cl']) }))
 const createAlerta = vi.fn()
 vi.mock('@/lib/data/alertas', () => ({ createAlerta: (...a: unknown[]) => createAlerta(...a) }))
 
@@ -51,13 +48,12 @@ describe('POST tomar', () => {
     expect(openUsage).toHaveBeenCalledWith('c1', 'v1', { id: 'd1', nombre: 'Ana' })
     expect(incrementDriverStats).toHaveBeenCalledWith('d1', 'usos')
   })
-  it('crea una alerta sin_entrega cuando hay forced-close', async () => {
+  it('en forced-close solo incrementa sinEntrega del conductor anterior (sin alerta)', async () => {
     verifyDriverPin.mockResolvedValue('ok')
     openUsage.mockResolvedValue({ usage: { id: 'u2' }, forced: { id: 'viejo', driverId: 'dViejo', driverNombre: 'Beto', tomadoEn: 't' } })
     const res = await POST(req({ driverId: 'd1', pin: '1234' }), ctx('t'))
     expect(res.status).toBe(200)
-    expect(createAlerta).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'sin_entrega', usageId: 'viejo', driverNombre: 'Beto', companyId: 'c1', vehicleId: 'v1' }))
-    expect(incrementDriverStats).toHaveBeenCalledWith('d1', 'usos')
     expect(incrementDriverStats).toHaveBeenCalledWith('dViejo', 'sinEntrega')
+    expect(createAlerta).not.toHaveBeenCalled()
   })
 })

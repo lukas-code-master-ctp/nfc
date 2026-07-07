@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getVehicleByToken } from '@/lib/data/vehicles'
 import { verifyDriverPin, getDriver, incrementDriverStats } from '@/lib/data/drivers'
 import { openUsage } from '@/lib/data/usages'
-import { getCompany } from '@/lib/data/companies'
-import { alertRecipientEmails } from '@/lib/data/members'
-import { sendUsageAlertEmail } from '@/lib/email/resend'
-import { createAlerta } from '@/lib/data/alertas'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,33 +25,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   const { forced } = await openUsage(vehicle.companyId, vehicle.id, { id: driver.id, nombre: driver.nombre })
   try { await incrementDriverStats(driver.id, 'usos') } catch { /* best-effort */ }
 
-  // Aviso best-effort al dueño/admin si el uso anterior quedó sin entrega formal.
+  // El conductor anterior no cerró su uso (fuerza-cierre). Solo cuenta para el
+  // reporte de responsabilidad; ya no genera alerta ni email.
   if (forced) {
-    try {
-      const company = await getCompany(vehicle.companyId)
-      const emails = company ? await alertRecipientEmails(vehicle.companyId, company.ownerUid) : []
-      for (const to of emails) {
-        await sendUsageAlertEmail(to, {
-          patente: vehicle.patente,
-          driverNombre: forced.driverNombre,
-          tomadoEn: forced.tomadoEn,
-        })
-      }
-    } catch {
-      /* best-effort: el uso ya se abrió */
-    }
-    try {
-      await createAlerta({
-        companyId: vehicle.companyId,
-        vehicleId: vehicle.id,
-        patente: vehicle.patente,
-        usageId: forced.id,
-        tipo: 'sin_entrega',
-        driverNombre: forced.driverNombre,
-      })
-    } catch {
-      /* best-effort */
-    }
     try { await incrementDriverStats(forced.driverId, 'sinEntrega') } catch { /* best-effort */ }
   }
 
