@@ -5,6 +5,7 @@ import { getCompany } from '@/lib/data/companies'
 import { EMPTY_COMPANY, DEFAULT_AVISO_USO_HORAS } from '@/lib/types'
 import BackLink from '@/components/BackLink'
 import CompanyCard from '@/components/company/CompanyCard'
+import PlataformaCard from '@/components/company/PlataformaCard'
 import TeamCard from '@/components/company/TeamCard'
 import DriversCard from '@/components/drivers/DriversCard'
 
@@ -24,10 +25,7 @@ export default async function ConfiguracionPage() {
       <h1 className="mb-4 mt-5 text-2xl font-bold tracking-tight text-tinta">Configuración</h1>
 
       {esAdmin ? (
-        <CompanyCard
-          initial={company?.company ?? EMPTY_COMPANY}
-          avisoUsoHoras={company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS}
-        />
+        <CompanyCard initial={company?.company ?? EMPTY_COMPANY} />
       ) : (
         <section className="rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-tinta">Datos de la empresa</h2>
@@ -55,13 +53,11 @@ export default async function ConfiguracionPage() {
               <dt className="text-acero">Teléfono</dt>
               <dd className="font-medium text-tinta">{company?.company.telefono || '—'}</dd>
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-acero">Aviso de uso sin entregar</dt>
-              <dd className="font-medium text-tinta">{company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS} horas</dd>
-            </div>
           </dl>
         </section>
       )}
+
+      {esAdmin && <PlataformaCard avisoUsoHoras={company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS} />}
 
       {esAdmin && <TeamCard currentUid={m.uid} />}
       {puedeGestionarConductores && <DriversCard />}

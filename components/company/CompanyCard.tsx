@@ -11,10 +11,9 @@ const FIELDS: { key: keyof CompanyData; label: string; placeholder: string }[] =
   { key: 'telefono', label: 'Teléfono', placeholder: '+56 9 1234 5678' },
 ]
 
-export default function CompanyCard({ initial, avisoUsoHoras }: { initial: CompanyData; avisoUsoHoras: number }) {
+export default function CompanyCard({ initial }: { initial: CompanyData }) {
   const router = useRouter()
   const [company, setCompany] = useState<CompanyData>(initial)
-  const [horas, setHoras] = useState<number>(avisoUsoHoras)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +26,7 @@ export default function CompanyCard({ initial, avisoUsoHoras }: { initial: Compa
     const res = await fetch('/api/company', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ company, avisoUsoHoras: Math.max(1, Math.floor(Number(horas) || 12)) }),
+      body: JSON.stringify({ company }),
     })
     setSaving(false)
     if (res.ok) {
@@ -59,22 +58,6 @@ export default function CompanyCard({ initial, avisoUsoHoras }: { initial: Compa
             />
           </div>
         ))}
-        <div className="space-y-1.5">
-          <label htmlFor="avisoUsoHoras" className="block text-sm font-medium text-acero">
-            Avisar uso sin entregar (horas)
-          </label>
-          <input
-            id="avisoUsoHoras"
-            type="number"
-            min={1}
-            value={horas}
-            onChange={(e) => setHoras(Number(e.target.value))}
-            className="w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero/45 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
-          />
-          <p className="text-xs text-acero">
-            Un vehículo que lleve más de estas horas &quot;en uso&quot; sin entregar se marcará en Flota.
-          </p>
-        </div>
         <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"

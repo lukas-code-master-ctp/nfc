@@ -12,17 +12,21 @@ export async function PATCH(req: NextRequest) {
   if (!can(m.role, 'billing:manage')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const body = await req.json()
-  if (!body.company || typeof body.company !== 'object') {
-    return NextResponse.json({ error: 'company inválido' }, { status: 400 })
-  }
+  const tieneCompany = body.company && typeof body.company === 'object'
 
   const aviso = parseAvisoUsoHoras(body.avisoUsoHoras)
   if (aviso === 'invalid') {
     return NextResponse.json({ error: 'avisoUsoHoras inválido' }, { status: 400 })
   }
 
+  // `company` y `avisoUsoHoras` se editan en cards separadas; el body puede traer
+  // solo uno de los dos. Si no viene ninguno, no hay nada que actualizar.
+  if (!tieneCompany && aviso === 'absent') {
+    return NextResponse.json({ error: 'nada que actualizar' }, { status: 400 })
+  }
+
   await saveCompany(m.companyId, {
-    company: sanitizeCompany(body.company),
+    ...(tieneCompany ? { company: sanitizeCompany(body.company) } : {}),
     ...(aviso !== 'absent' ? { avisoUsoHoras: aviso } : {}),
   })
   return NextResponse.json({ ok: true })
