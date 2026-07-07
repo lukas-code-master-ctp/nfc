@@ -127,10 +127,27 @@ export default function VehiclesBoard({
     )
   }
 
+  // Chip de estado para la barra compacta de mobile.
+  const filterChip = (key: Filter, label: string, count: number) => {
+    const active = filter === key
+    return (
+      <button
+        key={key}
+        onClick={() => setFilter(key)}
+        className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+          active ? 'border-transparent bg-azul/10 text-azul' : 'border-linea bg-superficie text-tinta'
+        }`}
+      >
+        {label}
+        <span className="tabular-nums text-xs text-acero">{count}</span>
+      </button>
+    )
+  }
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-tinta">Mis vehículos</h1>
           <p className="mt-1 text-sm text-acero">
             {used} de {limit} {limit === 1 ? 'vehículo registrado' : 'vehículos registrados'}
@@ -141,7 +158,7 @@ export default function VehiclesBoard({
             onClick={() => setOpen(true)}
             disabled={atCapacity}
             title={atCapacity ? 'Alcanzaste el límite de tu plan' : undefined}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-azul"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-azul"
           >
             <PlusIcon />
             Nuevo vehículo
@@ -164,7 +181,7 @@ export default function VehiclesBoard({
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-[210px_1fr]">
-          <aside className="space-y-4 sm:sticky sm:top-20 sm:self-start">
+          <aside className="hidden space-y-4 sm:block sm:sticky sm:top-20 sm:self-start">
             <div className="rounded-2xl border border-linea bg-superficie p-3 shadow-sm">
               <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-acero">Estado</p>
               <div className="space-y-0.5">
@@ -192,6 +209,25 @@ export default function VehiclesBoard({
           </aside>
 
           <div>
+            {/* Filtros compactos (solo mobile): chips de estado + orden. */}
+            <div className="mb-3 space-y-2 sm:hidden">
+              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+                {filterChip('todos', 'Todos', items.length)}
+                {STATUS_META.filter((s) => counts[s.key] > 0).map((s) => filterChip(s.key, s.label, counts[s.key]))}
+              </div>
+              <div className="flex justify-end">
+                <select
+                  aria-label="Ordenar por"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as SortKey)}
+                  className="rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+                >
+                  {SORTS.map((s) => (
+                    <option key={s.key} value={s.key}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             {visible.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-10 text-center">
                 <p className="text-sm text-acero">Ningún vehículo con ese estado.</p>
