@@ -3,6 +3,7 @@ import { reminderSubject, reminderHtml } from '@/lib/email/reminderEmail'
 import { invitationSubject, invitationHtml } from '@/lib/email/invitationEmail'
 import { usageAlertSubject, usageAlertHtml } from '@/lib/email/usageAlertEmail'
 import { billingRequestSubject, billingRequestHtml } from '@/lib/email/billingEmail'
+import { danoSubject, danoHtml } from '@/lib/email/danoEmail'
 import type { Role } from '@/lib/auth/roles'
 
 let _resend: Resend | undefined
@@ -57,5 +58,17 @@ export async function sendUsageAlertEmail(
     to,
     subject: usageAlertSubject(p.patente),
     html: usageAlertHtml(p),
+  })
+}
+
+export async function sendDanoEmail(
+  to: string,
+  p: { patente: string; vehicleId: string; usageId: string; driverNombre: string; nota?: string },
+): Promise<void> {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM!,
+    to,
+    subject: danoSubject(p.patente),
+    html: danoHtml(p),
   })
 }
