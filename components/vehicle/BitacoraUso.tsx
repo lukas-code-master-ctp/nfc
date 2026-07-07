@@ -1,4 +1,5 @@
 import UsageDatosEditor from '@/components/vehicle/UsageDatosEditor'
+import RevisarDanoButton from '@/components/vehicle/RevisarDanoButton'
 
 interface UsageRow {
   id: string
@@ -8,7 +9,7 @@ interface UsageRow {
   estado: 'abierto' | 'cerrado'
   cierreForzado?: boolean
   entregadoPorNombre?: string
-  dano?: { hay: boolean; nota?: string }
+  dano?: { hay: boolean; nota?: string; revisadoPorNombre?: string; revisadoEn?: string }
   fotoTableroUrl: string | null
   fotoCabinaUrl: string | null
   bencina?: string | null
@@ -33,7 +34,7 @@ export default function BitacoraUso({ usos, puedeEditar }: { usos: UsageRow[]; p
       ) : (
         <ul className="mt-4 space-y-3">
           {usos.map((u) => (
-            <li key={u.id} className="rounded-xl border border-linea p-4">
+            <li key={u.id} id={`uso-${u.id}`} className="scroll-mt-20 rounded-xl border border-linea p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-tinta">{u.driverNombre}</p>
                 <div className="flex flex-wrap justify-end gap-1.5">
@@ -48,6 +49,11 @@ export default function BitacoraUso({ usos, puedeEditar }: { usos: UsageRow[]; p
                 {u.entregadoPorNombre && u.entregadoPorNombre !== u.driverNombre ? ` (por ${u.entregadoPorNombre})` : ''}
               </p>
               {u.dano?.nota && <p className="mt-1 text-xs text-[#C81E1E]">Daño: {u.dano.nota}</p>}
+              {u.dano?.hay && (
+                u.dano.revisadoPorNombre
+                  ? <p className="mt-2 text-xs text-acero">Daño registrado por <span className="font-medium text-tinta">{u.dano.revisadoPorNombre}</span></p>
+                  : <RevisarDanoButton usageId={u.id} />
+              )}
               {(u.fotoTableroUrl || u.fotoCabinaUrl) && (
                 <div className="mt-3 flex gap-2">
                   {u.fotoTableroUrl && (

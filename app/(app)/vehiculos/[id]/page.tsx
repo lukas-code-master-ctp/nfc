@@ -46,7 +46,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
       estado: u.estado,
       cierreForzado: u.cierreForzado,
       entregadoPorNombre: u.entregadoPorNombre,
-      dano: u.dano ? { hay: u.dano.hay, nota: u.dano.nota } : undefined,
+      dano: u.dano ? { hay: u.dano.hay, nota: u.dano.nota, revisadoPorNombre: u.dano.revisadoPorNombre, revisadoEn: u.dano.revisadoEn } : undefined,
       fotoTableroUrl: u.fotos?.tablero ? await createReadUrl(u.fotos.tablero) : null,
       fotoCabinaUrl: u.fotos?.cabina ? await createReadUrl(u.fotos.cabina) : null,
       bencina: u.bencina ?? null,
