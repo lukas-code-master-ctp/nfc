@@ -174,7 +174,14 @@ export interface VehicleUsage {
   entregadoPorDriverId?: string
   entregadoPorNombre?: string
   fotos?: { tablero?: string; cabina?: string }
-  dano?: { hay: boolean; nota?: string; fotoPath?: string }
+  dano?: {
+    hay: boolean
+    nota?: string
+    fotoPath?: string
+    revisadoPorUid?: string
+    revisadoPorNombre?: string
+    revisadoEn?: string
+  }
   // Reservados para SP3 (IA) — vacíos en SP2:
   bencina?: string
   km?: number

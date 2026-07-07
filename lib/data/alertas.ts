@@ -51,3 +51,9 @@ export async function deleteAlerta(companyId: string, id: string): Promise<void>
   if (!doc.exists || doc.data()?.companyId !== companyId) throw new Error('forbidden')
   await ref.delete()
 }
+
+export async function deleteDanoAlertaByUsage(companyId: string, usageId: string): Promise<void> {
+  const snap = await adminDb.collection(COL).where('companyId', '==', companyId).get()
+  const borrar = snap.docs.filter((d) => d.data().tipo === 'dano' && d.data().usageId === usageId)
+  await Promise.all(borrar.map((d) => d.ref.delete()))
+}

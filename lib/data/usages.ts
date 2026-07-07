@@ -149,3 +149,21 @@ export async function listUsagesPage(
   const nextCursor = items.length === pageSize ? items[items.length - 1].tomadoEn : null
   return { items, nextCursor }
 }
+
+export async function marcarDanoRevisado(
+  companyId: string,
+  usageId: string,
+  revisor: { uid: string; nombre: string },
+): Promise<void> {
+  const ref = adminDb.collection(COL).doc(usageId)
+  const doc = await ref.get()
+  if (!doc.exists || doc.data()?.companyId !== companyId) throw new Error('forbidden')
+  const dano = doc.data()?.dano
+  if (!dano?.hay) throw new Error('no_dano')
+  if (dano.revisadoPorUid) throw new Error('ya_revisado')
+  await ref.update({
+    'dano.revisadoPorUid': revisor.uid,
+    'dano.revisadoPorNombre': revisor.nombre,
+    'dano.revisadoEn': new Date().toISOString(),
+  })
+}

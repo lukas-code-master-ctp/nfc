@@ -3,19 +3,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const whereGet = vi.fn()
 const add = vi.fn()
 const docUpdate = vi.fn()
+const docGet = vi.fn()
 vi.mock('@/lib/firebase/admin', () => ({
   adminDb: {
     collection: () => ({
       where: () => ({ get: whereGet }),
       add,
-      doc: () => ({ update: docUpdate }),
+      doc: () => ({ get: docGet, update: docUpdate }),
     }),
   },
 }))
 
-import { openUsage, closeUsage, getOpenUsage, listUsages } from '@/lib/data/usages'
+import { openUsage, closeUsage, getOpenUsage, listUsages, marcarDanoRevisado } from '@/lib/data/usages'
 
-beforeEach(() => { whereGet.mockReset(); add.mockReset(); docUpdate.mockReset() })
+beforeEach(() => { whereGet.mockReset(); add.mockReset(); docUpdate.mockReset(); docGet.mockReset() })
 
 describe('getOpenUsage', () => {
   it('devuelve el uso abierto (filtra cerrados en memoria)', async () => {
@@ -86,5 +87,23 @@ describe('listUsages', () => {
       { id: 'b', data: () => ({ tomadoEn: '2026-03-01' }) },
     ] })
     expect((await listUsages('v1')).map((u) => u.id)).toEqual(['b', 'a'])
+  })
+})
+
+describe('marcarDanoRevisado', () => {
+  it('estampa la revisión en un uso con daño no revisado', async () => {
+    docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1', dano: { hay: true, nota: 'x' } }) })
+    await marcarDanoRevisado('c1', 'u1', { uid: 'r1', nombre: 'Ana' })
+    expect(docUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      'dano.revisadoPorUid': 'r1', 'dano.revisadoPorNombre': 'Ana',
+    }))
+  })
+  it('lanza forbidden si el uso no es de la empresa', async () => {
+    docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'otra', dano: { hay: true } }) })
+    await expect(marcarDanoRevisado('c1', 'u1', { uid: 'r1', nombre: 'Ana' })).rejects.toThrow('forbidden')
+  })
+  it('lanza no_dano si el uso no tiene daño', async () => {
+    docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1' }) })
+    await expect(marcarDanoRevisado('c1', 'u1', { uid: 'r1', nombre: 'Ana' })).rejects.toThrow('no_dano')
   })
 })

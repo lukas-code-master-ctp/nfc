@@ -4,13 +4,14 @@ const whereGet = vi.fn()
 const add = vi.fn()
 const docGet = vi.fn()
 const docDelete = vi.fn()
+const refDelete = vi.fn()
 vi.mock('@/lib/firebase/admin', () => ({
   adminDb: { collection: () => ({ where: () => ({ get: whereGet }), add, doc: () => ({ get: docGet, delete: docDelete }) }) },
 }))
 
-import { createAlerta, listAlertas, deleteAlerta } from '@/lib/data/alertas'
+import { createAlerta, listAlertas, deleteAlerta, deleteDanoAlertaByUsage } from '@/lib/data/alertas'
 
-beforeEach(() => { whereGet.mockReset(); add.mockReset(); docGet.mockReset(); docDelete.mockReset() })
+beforeEach(() => { whereGet.mockReset(); add.mockReset(); docGet.mockReset(); docDelete.mockReset(); refDelete.mockReset() })
 
 describe('createAlerta', () => {
   it('escribe los campos + creadaEn', async () => {
@@ -40,5 +41,15 @@ describe('deleteAlerta', () => {
     docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1' }) })
     await deleteAlerta('c1', 'a1')
     expect(docDelete).toHaveBeenCalled()
+  })
+})
+
+describe('deleteDanoAlertaByUsage', () => {
+  it('borra las alertas dano de ese uso', async () => {
+    whereGet.mockResolvedValue({ docs: [
+      { id: 'a1', ref: { delete: refDelete }, data: () => ({ tipo: 'dano', usageId: 'u1', companyId: 'c1' }) },
+    ] })
+    await deleteDanoAlertaByUsage('c1', 'u1')
+    expect(refDelete).toHaveBeenCalled()
   })
 })
