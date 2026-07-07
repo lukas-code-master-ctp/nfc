@@ -1,5 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
+import PillTip from '@/components/PillTip'
 
 interface Opcion { id: string; nombre: string }
 interface Vehiculo { id: string; patente: string }
@@ -10,7 +11,10 @@ interface Uso {
   tomadoEn: string
   entregadoEn: string | null
   cierreForzado?: boolean
-  dano?: { hay: boolean }
+  km?: number
+  bencina?: string
+  limpieza?: string
+  dano?: { hay: boolean; nota?: string }
 }
 
 function fecha(iso: string): string {
@@ -97,9 +101,26 @@ export default function BitacoraFlota({
                   Tomó {fecha(u.tomadoEn)}{u.entregadoEn ? ` · Entregó ${fecha(u.entregadoEn)}` : ''}
                 </p>
               </div>
-              <div className="flex shrink-0 gap-1">
-                {u.dano?.hay && <span className="rounded-full bg-[#FCE7E7] px-2 py-0.5 text-xs font-medium text-[#C81E1E]">Daño</span>}
-                {u.cierreForzado && <span className="rounded-full bg-[#FDF1DC] px-2 py-0.5 text-xs font-medium text-[#B45309]">Sin entrega</span>}
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                {(u.km != null || u.bencina) && (
+                  <PillTip label="Tablero" tono="azul">
+                    {u.km != null && <p>Kilometraje: {u.km.toLocaleString('es-CL')} km</p>}
+                    {u.bencina && <p>Bencina: {u.bencina}</p>}
+                  </PillTip>
+                )}
+                {u.limpieza && (
+                  <PillTip label="Limpieza" tono="azul">
+                    <p>Limpieza: {u.limpieza}</p>
+                  </PillTip>
+                )}
+                {u.dano?.hay && (
+                  <PillTip label="Daño" tono="rojo">
+                    <p>{u.dano.nota || 'Sin nota'}</p>
+                  </PillTip>
+                )}
+                {u.cierreForzado && (
+                  <span className="rounded-full bg-[#FDF1DC] px-2 py-0.5 text-xs font-medium text-[#B45309]">Sin entrega</span>
+                )}
               </div>
             </li>
           ))}
