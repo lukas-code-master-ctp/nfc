@@ -14,7 +14,7 @@ interface Uso {
   km?: number
   bencina?: string
   limpieza?: string
-  dano?: { hay: boolean; nota?: string }
+  dano?: { hay: boolean; nota?: string; revisadoPorNombre?: string }
 }
 
 function fecha(iso: string): string {
@@ -116,6 +116,9 @@ export default function BitacoraFlota({
                 {u.dano?.hay && (
                   <PillTip label="Daño" tono="rojo">
                     <p>{u.dano.nota || 'Sin nota'}</p>
+                    {u.dano.revisadoPorNombre && (
+                      <p className="mt-1 text-xs text-acero">Daño registrado por: {u.dano.revisadoPorNombre}</p>
+                    )}
                   </PillTip>
                 )}
                 {u.cierreForzado && (
