@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const LINKS = [
-  { href: '/flota', label: 'Flota' },
   { href: '/reportes', label: 'Reportes' },
 ]
 

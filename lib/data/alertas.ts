@@ -45,13 +45,6 @@ export async function listAlertas(companyId: string): Promise<Alerta[]> {
   return snap.docs.map((d) => toAlerta(d.id, d.data())).sort((a, b) => (a.creadaEn < b.creadaEn ? 1 : -1))
 }
 
-export async function deleteAlerta(companyId: string, id: string): Promise<void> {
-  const ref = adminDb.collection(COL).doc(id)
-  const doc = await ref.get()
-  if (!doc.exists || doc.data()?.companyId !== companyId) throw new Error('forbidden')
-  await ref.delete()
-}
-
 export async function deleteDanoAlertaByUsage(companyId: string, usageId: string): Promise<void> {
   const snap = await adminDb.collection(COL).where('companyId', '==', companyId).get()
   const borrar = snap.docs.filter((d) => d.data().tipo === 'dano' && d.data().usageId === usageId)

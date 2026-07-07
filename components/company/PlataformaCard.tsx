@@ -51,7 +51,7 @@ export default function PlataformaCard({ avisoUsoHoras }: { avisoUsoHoras: numbe
             className="w-full rounded-lg border border-linea bg-superficie px-3 py-2.5 text-tinta placeholder:text-acero/45 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
           />
           <p className="text-xs text-acero">
-            Un vehículo que lleve más de estas horas &quot;en uso&quot; sin entregar se marcará en Flota.
+            Un vehículo que lleve más de estas horas &quot;en uso&quot; sin entregar se marcará en el panel de vehículos.
           </p>
         </div>
         <div className="flex items-center gap-3 pt-1">

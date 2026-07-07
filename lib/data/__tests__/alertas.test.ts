@@ -9,7 +9,7 @@ vi.mock('@/lib/firebase/admin', () => ({
   adminDb: { collection: () => ({ where: () => ({ get: whereGet }), add, doc: () => ({ get: docGet, delete: docDelete }) }) },
 }))
 
-import { createAlerta, listAlertas, deleteAlerta, deleteDanoAlertaByUsage } from '@/lib/data/alertas'
+import { createAlerta, listAlertas, deleteDanoAlertaByUsage } from '@/lib/data/alertas'
 
 beforeEach(() => { whereGet.mockReset(); add.mockReset(); docGet.mockReset(); docDelete.mockReset(); refDelete.mockReset() })
 
@@ -29,18 +29,6 @@ describe('listAlertas', () => {
       { id: 'b', data: () => ({ creadaEn: '2026-03-01', tipo: 'sin_entrega' }) },
     ] })
     expect((await listAlertas('c1')).map((a) => a.id)).toEqual(['b', 'a'])
-  })
-})
-
-describe('deleteAlerta', () => {
-  it('rechaza si la alerta es de otra empresa', async () => {
-    docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'otra' }) })
-    await expect(deleteAlerta('c1', 'a1')).rejects.toThrow('forbidden')
-  })
-  it('borra si pertenece', async () => {
-    docGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1' }) })
-    await deleteAlerta('c1', 'a1')
-    expect(docDelete).toHaveBeenCalled()
   })
 })
 
