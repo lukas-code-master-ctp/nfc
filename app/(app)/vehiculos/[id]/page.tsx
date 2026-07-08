@@ -4,6 +4,7 @@ import { can } from '@/lib/auth/roles'
 import { getVehicle } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
 import { listUsages } from '@/lib/data/usages'
+import { getCompany } from '@/lib/data/companies'
 import { documentStatus } from '@/lib/documents/status'
 import { createReadUrl } from '@/lib/storage/signedUrls'
 import BackLink from '@/components/BackLink'
@@ -14,6 +15,7 @@ import VehicleInfoForm from '@/components/VehicleInfoForm'
 import VehicleInfoView from '@/components/VehicleInfoView'
 import DeleteVehicleButton from '@/components/DeleteVehicleButton'
 import BitacoraUso from '@/components/vehicle/BitacoraUso'
+import CategoriaSelector from '@/components/vehicle/CategoriaSelector'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +28,9 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
 
   const canEditDocs = can(m.role, 'document:write')
   const canManageVehicle = can(m.role, 'vehicle:write')
+
+  const company = await getCompany(m.companyId)
+  const categorias = company?.categorias ?? []
 
   const now = new Date()
   const docs = await listDocuments(vehicle.id)
@@ -76,6 +81,17 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
             {vehicle.marca} {vehicle.modelo} · {vehicle.patente}
           </h1>
           <p className="text-sm text-acero">{vehicle.anio} · {vehicle.color}</p>
+          {categorias.length > 0 && (
+            canManageVehicle ? (
+              <div className="mt-2">
+                <CategoriaSelector vehicleId={vehicle.id} categoriaId={vehicle.categoriaId ?? null} categorias={categorias} />
+              </div>
+            ) : (
+              vehicle.categoriaId && categorias.find((c) => c.id === vehicle.categoriaId) && (
+                <p className="mt-2 text-sm text-acero">Categoría: <span className="font-medium text-tinta">{categorias.find((c) => c.id === vehicle.categoriaId)!.nombre}</span></p>
+              )
+            )
+          )}
         </div>
       </div>
 

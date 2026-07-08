@@ -23,6 +23,7 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
     publicToken: data.publicToken,
     createdAt: data.createdAt,
     usoActual: data.usoActual ?? null,
+    categoriaId: data.categoriaId ?? null,
   }
 }
 
