@@ -6,6 +6,7 @@ import { EMPTY_COMPANY, DEFAULT_AVISO_USO_HORAS } from '@/lib/types'
 import BackLink from '@/components/BackLink'
 import CompanyCard from '@/components/company/CompanyCard'
 import PlataformaCard from '@/components/company/PlataformaCard'
+import CategoriasCard from '@/components/company/CategoriasCard'
 import TeamCard from '@/components/company/TeamCard'
 import DriversCard from '@/components/drivers/DriversCard'
 
@@ -58,6 +59,7 @@ export default async function ConfiguracionPage() {
       )}
 
       {esAdmin && <PlataformaCard avisoUsoHoras={company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS} />}
+      {esAdmin && <CategoriasCard initial={company?.categorias ?? []} />}
 
       {esAdmin && <TeamCard currentUid={m.uid} />}
       {puedeGestionarConductores && <DriversCard />}
