@@ -1,5 +1,5 @@
 import { adminDb } from '@/lib/firebase/admin'
-import { DEFAULT_PLAN, EMPTY_COMPANY, type Company, type CompanyData, type PlanData } from '@/lib/types'
+import { DEFAULT_PLAN, EMPTY_COMPANY, type Categoria, type Company, type CompanyData, type PlanData } from '@/lib/types'
 import { findPendingInvitationByEmail, markInvitationAccepted } from '@/lib/data/invitations'
 
 const COL = 'companies'
@@ -14,6 +14,7 @@ export async function getCompany(companyId: string): Promise<Company | null> {
     company: { ...EMPTY_COMPANY, ...(d.company ?? {}) },
     plan: { ...DEFAULT_PLAN, ...(d.plan ?? {}) },
     avisoUsoHoras: d.avisoUsoHoras,
+    categorias: d.categorias ?? [],
     createdAt: d.createdAt ?? null,
   }
 }
@@ -34,12 +35,13 @@ export async function createCompany(
 // Solo un Administrador de la empresa llama esto (validado en la capa /api).
 export async function saveCompany(
   companyId: string,
-  patch: { company?: CompanyData; plan?: PlanData; avisoUsoHoras?: number },
+  patch: { company?: CompanyData; plan?: PlanData; avisoUsoHoras?: number; categorias?: Categoria[] },
 ): Promise<void> {
   const data: Record<string, unknown> = {}
   if (patch.company !== undefined) data.company = patch.company
   if (patch.plan !== undefined) data.plan = { maxVehiculos: Math.max(1, Math.floor(patch.plan.maxVehiculos)) }
   if (patch.avisoUsoHoras !== undefined) data.avisoUsoHoras = Math.max(1, Math.floor(patch.avisoUsoHoras))
+  if (patch.categorias !== undefined) data.categorias = patch.categorias
   await adminDb.collection(COL).doc(companyId).set(data, { merge: true })
 }
 

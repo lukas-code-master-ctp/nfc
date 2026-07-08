@@ -3,6 +3,7 @@ import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { saveCompany } from '@/lib/data/companies'
 import { parseAvisoUsoHoras } from '@/lib/usages/prolongado'
+import { sanitizeCategorias } from '@/lib/company/categorias'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,23 +13,20 @@ export async function PATCH(req: NextRequest) {
   if (!can(m.role, 'billing:manage')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const body = await req.json()
-  const tieneCompany = body.company && typeof body.company === 'object'
-
+  const patch: Parameters<typeof saveCompany>[1] = {}
+  if (body.company && typeof body.company === 'object') patch.company = sanitizeCompany(body.company)
   const aviso = parseAvisoUsoHoras(body.avisoUsoHoras)
   if (aviso === 'invalid') {
     return NextResponse.json({ error: 'avisoUsoHoras inválido' }, { status: 400 })
   }
+  if (aviso !== 'absent') patch.avisoUsoHoras = aviso
+  if (body.categorias !== undefined) patch.categorias = sanitizeCategorias(body.categorias)
 
-  // `company` y `avisoUsoHoras` se editan en cards separadas; el body puede traer
-  // solo uno de los dos. Si no viene ninguno, no hay nada que actualizar.
-  if (!tieneCompany && aviso === 'absent') {
+  if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: 'nada que actualizar' }, { status: 400 })
   }
 
-  await saveCompany(m.companyId, {
-    ...(tieneCompany ? { company: sanitizeCompany(body.company) } : {}),
-    ...(aviso !== 'absent' ? { avisoUsoHoras: aviso } : {}),
-  })
+  await saveCompany(m.companyId, patch)
   return NextResponse.json({ ok: true })
 }
 
