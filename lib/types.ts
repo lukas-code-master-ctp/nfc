@@ -66,6 +66,7 @@ export interface Vehicle {
   companyId: string
   createdByUid?: string
   usoActual?: { driverId: string; driverNombre: string; tomadoEn: string } | null
+  categoriaId?: string | null
 }
 
 export interface CompanyData {
@@ -84,6 +85,11 @@ export const EMPTY_COMPANY: CompanyData = {
   telefono: '',
 }
 
+export interface Categoria {
+  id: string
+  nombre: string
+}
+
 export interface PlanData {
   /** Máximo de vehículos permitidos por el plan (lo configura el admin). Mínimo 1. */
   maxVehiculos: number
@@ -100,6 +106,7 @@ export interface Company {
   company: CompanyData
   plan: PlanData
   avisoUsoHoras?: number // horas antes de avisar "uso sin entregar" en /flota
+  categorias?: Categoria[]
   createdAt: string | null
 }
 
