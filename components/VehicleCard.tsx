@@ -47,18 +47,22 @@ export default function VehicleCard({
           </span>
         )}
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-tinta">
-          {vehicle.marca} {vehicle.modelo} · {vehicle.patente}
-        </p>
-        <p className="truncate text-sm text-acero">
-          Documentación · {docCount} {docCount === 1 ? 'archivo' : 'archivos'}
-        </p>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-tinta">
+            {vehicle.marca} {vehicle.modelo} · {vehicle.patente}
+          </p>
+          <p className="truncate text-sm text-acero">
+            Documentación · {docCount} {docCount === 1 ? 'archivo' : 'archivos'}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:justify-end">
+          {danoUsageId && (
+            <span className="whitespace-nowrap rounded-full bg-[#FCE7E7] px-2 py-0.5 text-xs font-medium text-[#C81E1E]">Daño reportado</span>
+          )}
+          <StatusBadge status={status} variant="vehicle" />
+        </div>
       </div>
-      {danoUsageId && (
-        <span className="shrink-0 rounded-full bg-[#FCE7E7] px-2 py-0.5 text-xs font-medium text-[#C81E1E]">Daño reportado</span>
-      )}
-      <StatusBadge status={status} variant="vehicle" />
     </Link>
   )
 }

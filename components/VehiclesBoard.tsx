@@ -208,7 +208,7 @@ export default function VehiclesBoard({
             </div>
           </aside>
 
-          <div>
+          <div className="min-w-0">
             {/* Filtros compactos (solo mobile): chips de estado + orden. */}
             <div className="mb-3 space-y-2 sm:hidden">
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
