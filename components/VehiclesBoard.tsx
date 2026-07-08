@@ -4,10 +4,19 @@ import Link from 'next/link'
 import VehicleCard from '@/components/VehicleCard'
 import NewVehicleModal from '@/components/NewVehicleModal'
 import { planCapacity } from '@/lib/plan'
-import type { Vehicle } from '@/lib/types'
+import type { Vehicle, Categoria } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 
-type Item = { vehicle: Vehicle; status: DocStatus; docCount: number; prolongado: boolean; horasUso: number; danoUsageId: string | null }
+type Item = {
+  vehicle: Vehicle
+  status: DocStatus
+  docCount: number
+  prolongado: boolean
+  horasUso: number
+  danoUsageId: string | null
+  categoriaId: string | null
+  categoriaNombre: string | null
+}
 
 // Tope de slots fantasma a dibujar (para flotas grandes no tiene sentido
 // pintar decenas; el texto del pie comunica el total real disponible).
@@ -46,14 +55,17 @@ export default function VehiclesBoard({
   items,
   limit,
   canWrite,
+  categorias,
 }: {
   items: Item[]
   limit: number
   canWrite: boolean
+  categorias: Categoria[]
 }) {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<Filter>('todos')
   const [sort, setSort] = useState<SortKey>('urgencia')
+  const [categoria, setCategoria] = useState<string>('todas')
 
   const { used, remaining, atCapacity } = planCapacity(items.length, limit)
   const ghosts = canWrite ? Math.min(remaining, MAX_GHOSTS) : 0
@@ -66,7 +78,8 @@ export default function VehiclesBoard({
 
   const visible = useMemo(() => {
     const list = filter === 'todos' ? items : items.filter((i) => i.status === filter)
-    return [...list].sort((a, b) => {
+    const porCategoria = list.filter((i) => categoria === 'todas' || i.categoriaId === categoria)
+    return [...porCategoria].sort((a, b) => {
       switch (sort) {
         case 'urgencia':
           return PRIORITY[a.status] - PRIORITY[b.status] || nombre(a).localeCompare(nombre(b), 'es')
@@ -80,7 +93,7 @@ export default function VehiclesBoard({
           return 0
       }
     })
-  }, [items, filter, sort])
+  }, [items, filter, sort, categoria])
 
   const ghostsBlock = Array.from({ length: ghosts }).map((_, i) => (
     <button
@@ -144,6 +157,18 @@ export default function VehiclesBoard({
     )
   }
 
+  const categoriaSelect = categorias.length > 0 && (
+    <select
+      aria-label="Categoría"
+      value={categoria}
+      onChange={(e) => setCategoria(e.target.value)}
+      className="w-full rounded-lg border border-linea bg-superficie px-3 py-2 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+    >
+      <option value="todas">Todas las categorías</option>
+      {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+    </select>
+  )
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex items-end justify-between gap-4">
@@ -206,6 +231,12 @@ export default function VehiclesBoard({
                 ))}
               </select>
             </div>
+            {categorias.length > 0 && (
+              <div className="rounded-2xl border border-linea bg-superficie p-3 shadow-sm">
+                <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-acero">Categoría</p>
+                {categoriaSelect}
+              </div>
+            )}
           </aside>
 
           <div className="min-w-0">
@@ -215,7 +246,18 @@ export default function VehiclesBoard({
                 {filterChip('todos', 'Todos', items.length)}
                 {STATUS_META.filter((s) => counts[s.key] > 0).map((s) => filterChip(s.key, s.label, counts[s.key]))}
               </div>
-              <div className="flex justify-end">
+              <div className="flex flex-wrap justify-end gap-2">
+                {categorias.length > 0 && (
+                  <select
+                    aria-label="Categoría"
+                    value={categoria}
+                    onChange={(e) => setCategoria(e.target.value)}
+                    className="rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+                  >
+                    <option value="todas">Todas las categorías</option>
+                    {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                )}
                 <select
                   aria-label="Ordenar por"
                   value={sort}
@@ -234,8 +276,8 @@ export default function VehiclesBoard({
               </div>
             ) : (
               <div className="space-y-3">
-                {visible.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId }) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} />
+                {visible.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre }) => (
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} />
                 ))}
                 {canWrite && filter === 'todos' && ghostsBlock}
               </div>

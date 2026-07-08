@@ -10,6 +10,7 @@ import VehiclesBoard from '@/components/VehiclesBoard'
 import { listAlertas } from '@/lib/data/alertas'
 import { DEFAULT_AVISO_USO_HORAS } from '@/lib/types'
 import { usoProlongado, horasEnUso } from '@/lib/usages/prolongado'
+import type { Categoria } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,8 @@ export default async function DashboardPage() {
   ])
   const limit = maxVehiculosDe(company?.plan)
   const avisoUsoHoras = company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS
+  const categorias: Categoria[] = company?.categorias ?? []
+  const nombrePorCategoria = new Map(categorias.map((c) => [c.id, c.nombre]))
   const danoPorVehiculo = new Map<string, string>() // vehicleId -> usageId
   for (const a of alertas) if (a.tipo === 'dano') danoPorVehiculo.set(a.vehicleId, a.usageId)
 
@@ -40,9 +43,11 @@ export default async function DashboardPage() {
         prolongado: uso ? usoProlongado(uso.tomadoEn, avisoUsoHoras, now) : false,
         horasUso: uso ? Math.floor(horasEnUso(uso.tomadoEn, now)) : 0,
         danoUsageId: danoPorVehiculo.get(v.id) ?? null,
+        categoriaId: v.categoriaId ?? null,
+        categoriaNombre: v.categoriaId ? (nombrePorCategoria.get(v.categoriaId) ?? null) : null,
       }
     }),
   )
 
-  return <VehiclesBoard items={items} limit={limit} canWrite={can(m.role, 'vehicle:write')} />
+  return <VehiclesBoard items={items} limit={limit} canWrite={can(m.role, 'vehicle:write')} categorias={categorias} />
 }
