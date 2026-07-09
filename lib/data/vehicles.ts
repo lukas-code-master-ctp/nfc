@@ -1,6 +1,7 @@
 import { adminDb } from '@/lib/firebase/admin'
 import { nanoid } from 'nanoid'
 import { listDocuments, deleteDocument } from '@/lib/data/documents'
+import { deleteUsagesByVehicle } from '@/lib/data/usages'
 import { getCompany } from '@/lib/data/companies'
 import { alertRecipientEmails } from '@/lib/data/members'
 import type { Vehicle } from '@/lib/types'
@@ -72,11 +73,13 @@ export async function updateVehicle(
 
 export async function deleteVehicle(vehicleId: string, companyId: string): Promise<void> {
   await assertCompany(vehicleId, companyId)
-  // Borrado en cascada: eliminar documentos hijos (y sus archivos en Storage) antes del vehículo.
+  // Borrado en cascada: documentos hijos (+ sus archivos) y usos de bitácora (+ sus fotos)
+  // en Storage antes del vehículo, para no dejar archivos huérfanos.
   const docs = await listDocuments(vehicleId)
   for (const d of docs) {
     await deleteDocument(d.id, companyId)
   }
+  await deleteUsagesByVehicle(vehicleId)
   await adminDb.collection(COL).doc(vehicleId).delete()
 }
 

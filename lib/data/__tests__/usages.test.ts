@@ -4,19 +4,22 @@ const whereGet = vi.fn()
 const add = vi.fn()
 const docUpdate = vi.fn()
 const docGet = vi.fn()
+const docDelete = vi.fn()
+const bucketDelete = vi.fn()
 vi.mock('@/lib/firebase/admin', () => ({
   adminDb: {
     collection: () => ({
       where: () => ({ get: whereGet }),
       add,
-      doc: () => ({ get: docGet, update: docUpdate }),
+      doc: () => ({ get: docGet, update: docUpdate, delete: docDelete }),
     }),
   },
+  adminBucket: { file: (p: string) => ({ delete: (...a: unknown[]) => bucketDelete(p, ...a) }) },
 }))
 
-import { openUsage, closeUsage, getOpenUsage, listUsages, marcarDanoRevisado, forzarCierreUsage } from '@/lib/data/usages'
+import { openUsage, closeUsage, getOpenUsage, listUsages, marcarDanoRevisado, forzarCierreUsage, usagePhotoPaths, deleteUsagesByVehicle, deleteUsagesByCompany } from '@/lib/data/usages'
 
-beforeEach(() => { whereGet.mockReset(); add.mockReset(); docUpdate.mockReset(); docGet.mockReset() })
+beforeEach(() => { whereGet.mockReset(); add.mockReset(); docUpdate.mockReset(); docGet.mockReset(); docDelete.mockReset(); bucketDelete.mockReset() })
 
 describe('forzarCierreUsage', () => {
   it('cierra forzado, libera el vehículo y devuelve el driverId', async () => {
@@ -105,6 +108,41 @@ describe('listUsages', () => {
       { id: 'b', data: () => ({ tomadoEn: '2026-03-01' }) },
     ] })
     expect((await listUsages('v1')).map((u) => u.id)).toEqual(['b', 'a'])
+  })
+})
+
+describe('usagePhotoPaths', () => {
+  it('reúne tablero, cabina y foto de daño; omite las que faltan', () => {
+    expect(usagePhotoPaths({ fotos: { tablero: 't', cabina: 'c' }, dano: { hay: true, fotoPath: 'd' } } as never)).toEqual(['t', 'c', 'd'])
+    expect(usagePhotoPaths({ fotos: { tablero: 't' } } as never)).toEqual(['t'])
+    expect(usagePhotoPaths({} as never)).toEqual([])
+  })
+})
+
+describe('deleteUsagesByVehicle', () => {
+  it('borra las fotos de Storage de cada uso y luego sus docs', async () => {
+    whereGet.mockResolvedValue({ docs: [
+      { id: 'u1', data: () => ({ vehicleId: 'v1', tomadoEn: '2026-01-02', fotos: { tablero: 'p/t1', cabina: 'p/c1' }, dano: { hay: true, fotoPath: 'p/d1' } }) },
+      { id: 'u2', data: () => ({ vehicleId: 'v1', tomadoEn: '2026-01-01' }) },
+    ] })
+    await deleteUsagesByVehicle('v1')
+    expect(bucketDelete).toHaveBeenCalledWith('p/t1', { ignoreNotFound: true })
+    expect(bucketDelete).toHaveBeenCalledWith('p/c1', { ignoreNotFound: true })
+    expect(bucketDelete).toHaveBeenCalledWith('p/d1', { ignoreNotFound: true })
+    expect(bucketDelete).toHaveBeenCalledTimes(3) // u2 no tiene fotos
+    expect(docDelete).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('deleteUsagesByCompany', () => {
+  it('borra fotos + docs de todos los usos de la empresa', async () => {
+    whereGet.mockResolvedValue({ docs: [
+      { id: 'u1', data: () => ({ companyId: 'c1', tomadoEn: '2026-01-01', fotos: { tablero: 'p/t1', cabina: 'p/c1' } }) },
+    ] })
+    await deleteUsagesByCompany('c1')
+    expect(bucketDelete).toHaveBeenCalledWith('p/t1', { ignoreNotFound: true })
+    expect(bucketDelete).toHaveBeenCalledWith('p/c1', { ignoreNotFound: true })
+    expect(docDelete).toHaveBeenCalledTimes(1)
   })
 })
 

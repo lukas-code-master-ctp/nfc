@@ -1,9 +1,10 @@
 import { adminDb, adminAuth } from '@/lib/firebase/admin'
 import { listVehicles, deleteVehicle } from '@/lib/data/vehicles'
+import { deleteUsagesByCompany } from '@/lib/data/usages'
 
-// Colecciones de nivel superior scopeadas por companyId (además de vehicles/documents,
-// que se borran vía deleteVehicle para cascadear también los archivos de Storage).
-const COLECCIONES_POR_EMPRESA = ['drivers', 'usages', 'alertas', 'invitations', 'billingRequests']
+// Colecciones de nivel superior scopeadas por companyId (además de vehicles/documents/usages,
+// que se borran aparte para cascadear también sus archivos/fotos en Storage).
+const COLECCIONES_POR_EMPRESA = ['drivers', 'alertas', 'invitations', 'billingRequests']
 
 async function deleteByCompany(col: string, companyId: string): Promise<void> {
   const snap = await adminDb.collection(col).where('companyId', '==', companyId).get()
@@ -20,6 +21,9 @@ async function deleteByCompany(col: string, companyId: string): Promise<void> {
 export async function deleteCompanyCascade(companyId: string): Promise<void> {
   const vehicles = await listVehicles(companyId)
   for (const v of vehicles) await deleteVehicle(v.id, companyId)
+
+  // Backstop: usos huérfanos (de vehículos ya borrados) + sus fotos en Storage.
+  await deleteUsagesByCompany(companyId)
 
   for (const col of COLECCIONES_POR_EMPRESA) await deleteByCompany(col, companyId)
 

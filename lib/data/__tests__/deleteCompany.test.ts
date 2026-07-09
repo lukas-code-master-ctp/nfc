@@ -5,7 +5,6 @@ const h = vi.hoisted(() => {
   const authBorrados: string[] = []
   const fixtures: Record<string, string[]> = {
     drivers: ['dr1'],
-    usages: ['u1', 'u2'],
     alertas: [],
     invitations: ['i1'],
     billingRequests: [],
@@ -39,23 +38,28 @@ vi.mock('@/lib/data/vehicles', () => ({
   listVehicles: (...a: unknown[]) => listVehicles(...a),
   deleteVehicle: (...a: unknown[]) => deleteVehicle(...a),
 }))
+const deleteUsagesByCompany = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/data/usages', () => ({
+  deleteUsagesByCompany: (...a: unknown[]) => deleteUsagesByCompany(...a),
+}))
 
 import { deleteCompanyCascade } from '@/lib/data/deleteCompany'
 
 beforeEach(() => {
   h.borrados.length = 0
   h.authBorrados.length = 0
-  listVehicles.mockReset(); deleteVehicle.mockReset()
+  listVehicles.mockReset(); deleteVehicle.mockReset(); deleteUsagesByCompany.mockReset()
   listVehicles.mockResolvedValue([{ id: 'v1' }, { id: 'v2' }])
 })
 
 describe('deleteCompanyCascade', () => {
-  it('borra vehículos en cascada, colecciones por companyId, miembros y la empresa', async () => {
+  it('borra vehículos en cascada, usos (backstop), colecciones por companyId, miembros y la empresa', async () => {
     await deleteCompanyCascade('c1')
     expect(deleteVehicle).toHaveBeenCalledWith('v1', 'c1')
     expect(deleteVehicle).toHaveBeenCalledWith('v2', 'c1')
+    expect(deleteUsagesByCompany).toHaveBeenCalledWith('c1')
     expect(h.borrados).toEqual(expect.arrayContaining([
-      'drivers/dr1', 'usages/u1', 'usages/u2', 'invitations/i1',
+      'drivers/dr1', 'invitations/i1',
       'users/owner', 'users/miembro', 'companies/c1',
     ]))
   })
