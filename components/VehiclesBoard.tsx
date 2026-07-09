@@ -5,6 +5,7 @@ import VehicleCard from '@/components/VehicleCard'
 import NewVehicleModal from '@/components/NewVehicleModal'
 import { planCapacity } from '@/lib/plan'
 import { normalizarBusqueda, coincideBusqueda } from '@/lib/vehicles/buscar'
+import { rangoPaginas, HUECO } from '@/lib/vehicles/paginacion'
 import type { Vehicle, Categoria } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 
@@ -22,6 +23,10 @@ type Item = {
 // Tope de slots fantasma a dibujar (para flotas grandes no tiene sentido
 // pintar decenas; el texto del pie comunica el total real disponible).
 const MAX_GHOSTS = 6
+
+// Vehículos por página en el dashboard (paginación client-side sobre la lista
+// ya filtrada/buscada, así el buscador y los filtros leen toda la flota).
+const PAGE_SIZE = 25
 
 // Estados ordenados por urgencia (más urgente primero) para el filtro y el orden.
 const STATUS_META: { key: DocStatus; label: string }[] = [
@@ -59,6 +64,14 @@ function SearchIcon({ className = 'size-4' }: { className?: string }) {
   )
 }
 
+function ChevronIcon({ className = 'size-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  )
+}
+
 const nombre = (i: Item) => `${i.vehicle.marca} ${i.vehicle.modelo}`
 
 export default function VehiclesBoard({
@@ -77,7 +90,15 @@ export default function VehiclesBoard({
   const [sort, setSort] = useState<SortKey>('urgencia')
   const [categoria, setCategoria] = useState<string>('todas')
   const [q, setQ] = useState('')
+  const [page, setPage] = useState(1)
   const buscando = q.trim().length > 0
+
+  // Cualquier cambio de filtro/búsqueda/categoría/orden vuelve a la página 1
+  // (sin useEffect, para no chocar con react-hooks/set-state-in-effect).
+  const irAFiltro = (f: Filter) => { setFilter(f); setPage(1) }
+  const cambiarBusqueda = (v: string) => { setQ(v); setPage(1) }
+  const cambiarOrden = (s: SortKey) => { setSort(s); setPage(1) }
+  const cambiarCategoria = (c: string) => { setCategoria(c); setPage(1) }
 
   const { used, remaining, atCapacity } = planCapacity(items.length, limit)
   const ghosts = canWrite ? Math.min(remaining, MAX_GHOSTS) : 0
@@ -109,6 +130,13 @@ export default function VehiclesBoard({
     })
   }, [items, filter, sort, categoria, q])
 
+  // Paginación: sobre la lista YA filtrada/buscada (safePage acota si la lista
+  // se encogió y la página actual quedó fuera de rango).
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const paginados = visible.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const enUltimaPagina = safePage === totalPages
+
   const ghostsBlock = Array.from({ length: ghosts }).map((_, i) => (
     <button
       key={i}
@@ -138,12 +166,52 @@ export default function VehiclesBoard({
     </div>
   )
 
+  const pager = totalPages > 1 && (
+    <nav className="mt-6 flex flex-wrap items-center justify-center gap-1" aria-label="Paginación">
+      <button
+        onClick={() => setPage(safePage - 1)}
+        disabled={safePage === 1}
+        aria-label="Página anterior"
+        className="flex size-9 items-center justify-center rounded-lg border border-linea bg-superficie text-tinta transition-colors hover:bg-lienzo disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ChevronIcon className="size-4 rotate-180" />
+      </button>
+      {rangoPaginas(safePage, totalPages).map((p, i) =>
+        p === HUECO ? (
+          <span key={`h${i}`} className="px-1 text-sm text-acero" aria-hidden="true">…</span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => setPage(p)}
+            aria-current={p === safePage ? 'page' : undefined}
+            aria-label={`Página ${p}`}
+            className={`flex size-9 items-center justify-center rounded-lg border text-sm font-medium tabular-nums transition-colors ${
+              p === safePage
+                ? 'border-transparent bg-azul text-white'
+                : 'border-linea bg-superficie text-tinta hover:bg-lienzo'
+            }`}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button
+        onClick={() => setPage(safePage + 1)}
+        disabled={safePage === totalPages}
+        aria-label="Página siguiente"
+        className="flex size-9 items-center justify-center rounded-lg border border-linea bg-superficie text-tinta transition-colors hover:bg-lienzo disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ChevronIcon className="size-4" />
+      </button>
+    </nav>
+  )
+
   const filterOption = (key: Filter, label: string, count: number) => {
     const active = filter === key
     return (
       <button
         key={key}
-        onClick={() => setFilter(key)}
+        onClick={() => irAFiltro(key)}
         className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
           active ? 'bg-azul/10 font-semibold text-azul' : 'text-tinta hover:bg-lienzo'
         }`}
@@ -160,7 +228,7 @@ export default function VehiclesBoard({
     return (
       <button
         key={key}
-        onClick={() => setFilter(key)}
+        onClick={() => irAFiltro(key)}
         className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
           active ? 'border-transparent bg-azul/10 text-azul' : 'border-linea bg-superficie text-tinta'
         }`}
@@ -177,14 +245,14 @@ export default function VehiclesBoard({
       <input
         type="text"
         value={q}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => cambiarBusqueda(e.target.value)}
         placeholder="Buscar por patente, marca o modelo"
         aria-label="Buscar vehículos"
         className="w-full rounded-lg border border-linea bg-superficie py-2.5 pl-9 pr-9 text-sm text-tinta placeholder:text-acero focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
       />
       {buscando && (
         <button
-          onClick={() => setQ('')}
+          onClick={() => cambiarBusqueda('')}
           aria-label="Limpiar búsqueda"
           className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-acero transition-colors hover:bg-lienzo hover:text-tinta"
         >
@@ -200,7 +268,7 @@ export default function VehiclesBoard({
     <select
       aria-label="Categoría"
       value={categoria}
-      onChange={(e) => setCategoria(e.target.value)}
+      onChange={(e) => cambiarCategoria(e.target.value)}
       className="w-full rounded-lg border border-linea bg-superficie px-3 py-2 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
     >
       <option value="todas">Todas las categorías</option>
@@ -260,7 +328,7 @@ export default function VehiclesBoard({
               <select
                 id="sort"
                 value={sort}
-                onChange={(e) => setSort(e.target.value as SortKey)}
+                onChange={(e) => cambiarOrden(e.target.value as SortKey)}
                 className="w-full rounded-lg border border-linea bg-superficie px-3 py-2 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
               >
                 {SORTS.map((s) => (
@@ -291,7 +359,7 @@ export default function VehiclesBoard({
                   <select
                     aria-label="Categoría"
                     value={categoria}
-                    onChange={(e) => setCategoria(e.target.value)}
+                    onChange={(e) => cambiarCategoria(e.target.value)}
                     className="rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
                   >
                     <option value="todas">Todas las categorías</option>
@@ -301,7 +369,7 @@ export default function VehiclesBoard({
                 <select
                   aria-label="Ordenar por"
                   value={sort}
-                  onChange={(e) => setSort(e.target.value as SortKey)}
+                  onChange={(e) => cambiarOrden(e.target.value as SortKey)}
                   className="rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
                 >
                   {SORTS.map((s) => (
@@ -317,14 +385,17 @@ export default function VehiclesBoard({
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {visible.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre }) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} />
-                ))}
-                {canWrite && filter === 'todos' && !buscando && ghostsBlock}
-              </div>
+              <>
+                <div className="space-y-3">
+                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre }) => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} />
+                  ))}
+                  {enUltimaPagina && canWrite && filter === 'todos' && !buscando && ghostsBlock}
+                </div>
+                {pager}
+              </>
             )}
-            {canWrite && filter === 'todos' && !buscando && footerBlock}
+            {enUltimaPagina && canWrite && filter === 'todos' && !buscando && footerBlock}
           </div>
         </div>
       )}
