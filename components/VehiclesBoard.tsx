@@ -4,6 +4,7 @@ import Link from 'next/link'
 import VehicleCard from '@/components/VehicleCard'
 import NewVehicleModal from '@/components/NewVehicleModal'
 import { planCapacity } from '@/lib/plan'
+import { normalizarBusqueda, coincideBusqueda } from '@/lib/vehicles/buscar'
 import type { Vehicle, Categoria } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 
@@ -49,6 +50,15 @@ function PlusIcon({ className = 'size-4' }: { className?: string }) {
   )
 }
 
+function SearchIcon({ className = 'size-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  )
+}
+
 const nombre = (i: Item) => `${i.vehicle.marca} ${i.vehicle.modelo}`
 
 export default function VehiclesBoard({
@@ -66,6 +76,8 @@ export default function VehiclesBoard({
   const [filter, setFilter] = useState<Filter>('todos')
   const [sort, setSort] = useState<SortKey>('urgencia')
   const [categoria, setCategoria] = useState<string>('todas')
+  const [q, setQ] = useState('')
+  const buscando = q.trim().length > 0
 
   const { used, remaining, atCapacity } = planCapacity(items.length, limit)
   const ghosts = canWrite ? Math.min(remaining, MAX_GHOSTS) : 0
@@ -77,9 +89,11 @@ export default function VehiclesBoard({
   }, [items])
 
   const visible = useMemo(() => {
+    const query = normalizarBusqueda(q)
     const list = filter === 'todos' ? items : items.filter((i) => i.status === filter)
     const porCategoria = list.filter((i) => categoria === 'todas' || i.categoriaId === categoria)
-    return [...porCategoria].sort((a, b) => {
+    const porBusqueda = porCategoria.filter((i) => coincideBusqueda(i.vehicle, query))
+    return [...porBusqueda].sort((a, b) => {
       switch (sort) {
         case 'urgencia':
           return PRIORITY[a.status] - PRIORITY[b.status] || nombre(a).localeCompare(nombre(b), 'es')
@@ -93,7 +107,7 @@ export default function VehiclesBoard({
           return 0
       }
     })
-  }, [items, filter, sort, categoria])
+  }, [items, filter, sort, categoria, q])
 
   const ghostsBlock = Array.from({ length: ghosts }).map((_, i) => (
     <button
@@ -156,6 +170,31 @@ export default function VehiclesBoard({
       </button>
     )
   }
+
+  const searchBar = (
+    <div className="relative">
+      <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-acero" />
+      <input
+        type="text"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Buscar por patente, marca o modelo"
+        aria-label="Buscar vehículos"
+        className="w-full rounded-lg border border-linea bg-superficie py-2.5 pl-9 pr-9 text-sm text-tinta placeholder:text-acero focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+      />
+      {buscando && (
+        <button
+          onClick={() => setQ('')}
+          aria-label="Limpiar búsqueda"
+          className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-acero transition-colors hover:bg-lienzo hover:text-tinta"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    </div>
+  )
 
   const categoriaSelect = categorias.length > 0 && (
     <select
@@ -240,6 +279,7 @@ export default function VehiclesBoard({
           </aside>
 
           <div className="min-w-0">
+            <div className="mb-3">{searchBar}</div>
             {/* Filtros compactos (solo mobile): chips de estado + orden. */}
             <div className="mb-3 space-y-2 sm:hidden">
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
@@ -272,17 +312,19 @@ export default function VehiclesBoard({
             </div>
             {visible.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-linea bg-superficie/60 px-6 py-10 text-center">
-                <p className="text-sm text-acero">Ningún vehículo con ese estado.</p>
+                <p className="text-sm text-acero">
+                  {buscando ? 'Ningún vehículo coincide con tu búsqueda.' : 'Ningún vehículo con ese estado.'}
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
                 {visible.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre }) => (
                   <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} />
                 ))}
-                {canWrite && filter === 'todos' && ghostsBlock}
+                {canWrite && filter === 'todos' && !buscando && ghostsBlock}
               </div>
             )}
-            {canWrite && filter === 'todos' && footerBlock}
+            {canWrite && filter === 'todos' && !buscando && footerBlock}
           </div>
         </div>
       )}
