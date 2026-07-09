@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin'
+import { adminDb, adminBucket } from '@/lib/firebase/admin'
 import type { VehicleUsage } from '@/lib/types'
 
 const COL = 'usages'
@@ -32,6 +32,36 @@ export async function listUsages(vehicleId: string): Promise<VehicleUsage[]> {
   return snap.docs
     .map((d) => toUsage(d.id, d.data()))
     .sort((a, b) => (a.tomadoEn < b.tomadoEn ? 1 : -1))
+}
+
+/** Rutas en Storage de las fotos de un uso: tablero, cabina y foto de daño (omite las que falten). */
+export function usagePhotoPaths(u: VehicleUsage): string[] {
+  const paths: string[] = []
+  if (u.fotos?.tablero) paths.push(u.fotos.tablero)
+  if (u.fotos?.cabina) paths.push(u.fotos.cabina)
+  if (u.dano?.fotoPath) paths.push(u.dano.fotoPath)
+  return paths
+}
+
+// Borra los docs de uso + sus fotos en Storage (mismo criterio que deleteDocument: ignoreNotFound).
+async function deleteUsageDocs(usages: VehicleUsage[]): Promise<void> {
+  for (const u of usages) {
+    for (const path of usagePhotoPaths(u)) {
+      await adminBucket.file(path).delete({ ignoreNotFound: true })
+    }
+    await adminDb.collection(COL).doc(u.id).delete()
+  }
+}
+
+/** Borra todos los usos de un vehículo y sus fotos en Storage. Cascada de deleteVehicle. */
+export async function deleteUsagesByVehicle(vehicleId: string): Promise<void> {
+  await deleteUsageDocs(await listUsages(vehicleId))
+}
+
+/** Borra todos los usos de una empresa y sus fotos en Storage. Backstop de deleteCompanyCascade. */
+export async function deleteUsagesByCompany(companyId: string): Promise<void> {
+  const snap = await adminDb.collection(COL).where('companyId', '==', companyId).get()
+  await deleteUsageDocs(snap.docs.map((d) => toUsage(d.id, d.data())))
 }
 
 export async function getOpenUsage(vehicleId: string): Promise<VehicleUsage | null> {
