@@ -25,15 +25,19 @@ export async function processMantencionReminders(deps: MantencionReminderDeps, n
       const enviados = v.mantencionReminders ?? []
       const hito = hitoMantencion(estado, enviados)
       if (!hito) continue
-      if (emails === null) emails = await deps.recipients(c.id, c.ownerUid)
-      if (emails.length === 0) continue
-      const texto = detalle.kmRestantes != null && detalle.kmRestantes <= 0 ? 'kilometraje cumplido'
-        : detalle.diasRestantes != null && detalle.diasRestantes < 0 ? 'fecha cumplida' : 'pronto'
-      for (const to of emails) {
-        await deps.sendMantencionEmail(to, { patente: v.patente, vehicleId: v.id, estado: hito, detalle: texto })
+      try {
+        if (emails === null) emails = await deps.recipients(c.id, c.ownerUid)
+        if (emails.length === 0) continue
+        const texto = detalle.kmRestantes != null && detalle.kmRestantes <= 0 ? 'kilometraje cumplido'
+          : detalle.diasRestantes != null && detalle.diasRestantes < 0 ? 'fecha cumplida' : 'pronto'
+        for (const to of emails) {
+          await deps.sendMantencionEmail(to, { patente: v.patente, vehicleId: v.id, estado: hito, detalle: texto })
+        }
+        await deps.markHito(v.id, c.id, [...enviados, hito])
+        sent++
+      } catch (err) {
+        console.error('[processMantencionReminders]', v.id, err)
       }
-      await deps.markHito(v.id, c.id, [...enviados, hito])
-      sent++
     }
   }
   return { sent }
