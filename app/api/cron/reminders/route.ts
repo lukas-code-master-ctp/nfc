@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processReminders } from '@/lib/documents/runReminders'
 import { listAllDocuments, updateDocument } from '@/lib/data/documents'
-import { vehicleInfoForReminder } from '@/lib/data/vehicles'
-import { sendReminderEmail } from '@/lib/email/resend'
+import { vehicleInfoForReminder, listVehicles, updateVehicle } from '@/lib/data/vehicles'
+import { sendReminderEmail, sendMantencionEmail } from '@/lib/email/resend'
+import { processMantencionReminders } from '@/lib/mantencion/runReminders'
+import { listCompaniasParaMantencion } from '@/lib/data/companies'
+import { ultimaMantencion } from '@/lib/data/mantenciones'
+import { alertRecipientEmails } from '@/lib/data/members'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,5 +25,17 @@ export async function GET(req: NextRequest) {
     },
     new Date(),
   )
-  return NextResponse.json(result)
+  const mant = await processMantencionReminders(
+    {
+      allCompanies: listCompaniasParaMantencion,
+      vehiclesOf: listVehicles,
+      ultimaMantencion,
+      recipients: alertRecipientEmails,
+      sendMantencionEmail,
+      markHito: (vehicleId, companyId, hitos) =>
+        updateVehicle(vehicleId, companyId, { mantencionReminders: hitos as ('proxima' | 'vencida')[] }),
+    },
+    new Date(),
+  )
+  return NextResponse.json({ documentos: result, mantenciones: mant })
 }
