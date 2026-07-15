@@ -5,7 +5,9 @@ import { getVehicle } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
 import { listUsages } from '@/lib/data/usages'
 import { getCompany } from '@/lib/data/companies'
+import { listMantenciones, ultimaMantencion } from '@/lib/data/mantenciones'
 import { documentStatus } from '@/lib/documents/status'
+import { estadoMantencion } from '@/lib/mantencion/status'
 import { createReadUrl } from '@/lib/storage/signedUrls'
 import BackLink from '@/components/BackLink'
 import DocumentForm from '@/components/DocumentForm'
@@ -16,6 +18,7 @@ import VehicleInfoView from '@/components/VehicleInfoView'
 import DeleteVehicleButton from '@/components/DeleteVehicleButton'
 import BitacoraUso from '@/components/vehicle/BitacoraUso'
 import CategoriaSelector from '@/components/vehicle/CategoriaSelector'
+import MantencionPanel from '@/components/vehicle/MantencionPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,6 +64,20 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
       datosConfirmados: u.datosConfirmados,
     })),
   )
+
+  const [mantenciones, ultima] = await Promise.all([
+    listMantenciones(vehicle.id),
+    ultimaMantencion(vehicle.id),
+  ])
+  const mantencionesConUrl = await Promise.all(
+    mantenciones.map(async (mt) => ({
+      id: mt.id, fecha: mt.fecha, km: mt.km, nota: mt.nota ?? null,
+      fileUrl: mt.filePath ? await createReadUrl(mt.filePath) : null,
+    })),
+  )
+  const pautaEfectiva = vehicle.pautaMantencion ?? company?.pautaMantencion ?? null
+  const esOverride = vehicle.pautaMantencion != null
+  const estado = estadoMantencion({ pauta: pautaEfectiva, ultima, kmActual: vehicle.kmActual ?? null, now })
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? ''
   const publicUrl = `${base}/v/${vehicle.publicToken}`
@@ -120,6 +137,19 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
       ) : (
         <VehicleInfoView info={vehicle.info ?? {}} />
       )}
+
+      <MantencionPanel
+        vehicleId={vehicle.id}
+        estado={estado.estado}
+        detalle={estado.detalle}
+        pautaEfectiva={pautaEfectiva}
+        esOverride={esOverride}
+        pautaEstandar={company?.pautaMantencion ?? null}
+        kmActual={vehicle.kmActual ?? null}
+        mantenciones={mantencionesConUrl}
+        puedeRegistrar={canEditDocs}
+        puedeConfigurar={canManageVehicle}
+      />
 
       <BitacoraUso usos={usos} puedeEditar={canEditDocs} />
 

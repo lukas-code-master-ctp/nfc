@@ -2,8 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const docGet = vi.fn()
 const docUpdate = vi.fn()
+// `where().get()` lo usa refreshVehicleKm (vía listUsages); sin lecturas no escribe km.
 vi.mock('@/lib/firebase/admin', () => ({
-  adminDb: { collection: () => ({ doc: () => ({ get: docGet, update: docUpdate }) }) },
+  adminDb: {
+    collection: () => ({
+      doc: () => ({ get: docGet, update: docUpdate }),
+      where: () => ({ get: async () => ({ docs: [] }) }),
+    }),
+  },
 }))
 
 import { getUsage, setUsageAnalysis, updateUsageDatos } from '@/lib/data/usages'
@@ -21,6 +27,8 @@ describe('getUsage', () => {
 
 describe('setUsageAnalysis', () => {
   it('escribe los 3 campos + iaAnalizadoEn (sin confirmar)', async () => {
+    // Tras escribir, setUsageAnalysis relee el uso para sacar vehicleId (refreshVehicleKm).
+    docGet.mockResolvedValue({ data: () => ({ vehicleId: 'v1' }) })
     await setUsageAnalysis('u1', { bencina: '1/2', km: 100, limpieza: 'limpio' })
     const arg = docUpdate.mock.calls[0][0]
     expect(arg).toMatchObject({ bencina: '1/2', km: 100, limpieza: 'limpio' })

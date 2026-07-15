@@ -1,5 +1,5 @@
 import { adminDb } from '@/lib/firebase/admin'
-import { DEFAULT_PLAN, EMPTY_COMPANY, type Categoria, type Company, type CompanyData, type PlanData } from '@/lib/types'
+import { DEFAULT_PLAN, EMPTY_COMPANY, type Categoria, type Company, type CompanyData, type PlanData, type PautaMantencion } from '@/lib/types'
 import { findPendingInvitationByEmail, markInvitationAccepted } from '@/lib/data/invitations'
 
 const COL = 'companies'
@@ -15,6 +15,7 @@ export async function getCompany(companyId: string): Promise<Company | null> {
     plan: { ...DEFAULT_PLAN, ...(d.plan ?? {}) },
     avisoUsoHoras: d.avisoUsoHoras,
     categorias: d.categorias ?? [],
+    pautaMantencion: d.pautaMantencion ?? undefined,
     createdAt: d.createdAt ?? null,
   }
 }
@@ -35,13 +36,14 @@ export async function createCompany(
 // Solo un Administrador de la empresa llama esto (validado en la capa /api).
 export async function saveCompany(
   companyId: string,
-  patch: { company?: CompanyData; plan?: PlanData; avisoUsoHoras?: number; categorias?: Categoria[] },
+  patch: { company?: CompanyData; plan?: PlanData; avisoUsoHoras?: number; categorias?: Categoria[]; pautaMantencion?: PautaMantencion },
 ): Promise<void> {
   const data: Record<string, unknown> = {}
   if (patch.company !== undefined) data.company = patch.company
   if (patch.plan !== undefined) data.plan = { maxVehiculos: Math.max(1, Math.floor(patch.plan.maxVehiculos)) }
   if (patch.avisoUsoHoras !== undefined) data.avisoUsoHoras = Math.max(1, Math.floor(patch.avisoUsoHoras))
   if (patch.categorias !== undefined) data.categorias = patch.categorias
+  if (patch.pautaMantencion !== undefined) data.pautaMantencion = patch.pautaMantencion
   await adminDb.collection(COL).doc(companyId).set(data, { merge: true })
 }
 
@@ -83,4 +85,9 @@ export async function ensureProvisioned(uid: string, email: string): Promise<voi
     patch.createdAt = new Date().toISOString()
   }
   await userRef.set(patch, { merge: true })
+}
+
+export async function listCompaniasParaMantencion(): Promise<{ id: string; ownerUid: string; pauta: PautaMantencion | null }[]> {
+  const snap = await adminDb.collection(COL).get()
+  return snap.docs.map((d) => ({ id: d.id, ownerUid: d.data().ownerUid, pauta: d.data().pautaMantencion ?? null }))
 }

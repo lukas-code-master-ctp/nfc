@@ -2,6 +2,7 @@ import { adminDb } from '@/lib/firebase/admin'
 import { nanoid } from 'nanoid'
 import { listDocuments, deleteDocument } from '@/lib/data/documents'
 import { deleteUsagesByVehicle } from '@/lib/data/usages'
+import { deleteMantencionesByVehicle } from '@/lib/data/mantenciones'
 import { getCompany } from '@/lib/data/companies'
 import { alertRecipientEmails } from '@/lib/data/members'
 import type { Vehicle } from '@/lib/types'
@@ -27,6 +28,8 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
     categoriaId: data.categoriaId ?? null,
     kmActual: data.kmActual ?? null,
     kmActualizadoEn: data.kmActualizadoEn ?? null,
+    pautaMantencion: data.pautaMantencion ?? null,
+    mantencionReminders: data.mantencionReminders ?? [],
   }
 }
 
@@ -82,6 +85,7 @@ export async function deleteVehicle(vehicleId: string, companyId: string): Promi
     await deleteDocument(d.id, companyId)
   }
   await deleteUsagesByVehicle(vehicleId)
+  await deleteMantencionesByVehicle(vehicleId)
   await adminDb.collection(COL).doc(vehicleId).delete()
 }
 

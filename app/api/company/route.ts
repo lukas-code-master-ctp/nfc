@@ -4,6 +4,7 @@ import { can } from '@/lib/auth/roles'
 import { saveCompany } from '@/lib/data/companies'
 import { parseAvisoUsoHoras } from '@/lib/usages/prolongado'
 import { sanitizeCategorias } from '@/lib/company/categorias'
+import { sanitizePauta } from '@/lib/mantencion/status'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,7 @@ export async function PATCH(req: NextRequest) {
   }
   if (aviso !== 'absent') patch.avisoUsoHoras = aviso
   if (body.categorias !== undefined) patch.categorias = sanitizeCategorias(body.categorias)
+  if (body.pautaMantencion !== undefined) patch.pautaMantencion = sanitizePauta(body.pautaMantencion)
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: 'nada que actualizar' }, { status: 400 })

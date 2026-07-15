@@ -26,6 +26,24 @@ export function tipoTieneVencimiento(tipo: DocumentType): boolean {
   return !DOCUMENT_TYPES_SIN_VENCIMIENTO.has(tipo)
 }
 
+export interface PautaMantencion {
+  cadaKm?: number | null
+  cadaMeses?: number | null
+}
+
+export interface Mantencion {
+  id: string
+  companyId: string
+  vehicleId: string
+  fecha: string // YYYY-MM-DD
+  km: number | null
+  nota?: string | null
+  filePath?: string | null
+  fileUrl?: string | null
+  createdByUid?: string
+  createdAt: string // ISO
+}
+
 // Información operativa del vehículo (para quien lo va a manejar). Todos
 // los campos son opcionales; la ficha pública muestra solo los que estén.
 export interface VehicleInfo {
@@ -71,6 +89,8 @@ export interface Vehicle {
   // la IA en las entregas). `kmActualizadoEn` = fecha de la lectura que lo fijó.
   kmActual?: number | null
   kmActualizadoEn?: string | null
+  pautaMantencion?: PautaMantencion | null
+  mantencionReminders?: ('proxima' | 'vencida')[]
 }
 
 export interface CompanyData {
@@ -111,6 +131,7 @@ export interface Company {
   plan: PlanData
   avisoUsoHoras?: number // horas antes de avisar "uso sin entregar" en /flota
   categorias?: Categoria[]
+  pautaMantencion?: PautaMantencion
   createdAt: string | null
 }
 
