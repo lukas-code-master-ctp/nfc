@@ -194,7 +194,7 @@ export default function MantencionPanel({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {mt.fileUrl && <a href={mt.fileUrl} target="_blank" rel="noopener noreferrer" className="text-azul hover:underline">Constancia</a>}
-                {puedeRegistrar && <button onClick={() => borrar(mt.id)} className="text-acero hover:text-[#C81E1E]" aria-label="Eliminar">✕</button>}
+                {puedeRegistrar && <button onClick={() => borrar(mt.id)} className="text-acero transition-colors hover:text-[#C81E1E]" aria-label="Eliminar mantención">Eliminar</button>}
               </div>
             </div>
           ))}
