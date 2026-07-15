@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const m = await getMembership()
   if (!m) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   const vehicleId = req.nextUrl.searchParams.get('vehicleId') ?? ''
+  if (!vehicleId) return NextResponse.json({ error: 'vehicleId requerido' }, { status: 400 })
   const v = await getVehicle(vehicleId)
   if (!v || v.companyId !== m.companyId) return NextResponse.json({ error: 'not found' }, { status: 404 })
   return NextResponse.json({ mantenciones: await listMantenciones(vehicleId) })
