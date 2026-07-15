@@ -17,7 +17,7 @@ vi.mock('@/lib/firebase/admin', () => ({
   adminBucket: { file: (p: string) => ({ delete: (...a: unknown[]) => bucketDelete(p, ...a) }) },
 }))
 
-import { openUsage, closeUsage, getOpenUsage, listUsages, marcarDanoRevisado, forzarCierreUsage, usagePhotoPaths, deleteUsagesByVehicle, deleteUsagesByCompany } from '@/lib/data/usages'
+import { openUsage, closeUsage, getOpenUsage, listUsages, marcarDanoRevisado, forzarCierreUsage, usagePhotoPaths, deleteUsagesByVehicle, deleteUsagesByCompany, refreshVehicleKm } from '@/lib/data/usages'
 
 beforeEach(() => { whereGet.mockReset(); add.mockReset(); docUpdate.mockReset(); docGet.mockReset(); docDelete.mockReset(); bucketDelete.mockReset() })
 
@@ -143,6 +143,22 @@ describe('deleteUsagesByCompany', () => {
     expect(bucketDelete).toHaveBeenCalledWith('p/t1', { ignoreNotFound: true })
     expect(bucketDelete).toHaveBeenCalledWith('p/c1', { ignoreNotFound: true })
     expect(docDelete).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('refreshVehicleKm', () => {
+  it('escribe el km máximo y su fecha en el vehículo', async () => {
+    whereGet.mockResolvedValue({ docs: [
+      { id: 'u1', data: () => ({ km: 1000, entregadoEn: '2026-01-01', tomadoEn: '2026-01-01' }) },
+      { id: 'u2', data: () => ({ km: 4200, entregadoEn: '2026-03-01', tomadoEn: '2026-03-01' }) },
+    ] })
+    await refreshVehicleKm('v1')
+    expect(docUpdate).toHaveBeenCalledWith({ kmActual: 4200, kmActualizadoEn: '2026-03-01' })
+  })
+  it('no escribe nada si ningún uso tiene km', async () => {
+    whereGet.mockResolvedValue({ docs: [{ id: 'u1', data: () => ({ km: null, tomadoEn: '2026-01-01' }) }] })
+    await refreshVehicleKm('v1')
+    expect(docUpdate).not.toHaveBeenCalled()
   })
 })
 

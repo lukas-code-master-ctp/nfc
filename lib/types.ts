@@ -67,6 +67,10 @@ export interface Vehicle {
   createdByUid?: string
   usoActual?: { driverId: string; driverNombre: string; tomadoEn: string } | null
   categoriaId?: string | null
+  // Kilometraje del odómetro, denormalizado desde los usos (el máximo leído por
+  // la IA en las entregas). `kmActualizadoEn` = fecha de la lectura que lo fijó.
+  kmActual?: number | null
+  kmActualizadoEn?: string | null
 }
 
 export interface CompanyData {
