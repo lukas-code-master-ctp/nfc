@@ -20,7 +20,7 @@ vi.mock('@/lib/firebase/admin', () => ({
 }))
 
 import {
-  createMantencion, listMantenciones, ultimaMantencion,
+  createMantencion, ultimaMantencion,
   deleteMantencion, deleteMantencionesByVehicle,
 } from '@/lib/data/mantenciones'
 
