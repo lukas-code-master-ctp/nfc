@@ -1,8 +1,9 @@
 import { adminDb, adminAuth } from '@/lib/firebase/admin'
 import { listVehicles, deleteVehicle } from '@/lib/data/vehicles'
 import { deleteUsagesByCompany } from '@/lib/data/usages'
+import { deleteMantencionesByCompany } from '@/lib/data/mantenciones'
 
-// Colecciones de nivel superior scopeadas por companyId (además de vehicles/documents/usages,
+// Colecciones de nivel superior scopeadas por companyId (además de vehicles/documents/usages/mantenciones,
 // que se borran aparte para cascadear también sus archivos/fotos en Storage).
 const COLECCIONES_POR_EMPRESA = ['drivers', 'alertas', 'invitations', 'billingRequests']
 
@@ -12,7 +13,7 @@ async function deleteByCompany(col: string, companyId: string): Promise<void> {
 }
 
 /**
- * Borra una empresa COMPLETA: vehículos (cascada: documentos + archivos),
+ * Borra una empresa COMPLETA: vehículos (cascada: documentos + archivos + mantenciones),
  * conductores, usos, alertas, invitaciones, solicitudes de facturación,
  * perfiles de los miembros + sus usuarios de Firebase Auth (best-effort por
  * usuario), y el doc de la empresa. Irreversible. Solo llamar server-side
@@ -24,6 +25,7 @@ export async function deleteCompanyCascade(companyId: string): Promise<void> {
 
   // Backstop: usos huérfanos (de vehículos ya borrados) + sus fotos en Storage.
   await deleteUsagesByCompany(companyId)
+  await deleteMantencionesByCompany(companyId)
 
   for (const col of COLECCIONES_POR_EMPRESA) await deleteByCompany(col, companyId)
 
