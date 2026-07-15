@@ -1,4 +1,5 @@
 import { adminDb, adminBucket } from '@/lib/firebase/admin'
+import { kmDeUsos } from '@/lib/usages/km'
 import type { VehicleUsage } from '@/lib/types'
 
 const COL = 'usages'
@@ -162,12 +163,35 @@ export async function setUsageAnalysis(
   id: string,
   datos: { bencina: string | null; km: number | null; limpieza: string | null },
 ): Promise<void> {
-  await adminDb.collection(COL).doc(id).update({
+  const ref = adminDb.collection(COL).doc(id)
+  await ref.update({
     bencina: datos.bencina,
     km: datos.km,
     limpieza: datos.limpieza,
     iaAnalizadoEn: new Date().toISOString(),
   })
+  if (datos.km != null) {
+    const vehicleId = (await ref.get()).data()?.vehicleId
+    if (vehicleId) await refreshVehicleKm(vehicleId)
+  }
+}
+
+/**
+ * Recalcula el `kmActual` del vehículo a partir de sus usos (el máximo leído) y
+ * lo denormaliza en `vehicles/{id}`. Best-effort: nunca lanza hacia afuera.
+ */
+export async function refreshVehicleKm(vehicleId: string): Promise<void> {
+  try {
+    const usos = await listUsages(vehicleId)
+    const km = kmDeUsos(usos)
+    if (!km) return
+    await adminDb.collection('vehicles').doc(vehicleId).update({
+      kmActual: km.km,
+      kmActualizadoEn: km.fecha || null,
+    })
+  } catch (err) {
+    console.error('[refreshVehicleKm]', vehicleId, err)
+  }
 }
 
 export async function updateUsageDatos(
@@ -179,6 +203,11 @@ export async function updateUsageDatos(
   const doc = await ref.get()
   if (!doc.exists || doc.data()?.companyId !== companyId) throw new Error('forbidden')
   await ref.update({ ...patch, datosConfirmados: true })
+  // Si se corrigió el km, reconcilia el km del vehículo (máximo entre sus usos).
+  if (patch.km !== undefined) {
+    const vehicleId = doc.data()?.vehicleId
+    if (vehicleId) await refreshVehicleKm(vehicleId)
+  }
 }
 
 export async function listUsagesPage(

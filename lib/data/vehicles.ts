@@ -25,6 +25,8 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
     createdAt: data.createdAt,
     usoActual: data.usoActual ?? null,
     categoriaId: data.categoriaId ?? null,
+    kmActual: data.kmActual ?? null,
+    kmActualizadoEn: data.kmActualizadoEn ?? null,
   }
 }
 
