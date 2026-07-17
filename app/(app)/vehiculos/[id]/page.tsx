@@ -19,6 +19,7 @@ import DeleteVehicleButton from '@/components/DeleteVehicleButton'
 import BitacoraUso from '@/components/vehicle/BitacoraUso'
 import CategoriaSelector from '@/components/vehicle/CategoriaSelector'
 import MantencionPanel from '@/components/vehicle/MantencionPanel'
+import DanoActivoPanel from '@/components/vehicle/DanoActivoPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,6 +79,8 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   const pautaEfectiva = vehicle.pautaMantencion ?? company?.pautaMantencion ?? null
   const esOverride = vehicle.pautaMantencion != null
   const estado = estadoMantencion({ pauta: pautaEfectiva, ultima, kmActual: vehicle.kmActual ?? null, now })
+
+  const danoFotoUrl = vehicle.danoActivo?.fotoPath ? await createReadUrl(vehicle.danoActivo.fotoPath) : null
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? ''
   const publicUrl = `${base}/v/${vehicle.publicToken}`
@@ -149,6 +152,13 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         mantenciones={mantencionesConUrl}
         puedeRegistrar={canEditDocs}
         puedeConfigurar={canManageVehicle}
+      />
+
+      <DanoActivoPanel
+        vehicleId={vehicle.id}
+        danoActivo={vehicle.danoActivo ?? null}
+        danoFotoUrl={danoFotoUrl}
+        puedeGestionar={canManageVehicle}
       />
 
       <BitacoraUso usos={usos} puedeEditar={canEditDocs} />

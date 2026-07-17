@@ -43,6 +43,20 @@ export async function createUsagePhotoUrl(
   return { uploadUrl, filePath }
 }
 
+export async function createDanoUrl(
+  vehicleId: string,
+  contentType: string,
+): Promise<{ uploadUrl: string; filePath: string }> {
+  const filePath = `vehicles/${vehicleId}/dano/${nanoid(10)}-foto`
+  const [uploadUrl] = await adminBucket.file(filePath).getSignedUrl({
+    version: 'v4',
+    action: 'write',
+    expires: Date.now() + 10 * 60 * 1000,
+    contentType,
+  })
+  return { uploadUrl, filePath }
+}
+
 export async function createMantencionUrl(
   vehicleId: string,
   fileName: string,

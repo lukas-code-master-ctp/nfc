@@ -17,7 +17,7 @@ function CarIcon({ className }: { className?: string }) {
 }
 
 export default function VehicleCard({
-  vehicle, status, docCount = 0, prolongado = false, horasUso = 0, danoUsageId = null, categoriaNombre = null,
+  vehicle, status, docCount = 0, prolongado = false, horasUso = 0, danoUsageId = null, categoriaNombre = null, danoActivo = false,
 }: {
   vehicle: Vehicle
   status: DocStatus
@@ -26,6 +26,7 @@ export default function VehicleCard({
   horasUso?: number
   danoUsageId?: string | null
   categoriaNombre?: string | null
+  danoActivo?: boolean
 }) {
   const uso = vehicle.usoActual ?? null
   const puntoColor = prolongado ? '#B45309' : '#15803D'
@@ -60,6 +61,9 @@ export default function VehicleCard({
         <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:justify-end">
           {categoriaNombre && (
             <span className="whitespace-nowrap rounded-full bg-[#EEF0F3] px-2 py-0.5 text-xs font-medium text-acero">{categoriaNombre}</span>
+          )}
+          {danoActivo && (
+            <span className="whitespace-nowrap rounded-full bg-[#FCE7E7] px-2 py-0.5 text-xs font-medium text-[#C81E1E]">Dañado</span>
           )}
           {danoUsageId && (
             <span className="whitespace-nowrap rounded-full bg-[#FCE7E7] px-2 py-0.5 text-xs font-medium text-[#C81E1E]">Daño reportado</span>

@@ -45,6 +45,7 @@ export default async function DashboardPage() {
         danoUsageId: danoPorVehiculo.get(v.id) ?? null,
         categoriaId: v.categoriaId ?? null,
         categoriaNombre: v.categoriaId ? (nombrePorCategoria.get(v.categoriaId) ?? null) : null,
+        danoActivo: v.danoActivo != null,
       }
     }),
   )

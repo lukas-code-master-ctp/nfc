@@ -152,13 +152,14 @@ function MenuBoton({ titulo, subtitulo, onClick }: { titulo: string; subtitulo: 
 }
 
 export default function PublicVehicleView({
-  vehicle, documents, token, drivers, enUso,
+  vehicle, documents, token, drivers, enUso, danoFotoUrl,
 }: {
   vehicle: Vehicle
   documents: Item[]
   token: string
   drivers: { id: string; nombre: string }[]
   enUso: { driverNombre: string; tomadoEn: string } | null
+  danoFotoUrl: string | null
 }) {
   const [vista, setVista] = useState<'menu' | 'uso' | 'docs' | 'info'>('menu')
 
@@ -179,6 +180,25 @@ export default function PublicVehicleView({
           <p className="text-base text-acero">{vehicle.anio} · {vehicle.color}</p>
         </div>
       </div>
+
+      {vehicle.danoActivo && (
+        <div className="rounded-2xl border border-[#F5C6C6] bg-[#FCE7E7] p-5 shadow-sm">
+          <p className="flex items-center gap-2 text-base font-semibold text-[#C81E1E]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0" aria-hidden="true">
+              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" />
+            </svg>
+            Este vehículo tiene un daño reportado
+          </p>
+          {vehicle.danoActivo.nota && <p className="mt-1 text-sm text-tinta">{vehicle.danoActivo.nota}</p>}
+          {danoFotoUrl && (
+            <a href={danoFotoUrl} target="_blank" rel="noopener noreferrer" className="mt-3 block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={danoFotoUrl} alt="Daño reportado" loading="lazy" className="max-h-56 w-full rounded-xl border border-[#F5C6C6] bg-lienzo object-contain" />
+            </a>
+          )}
+          <p className="mt-2 text-xs text-acero">Ya está registrado. Si tomas el vehículo, no se te atribuirá este daño.</p>
+        </div>
+      )}
 
       {vista === 'menu' ? (
         <div className="space-y-3">

@@ -32,12 +32,16 @@ export default function UsoPanel({ token, drivers, enUso, autoAbrir = false }: {
   const [cabina, setCabina] = useState<File | null>(null)
   const [hayDano, setHayDano] = useState(false)
   const [notaDano, setNotaDano] = useState('')
+  const [reportaDano, setReportaDano] = useState(false)
+  const [notaDanoTomar, setNotaDanoTomar] = useState('')
+  const [fotoDanoTomar, setFotoDanoTomar] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function reset() {
     setModo('idle'); setDriverId(''); setPin(''); setTablero(null); setCabina(null)
     setHayDano(false); setNotaDano(''); setError(null)
+    setReportaDano(false); setNotaDanoTomar(''); setFotoDanoTomar(null)
   }
 
   function errorDePin(status: number): string {
@@ -48,14 +52,28 @@ export default function UsoPanel({ token, drivers, enUso, autoAbrir = false }: {
 
   async function tomar(e: React.FormEvent) {
     e.preventDefault()
+    if (reportaDano && !notaDanoTomar.trim() && !fotoDanoTomar) {
+      setError('Agrega un comentario o una foto del daño.')
+      return
+    }
     setBusy(true); setError(null)
-    const res = await fetch(`/api/v/${token}/tomar`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ driverId, pin }),
-    })
-    setBusy(false)
-    if (res.ok) { reset(); router.refresh() }
-    else setError(errorDePin(res.status))
+    try {
+      let fotoPath: string | null = null
+      if (reportaDano && fotoDanoTomar) {
+        fotoPath = await subirFoto(token, driverId, pin, 'incidencia', fotoDanoTomar)
+      }
+      const dano = reportaDano ? { nota: notaDanoTomar.trim() || null, fotoPath } : undefined
+      const res = await fetch(`/api/v/${token}/tomar`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driverId, pin, dano }),
+      })
+      setBusy(false)
+      if (res.ok) { reset(); router.refresh() }
+      else setError(errorDePin(res.status))
+    } catch {
+      setBusy(false)
+      setError('No se pudo completar. Revisa tu conexión.')
+    }
   }
 
   async function entregar(e: React.FormEvent) {
@@ -112,6 +130,16 @@ export default function UsoPanel({ token, drivers, enUso, autoAbrir = false }: {
             {drivers.map((d) => <option key={d.id} value={d.id}>{d.nombre}</option>)}
           </select>
           <input value={pin} onChange={(e) => setPin(e.target.value)} required inputMode="numeric" maxLength={4} placeholder="Tu PIN" className={inputCls} />
+          <label className="flex items-center gap-2 text-sm text-tinta">
+            <input type="checkbox" checked={reportaDano} onChange={(e) => setReportaDano(e.target.checked)} />
+            Este vehículo ya tiene un daño (repórtalo)
+          </label>
+          {reportaDano && (
+            <>
+              <textarea value={notaDanoTomar} onChange={(e) => setNotaDanoTomar(e.target.value)} rows={2} placeholder="Describe el daño que ya tiene" className={inputCls} />
+              <input type="file" accept="image/*" capture="environment" onChange={(e) => setFotoDanoTomar(e.target.files?.[0] ?? null)} className={fileCls} />
+            </>
+          )}
           {error && <p className="text-sm text-vencido">{error}</p>}
           <button type="submit" disabled={busy} className={btnPrimary}>{busy ? 'Tomando…' : 'Confirmar'}</button>
           <button type="button" onClick={reset} className="w-full text-sm text-acero">Cancelar</button>

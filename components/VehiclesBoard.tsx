@@ -18,6 +18,7 @@ type Item = {
   danoUsageId: string | null
   categoriaId: string | null
   categoriaNombre: string | null
+  danoActivo: boolean
 }
 
 // Tope de slots fantasma a dibujar (para flotas grandes no tiene sentido
@@ -387,8 +388,8 @@ export default function VehiclesBoard({
             ) : (
               <>
                 <div className="space-y-3">
-                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre }) => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} />
+                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre, danoActivo }) => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} danoActivo={danoActivo} />
                   ))}
                   {enUltimaPagina && canWrite && filter === 'todos' && !buscando && ghostsBlock}
                 </div>
