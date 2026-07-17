@@ -146,7 +146,7 @@ export default function PdfPreview({ url, label }: { url: string; label: string 
         // pdfjs referencia APIs de browser: se importa SOLO en el cliente.
         const pdfjs = await import('pdfjs-dist')
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-        const pdf = await pdfjs.getDocument(url).promise
+        const pdf = await pdfjs.getDocument({ url }).promise
         if (cancelado) { await pdf.destroy(); return }
         const page = await pdf.getPage(1)
         const viewport = page.getViewport({ scale: 2 })
@@ -205,7 +205,7 @@ export default function PdfPreview({ url, label }: { url: string; label: string 
 }
 ```
 
-Nota: el código apunta a la API de pdfjs v4 (`getDocument(url).promise`, `getPage(1)`, `getViewport({ scale })`, `render({ canvasContext, viewport }).promise`). Si los tipos de la versión instalada exigen un campo adicional en `render(...)` (p. ej. `canvas`), agrégalo siguiendo el tipo — no cambies la lógica.
+Nota: la dependencia instalada es **pdfjs-dist v6**. El código usa la API de v6: `getDocument({ url }).promise` (en v6 `getDocument` recibe un objeto `DocumentInitParameters`, **no** un string), `getPage(1)`, `getViewport({ scale })`, `render({ canvasContext, viewport }).promise` (verificado contra los tipos de v6: `canvasContext` es opcional y `viewport` requerido, así que este llamado tipa correcto; `canvas` es opcional y no hace falta). Si `npx tsc --noEmit` marcara algún campo requerido extra, agrégalo siguiendo el tipo — no cambies la lógica.
 
 - [ ] **Step 2: Typecheck y lint**
 
