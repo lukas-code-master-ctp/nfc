@@ -6,8 +6,10 @@ export const TABS_FICHA: readonly TabFicha[] = ['documentos', 'vehiculo', 'bitac
 /**
  * Resuelve la pestaña activa (y un posible destino de scroll) a partir del hash
  * de la URL. Un hash `uso-{id}` (enlace profundo a un uso desde la pill del
- * dashboard o el email de daño) abre la Bitácora y pide scroll a ese uso.
- * Cualquier hash vacío o desconocido cae en Documentos.
+ * dashboard o el email de daño) abre la Bitácora y pide scroll a ese uso. El
+ * hash `mantencion` (desde la vista de flota `/mantenciones`) abre la pestaña
+ * Vehículo y pide scroll al panel de Mantención. Cualquier hash vacío o
+ * desconocido cae en Documentos.
  */
 export function tabDesdeHash(hash: string): { tab: TabFicha; scrollA: string | null } {
   const limpio = hash.replace(/^#/, '')
@@ -16,6 +18,9 @@ export function tabDesdeHash(hash: string): { tab: TabFicha; scrollA: string | n
   }
   if (limpio.startsWith('uso-')) {
     return { tab: 'bitacora', scrollA: limpio }
+  }
+  if (limpio === 'mantencion') {
+    return { tab: 'vehiculo', scrollA: 'mantencion' }
   }
   return { tab: 'documentos', scrollA: null }
 }

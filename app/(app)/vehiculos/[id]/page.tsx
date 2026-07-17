@@ -141,18 +141,21 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
             ) : (
               <VehicleInfoView info={vehicle.info ?? {}} />
             )}
-            <MantencionPanel
-              vehicleId={vehicle.id}
-              estado={estado.estado}
-              detalle={estado.detalle}
-              pautaEfectiva={pautaEfectiva}
-              esOverride={esOverride}
-              pautaEstandar={company?.pautaMantencion ?? null}
-              kmActual={vehicle.kmActual ?? null}
-              mantenciones={mantencionesConUrl}
-              puedeRegistrar={canEditDocs}
-              puedeConfigurar={canManageVehicle}
-            />
+            {/* Ancla para el enlace #mantencion desde la vista de flota /mantenciones. */}
+            <div id="mantencion" className="scroll-mt-20">
+              <MantencionPanel
+                vehicleId={vehicle.id}
+                estado={estado.estado}
+                detalle={estado.detalle}
+                pautaEfectiva={pautaEfectiva}
+                esOverride={esOverride}
+                pautaEstandar={company?.pautaMantencion ?? null}
+                kmActual={vehicle.kmActual ?? null}
+                mantenciones={mantencionesConUrl}
+                puedeRegistrar={canEditDocs}
+                puedeConfigurar={canManageVehicle}
+              />
+            </div>
             <DanoActivoPanel
               vehicleId={vehicle.id}
               danoActivo={vehicle.danoActivo ?? null}
