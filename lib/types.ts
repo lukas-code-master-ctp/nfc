@@ -31,6 +31,11 @@ export interface PautaMantencion {
   cadaMeses?: number | null
 }
 
+export interface ConsumoBencina {
+  rendimientoKmL: number | null // km por litro
+  estanqueLitros: number | null // capacidad del estanque en litros
+}
+
 export interface DanoActivo {
   nota: string | null
   fotoPath: string | null
@@ -100,6 +105,7 @@ export interface Vehicle {
   pautaMantencion?: PautaMantencion | null
   mantencionReminders?: ('proxima' | 'vencida')[]
   danoActivo?: DanoActivo | null
+  consumo?: ConsumoBencina | null
 }
 
 export interface CompanyData {
