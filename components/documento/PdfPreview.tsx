@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import LoadingDots from '@/components/LoadingDots'
+import type { PDFDocumentProxy } from 'pdfjs-dist'
 
 type Estado = 'cargando' | 'ok' | 'error'
 
@@ -14,24 +15,29 @@ export default function PdfPreview({ url, label }: { url: string; label: string 
   useEffect(() => {
     let cancelado = false
     async function render() {
+      let pdf: PDFDocumentProxy | null = null
       try {
         // pdfjs referencia APIs de browser: se importa SOLO en el cliente.
         const pdfjs = await import('pdfjs-dist')
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-        const pdf = await pdfjs.getDocument({ url }).promise
-        if (cancelado) { await pdf.loadingTask.destroy(); return }
+        pdf = await pdfjs.getDocument({ url }).promise
+        if (cancelado) return
         const page = await pdf.getPage(1)
         const viewport = page.getViewport({ scale: 2 })
         const canvas = canvasRef.current
         const ctx = canvas?.getContext('2d')
-        if (!canvas || !ctx) { await pdf.loadingTask.destroy(); return }
+        if (!canvas || !ctx) return
         canvas.width = viewport.width
         canvas.height = viewport.height
-        await page.render({ canvasContext: ctx, viewport, canvas }).promise
-        await pdf.loadingTask.destroy()
+        if (cancelado) return
+        await page.render({ canvasContext: ctx, canvas, viewport }).promise
         if (!cancelado) setEstado('ok')
       } catch {
         if (!cancelado) setEstado('error')
+      } finally {
+        // Libera el transport y el worker de pdf.js en todos los caminos
+        // (éxito, cancelación o error), evitando fugas.
+        if (pdf) await pdf.loadingTask.destroy()
       }
     }
     render()
