@@ -41,22 +41,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   // vehículo (antes de usarlo). Se guarda como danoActivo del vehículo y avisa
   // por email a los destinatarios de alertas de la empresa (best-effort).
   const reporte = body?.dano
-  if (reporte && (reporte.nota || reporte.fotoPath)) {
+  if (reporte) {
     const dano = buildDanoActivo(
       { nota: typeof reporte.nota === 'string' ? reporte.nota : null, fotoPath: typeof reporte.fotoPath === 'string' && reporte.fotoPath ? reporte.fotoPath : null },
       'conductor', driver.nombre, new Date().toISOString(),
     )
-    try { await setDanoActivo(vehicle.id, vehicle.companyId, dano) } catch { /* best-effort */ }
-    const nota = dano.nota
-    after(async () => {
-      try {
-        const company = await getCompany(vehicle.companyId)
-        const emails = company ? await alertRecipientEmails(vehicle.companyId, company.ownerUid) : []
-        for (const to of emails) {
-          await sendIncidenciaEmail(to, { patente: vehicle.patente, vehicleId: vehicle.id, driverNombre: driver.nombre, nota })
-        }
-      } catch { /* best-effort */ }
-    })
+    // Nunca confiar en el cliente: una nota solo con espacios llega "truthy" pero
+    // buildDanoActivo la deja en null tras el trim; sin nota ni foto no hay nada
+    // que persistir ni avisar (evita un danoActivo vacío y un email en blanco).
+    if (dano.nota || dano.fotoPath) {
+      try { await setDanoActivo(vehicle.id, vehicle.companyId, dano) } catch { /* best-effort */ }
+      const nota = dano.nota
+      after(async () => {
+        try {
+          const company = await getCompany(vehicle.companyId)
+          const emails = company ? await alertRecipientEmails(vehicle.companyId, company.ownerUid) : []
+          for (const to of emails) {
+            await sendIncidenciaEmail(to, { patente: vehicle.patente, vehicleId: vehicle.id, driverNombre: driver.nombre, nota })
+          }
+        } catch { /* best-effort */ }
+      })
+    }
   }
 
   return NextResponse.json({ ok: true })

@@ -60,10 +60,11 @@ export default function DanoActivoPanel({
 
   async function desmarcar() {
     if (!confirm('¿Marcar este vehículo como sin daño?')) return
-    setBusy(true)
+    setBusy(true); setError(null)
     const res = await fetch(`/api/vehicles/${vehicleId}/dano`, { method: 'DELETE' })
     setBusy(false)
     if (res.ok) router.refresh()
+    else setError('No se pudo actualizar el daño.')
   }
 
   return (
@@ -88,9 +89,12 @@ export default function DanoActivoPanel({
             </a>
           )}
           {puedeGestionar && (
-            <button onClick={desmarcar} disabled={busy} className="rounded-lg border border-linea bg-superficie px-4 py-2 text-sm font-medium text-tinta transition-colors hover:bg-lienzo disabled:opacity-50">
-              Marcar como reparado
-            </button>
+            <>
+              {error && <p className="text-sm text-vencido">{error}</p>}
+              <button onClick={desmarcar} disabled={busy} className="rounded-lg border border-linea bg-superficie px-4 py-2 text-sm font-medium text-tinta transition-colors hover:bg-lienzo disabled:opacity-50">
+                Marcar como reparado
+              </button>
+            </>
           )}
         </div>
       ) : (

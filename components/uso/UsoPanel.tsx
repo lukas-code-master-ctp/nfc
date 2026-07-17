@@ -52,13 +52,17 @@ export default function UsoPanel({ token, drivers, enUso, autoAbrir = false }: {
 
   async function tomar(e: React.FormEvent) {
     e.preventDefault()
+    if (reportaDano && !notaDanoTomar.trim() && !fotoDanoTomar) {
+      setError('Agrega un comentario o una foto del daño.')
+      return
+    }
     setBusy(true); setError(null)
     try {
       let fotoPath: string | null = null
       if (reportaDano && fotoDanoTomar) {
         fotoPath = await subirFoto(token, driverId, pin, 'incidencia', fotoDanoTomar)
       }
-      const dano = reportaDano && (notaDanoTomar || fotoPath) ? { nota: notaDanoTomar || null, fotoPath } : undefined
+      const dano = reportaDano ? { nota: notaDanoTomar.trim() || null, fotoPath } : undefined
       const res = await fetch(`/api/v/${token}/tomar`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driverId, pin, dano }),
