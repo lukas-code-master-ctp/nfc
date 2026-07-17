@@ -166,7 +166,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
             />
           </div>
         }
-        bitacora={<BitacoraUso usos={usos} puedeEditar={canEditDocs} />}
+        bitacora={<BitacoraUso usos={usos} puedeEditar={canEditDocs} consumoParams={vehicle.consumo ?? null} />}
         ajustes={
           <div className="space-y-6">
             <NfcTokenPanel vehicleId={vehicle.id} initialUrl={publicUrl} />
