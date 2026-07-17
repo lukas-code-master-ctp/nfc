@@ -20,6 +20,7 @@ import BitacoraUso from '@/components/vehicle/BitacoraUso'
 import CategoriaSelector from '@/components/vehicle/CategoriaSelector'
 import MantencionPanel from '@/components/vehicle/MantencionPanel'
 import DanoActivoPanel from '@/components/vehicle/DanoActivoPanel'
+import VehicleTabs from '@/components/vehicle/VehicleTabs'
 
 export const dynamic = 'force-dynamic'
 
@@ -124,48 +125,54 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <NfcTokenPanel vehicleId={vehicle.id} initialUrl={publicUrl} />
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-tinta">Documentos</h2>
-        {canEditDocs && <DocumentForm vehicleId={vehicle.id} />}
-        <DocumentList documents={items} vehicleId={vehicle.id} canEdit={canEditDocs} />
-      </section>
-
-      {canManageVehicle ? (
-        <VehicleInfoForm vehicleId={vehicle.id} initial={vehicle.info ?? {}} />
-      ) : (
-        <VehicleInfoView info={vehicle.info ?? {}} />
-      )}
-
-      <MantencionPanel
-        vehicleId={vehicle.id}
-        estado={estado.estado}
-        detalle={estado.detalle}
-        pautaEfectiva={pautaEfectiva}
-        esOverride={esOverride}
-        pautaEstandar={company?.pautaMantencion ?? null}
-        kmActual={vehicle.kmActual ?? null}
-        mantenciones={mantencionesConUrl}
-        puedeRegistrar={canEditDocs}
-        puedeConfigurar={canManageVehicle}
+      <VehicleTabs
+        documentos={
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-tinta">Documentos</h2>
+            {canEditDocs && <DocumentForm vehicleId={vehicle.id} />}
+            <DocumentList documents={items} vehicleId={vehicle.id} canEdit={canEditDocs} />
+          </section>
+        }
+        vehiculo={
+          <div className="space-y-6">
+            {canManageVehicle ? (
+              <VehicleInfoForm vehicleId={vehicle.id} initial={vehicle.info ?? {}} />
+            ) : (
+              <VehicleInfoView info={vehicle.info ?? {}} />
+            )}
+            <MantencionPanel
+              vehicleId={vehicle.id}
+              estado={estado.estado}
+              detalle={estado.detalle}
+              pautaEfectiva={pautaEfectiva}
+              esOverride={esOverride}
+              pautaEstandar={company?.pautaMantencion ?? null}
+              kmActual={vehicle.kmActual ?? null}
+              mantenciones={mantencionesConUrl}
+              puedeRegistrar={canEditDocs}
+              puedeConfigurar={canManageVehicle}
+            />
+            <DanoActivoPanel
+              vehicleId={vehicle.id}
+              danoActivo={vehicle.danoActivo ?? null}
+              danoFotoUrl={danoFotoUrl}
+              puedeGestionar={canManageVehicle}
+            />
+          </div>
+        }
+        bitacora={<BitacoraUso usos={usos} puedeEditar={canEditDocs} />}
+        ajustes={
+          <div className="space-y-6">
+            <NfcTokenPanel vehicleId={vehicle.id} initialUrl={publicUrl} />
+            {canManageVehicle && (
+              <DeleteVehicleButton
+                vehicleId={vehicle.id}
+                label={`${vehicle.marca} ${vehicle.modelo} · ${vehicle.patente}`}
+              />
+            )}
+          </div>
+        }
       />
-
-      <DanoActivoPanel
-        vehicleId={vehicle.id}
-        danoActivo={vehicle.danoActivo ?? null}
-        danoFotoUrl={danoFotoUrl}
-        puedeGestionar={canManageVehicle}
-      />
-
-      <BitacoraUso usos={usos} puedeEditar={canEditDocs} />
-
-      {canManageVehicle && (
-        <DeleteVehicleButton
-          vehicleId={vehicle.id}
-          label={`${vehicle.marca} ${vehicle.modelo} · ${vehicle.patente}`}
-        />
-      )}
     </main>
   )
 }
