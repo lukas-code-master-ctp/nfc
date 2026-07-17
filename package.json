@@ -10,13 +10,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run rules\"",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "postinstall": "node scripts/copy-pdf-worker.mjs"
   },
   "dependencies": {
     "firebase": "^12.15.0",
     "firebase-admin": "^14.1.0",
     "nanoid": "^5.1.16",
     "next": "16.2.9",
+    "pdfjs-dist": "^6.1.200",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.16.0"
