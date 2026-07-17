@@ -54,7 +54,7 @@ export default function VehicleTabs({
   return (
     <div className="space-y-6">
       <nav
-        className="flex gap-1 overflow-x-auto border-b border-linea"
+        className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-linea"
         role="tablist"
         aria-label="Secciones del vehículo"
       >
