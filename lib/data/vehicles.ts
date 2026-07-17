@@ -31,6 +31,7 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
     pautaMantencion: data.pautaMantencion ?? null,
     mantencionReminders: data.mantencionReminders ?? [],
     danoActivo: data.danoActivo ?? null,
+    consumo: data.consumo ?? null,
   }
 }
 

@@ -3,6 +3,7 @@ import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { getVehicle, updateVehicle, deleteVehicle } from '@/lib/data/vehicles'
 import { sanitizePauta } from '@/lib/mantencion/status'
+import { sanitizeConsumo } from '@/lib/usages/consumo'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -25,6 +26,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     patch.pautaMantencion = body.pautaMantencion === null ? null : sanitizePauta(body.pautaMantencion)
   }
   if (body.info !== undefined) patch.info = body.info
+  if (body.consumo !== undefined) {
+    patch.consumo = body.consumo === null ? null : sanitizeConsumo(body.consumo)
+  }
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'nada que actualizar' }, { status: 400 })
   try {
     await updateVehicle(id, m.companyId, patch)

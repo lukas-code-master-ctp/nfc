@@ -20,6 +20,7 @@ import BitacoraUso from '@/components/vehicle/BitacoraUso'
 import CategoriaSelector from '@/components/vehicle/CategoriaSelector'
 import MantencionPanel from '@/components/vehicle/MantencionPanel'
 import DanoActivoPanel from '@/components/vehicle/DanoActivoPanel'
+import ConsumoBencinaPanel from '@/components/vehicle/ConsumoBencinaPanel'
 import VehicleTabs from '@/components/vehicle/VehicleTabs'
 
 export const dynamic = 'force-dynamic'
@@ -158,9 +159,14 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
               danoFotoUrl={danoFotoUrl}
               puedeGestionar={canManageVehicle}
             />
+            <ConsumoBencinaPanel
+              vehicleId={vehicle.id}
+              initial={vehicle.consumo ?? null}
+              puedeEditar={canManageVehicle}
+            />
           </div>
         }
-        bitacora={<BitacoraUso usos={usos} puedeEditar={canEditDocs} />}
+        bitacora={<BitacoraUso usos={usos} puedeEditar={canEditDocs} consumoParams={vehicle.consumo ?? null} />}
         ajustes={
           <div className="space-y-6">
             <NfcTokenPanel vehicleId={vehicle.id} initialUrl={publicUrl} />

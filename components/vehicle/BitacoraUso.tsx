@@ -1,6 +1,9 @@
 import UsageDatosEditor from '@/components/vehicle/UsageDatosEditor'
 import RevisarDanoButton from '@/components/vehicle/RevisarDanoButton'
 import ForzarEntregaButton from '@/components/vehicle/ForzarEntregaButton'
+import PillTip from '@/components/PillTip'
+import { calcularConsumo } from '@/lib/usages/consumo'
+import type { ConsumoBencina } from '@/lib/types'
 
 interface UsageRow {
   id: string
@@ -24,7 +27,7 @@ function fecha(iso: string): string {
   return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
 }
 
-export default function BitacoraUso({ usos, puedeEditar }: { usos: UsageRow[]; puedeEditar: boolean }) {
+export default function BitacoraUso({ usos, puedeEditar, consumoParams }: { usos: UsageRow[]; puedeEditar: boolean; consumoParams: ConsumoBencina | null }) {
   return (
     <section className="rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-tinta">Bitácora de uso</h2>
@@ -34,7 +37,15 @@ export default function BitacoraUso({ usos, puedeEditar }: { usos: UsageRow[]; p
         <p className="mt-4 text-sm text-acero">Aún no hay registros de uso.</p>
       ) : (
         <ul className="mt-4 space-y-3">
-          {usos.map((u) => (
+          {usos.map((u, i) => {
+            // El uso previo en el tiempo es el siguiente en la lista (orden desc por tomadoEn).
+            const prev = usos[i + 1]
+            const consumo = calcularConsumo(
+              { km: u.km ?? null, bencina: u.bencina ?? null },
+              prev ? { km: prev.km ?? null, bencina: prev.bencina ?? null } : null,
+              consumoParams,
+            )
+            return (
             <li key={u.id} id={`uso-${u.id}`} className="scroll-mt-20 rounded-xl border border-linea p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-tinta">{u.driverNombre}</p>
@@ -42,6 +53,11 @@ export default function BitacoraUso({ usos, puedeEditar }: { usos: UsageRow[]; p
                   {u.estado === 'abierto' && <span className="rounded-full bg-azul/10 px-2 py-0.5 text-xs font-medium text-azul">En uso</span>}
                   {u.cierreForzado && <span className="rounded-full bg-[#FDF1DC] px-2 py-0.5 text-xs font-medium text-[#B45309]">Sin entrega formal</span>}
                   {u.dano?.hay && <span className="rounded-full bg-[#FCE7E7] px-2 py-0.5 text-xs font-medium text-[#C81E1E]">Daño reportado</span>}
+                  {consumo?.revisar && (
+                    <PillTip label="Revisar consumo" tono="rojo">
+                      Esperabas gastar ~{Math.round(consumo.litrosEsperados)} L en {consumo.kmRecorridos.toLocaleString('es-CL')} km, pero el estanque bajó ~{Math.round(consumo.litrosObservados)} L. Revisa un posible consumo anómalo.
+                    </PillTip>
+                  )}
                 </div>
               </div>
               <p className="mt-1 text-xs text-acero">
@@ -88,7 +104,8 @@ export default function BitacoraUso({ usos, puedeEditar }: { usos: UsageRow[]; p
                 </div>
               )}
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
     </section>
