@@ -31,6 +31,14 @@ export interface PautaMantencion {
   cadaMeses?: number | null
 }
 
+export interface DanoActivo {
+  nota: string | null
+  fotoPath: string | null
+  reportadoPor: 'admin' | 'conductor'
+  reportadoPorNombre: string | null // nombre del conductor; null si lo marcó el admin
+  reportadoEn: string // ISO
+}
+
 export interface Mantencion {
   id: string
   companyId: string
@@ -91,6 +99,7 @@ export interface Vehicle {
   kmActualizadoEn?: string | null
   pautaMantencion?: PautaMantencion | null
   mantencionReminders?: ('proxima' | 'vencida')[]
+  danoActivo?: DanoActivo | null
 }
 
 export interface CompanyData {

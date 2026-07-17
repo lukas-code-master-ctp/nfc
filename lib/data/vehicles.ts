@@ -1,11 +1,11 @@
-import { adminDb } from '@/lib/firebase/admin'
+import { adminDb, adminBucket } from '@/lib/firebase/admin'
 import { nanoid } from 'nanoid'
 import { listDocuments, deleteDocument } from '@/lib/data/documents'
 import { deleteUsagesByVehicle } from '@/lib/data/usages'
 import { deleteMantencionesByVehicle } from '@/lib/data/mantenciones'
 import { getCompany } from '@/lib/data/companies'
 import { alertRecipientEmails } from '@/lib/data/members'
-import type { Vehicle } from '@/lib/types'
+import type { Vehicle, DanoActivo } from '@/lib/types'
 
 const COL = 'vehicles'
 
@@ -30,6 +30,7 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
     kmActualizadoEn: data.kmActualizadoEn ?? null,
     pautaMantencion: data.pautaMantencion ?? null,
     mantencionReminders: data.mantencionReminders ?? [],
+    danoActivo: data.danoActivo ?? null,
   }
 }
 
@@ -76,6 +77,22 @@ export async function updateVehicle(
   await adminDb.collection(COL).doc(vehicleId).update(patch)
 }
 
+export async function setDanoActivo(vehicleId: string, companyId: string, dano: DanoActivo): Promise<void> {
+  const v = await assertCompany(vehicleId, companyId)
+  const anterior = v.danoActivo?.fotoPath
+  if (anterior && anterior !== dano.fotoPath) {
+    await adminBucket.file(anterior).delete({ ignoreNotFound: true })
+  }
+  await adminDb.collection(COL).doc(vehicleId).update({ danoActivo: dano })
+}
+
+export async function clearDanoActivo(vehicleId: string, companyId: string): Promise<void> {
+  const v = await assertCompany(vehicleId, companyId)
+  const foto = v.danoActivo?.fotoPath
+  if (foto) await adminBucket.file(foto).delete({ ignoreNotFound: true })
+  await adminDb.collection(COL).doc(vehicleId).update({ danoActivo: null })
+}
+
 export async function deleteVehicle(vehicleId: string, companyId: string): Promise<void> {
   await assertCompany(vehicleId, companyId)
   // Borrado en cascada: documentos hijos (+ sus archivos) y usos de bitácora (+ sus fotos)
@@ -86,6 +103,10 @@ export async function deleteVehicle(vehicleId: string, companyId: string): Promi
   }
   await deleteUsagesByVehicle(vehicleId)
   await deleteMantencionesByVehicle(vehicleId)
+  const vActual = await getVehicle(vehicleId)
+  if (vActual?.danoActivo?.fotoPath) {
+    await adminBucket.file(vActual.danoActivo.fotoPath).delete({ ignoreNotFound: true })
+  }
   await adminDb.collection(COL).doc(vehicleId).delete()
 }
 
