@@ -29,6 +29,16 @@ export default async function PublicPage({ params }: { params: Promise<{ token: 
     listActiveDrivers(vehicle.companyId),
   ])
   const enUso = openUsage ? { driverNombre: openUsage.driverNombre, tomadoEn: openUsage.tomadoEn } : null
+  const danoFotoUrl = vehicle.danoActivo?.fotoPath ? await createReadUrl(vehicle.danoActivo.fotoPath) : null
 
-  return <PublicVehicleView vehicle={vehicle} documents={items} token={token} drivers={drivers} enUso={enUso} />
+  return (
+    <PublicVehicleView
+      vehicle={vehicle}
+      documents={items}
+      token={token}
+      drivers={drivers}
+      enUso={enUso}
+      danoFotoUrl={danoFotoUrl}
+    />
+  )
 }
