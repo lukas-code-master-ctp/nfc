@@ -72,3 +72,40 @@ export function calcularConsumo(
   const revisar = fraccionObservada - fraccionEsperada >= UMBRAL_FRACCION
   return { kmRecorridos, litrosEsperados, litrosObservados, fraccionEsperada, fraccionObservada, revisar }
 }
+
+type UsoConsumo = { vehicleId: string; driverId: string; tomadoEn: string; km: number | null; bencina: string | null }
+
+/**
+ * Cuenta, por conductor, cuántos usos gatillan la señal de consumo anómalo.
+ * Agrupa los usos por vehículo, los ordena desc por `tomadoEn` (el previo de
+ * grupo[i] es grupo[i+1]) y aplica `calcularConsumo` con los params de ese
+ * vehículo. Devuelve un Map driverId -> cantidad (solo conductores con >= 1).
+ */
+export function contarConsumoAnomaloPorConductor(
+  usos: UsoConsumo[],
+  paramsPorVehiculo: Map<string, ConsumoBencina | null>,
+): Map<string, number> {
+  const porVehiculo = new Map<string, UsoConsumo[]>()
+  for (const u of usos) {
+    const arr = porVehiculo.get(u.vehicleId)
+    if (arr) arr.push(u)
+    else porVehiculo.set(u.vehicleId, [u])
+  }
+  const conteo = new Map<string, number>()
+  for (const [vehicleId, grupo] of porVehiculo) {
+    grupo.sort((a, b) => (a.tomadoEn < b.tomadoEn ? 1 : -1))
+    const params = paramsPorVehiculo.get(vehicleId) ?? null
+    for (let i = 0; i < grupo.length; i++) {
+      const prev = grupo[i + 1] ?? null
+      const calc = calcularConsumo(
+        { km: grupo[i].km, bencina: grupo[i].bencina },
+        prev ? { km: prev.km, bencina: prev.bencina } : null,
+        params,
+      )
+      if (calc?.revisar) {
+        conteo.set(grupo[i].driverId, (conteo.get(grupo[i].driverId) ?? 0) + 1)
+      }
+    }
+  }
+  return conteo
+}
