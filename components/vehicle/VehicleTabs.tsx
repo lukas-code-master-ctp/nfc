@@ -1,6 +1,10 @@
 'use client'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import { tabDesdeHash, TABS_FICHA, type TabFicha } from '@/lib/vehicles/tabs'
+
+// useLayoutEffect en el cliente (evita el parpadeo de pestaña en deep-links);
+// useEffect en SSR para no gatillar el warning de React en el servidor.
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 const LABELS: Record<TabFicha, string> = {
   documentos: 'Documentos',
@@ -25,7 +29,7 @@ export default function VehicleTabs({
   // Sincroniza la pestaña con el hash de la URL: al montar y ante atrás/adelante
   // del navegador (evento `hashchange`). Un hash `uso-{id}` abre la Bitácora y
   // hace scroll al <li id="uso-{id}"> una vez que es visible.
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     function sync() {
       const { tab, scrollA } = tabDesdeHash(window.location.hash)
       setActiva(tab)
@@ -38,11 +42,11 @@ export default function VehicleTabs({
     return () => window.removeEventListener('hashchange', sync)
   }, [])
 
-  // Cambiar el hash dispara `hashchange` → sync() actualiza la pestaña y suma una
-  // entrada al historial, así atrás/adelante navegan entre pestañas.
+  // Navegar al fragmento dispara `hashchange` → sync() actualiza la pestaña y
+  // suma una entrada al historial (atrás/adelante funcionan). Usamos assign()
+  // en vez de asignar location.hash para no mutar una referencia externa.
   function irA(tab: TabFicha) {
-    // eslint-disable-next-line react-hooks/immutability
-    window.location.hash = tab
+    window.location.assign(`#${tab}`)
   }
 
   const slots: Record<TabFicha, ReactNode> = { documentos, vehiculo, bitacora, ajustes }
