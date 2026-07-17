@@ -14,6 +14,11 @@ describe('tabDesdeHash', () => {
     expect(tabDesdeHash('uso-XYZ')).toEqual({ tab: 'bitacora', scrollA: 'uso-XYZ' })
   })
 
+  it('el hash mantencion abre la pestaña Vehículo y pide scroll al panel', () => {
+    expect(tabDesdeHash('#mantencion')).toEqual({ tab: 'vehiculo', scrollA: 'mantencion' })
+    expect(tabDesdeHash('mantencion')).toEqual({ tab: 'vehiculo', scrollA: 'mantencion' })
+  })
+
   it('vacío o desconocido cae en documentos', () => {
     expect(tabDesdeHash('')).toEqual({ tab: 'documentos', scrollA: null })
     expect(tabDesdeHash('#')).toEqual({ tab: 'documentos', scrollA: null })

@@ -43,7 +43,7 @@ export default async function MantencionesPage() {
       <h1 className="mb-4 mt-5 text-2xl font-bold tracking-tight text-tinta">Mantención de la flota</h1>
       <div className="space-y-2">
         {filas.map((f) => (
-          <Link key={f.id} href={`/vehiculos/${f.id}`} className="flex items-center justify-between gap-3 rounded-2xl border border-linea bg-superficie p-4 shadow-sm transition-shadow hover:shadow-md">
+          <Link key={f.id} href={`/vehiculos/${f.id}#mantencion`} className="flex items-center justify-between gap-3 rounded-2xl border border-linea bg-superficie p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="min-w-0">
               <p className="truncate font-semibold text-tinta">{f.marca} {f.modelo} · {f.patente}</p>
               {f.detalle && <p className="truncate text-sm text-acero">{f.detalle}</p>}
