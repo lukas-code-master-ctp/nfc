@@ -20,6 +20,7 @@ import BitacoraUso from '@/components/vehicle/BitacoraUso'
 import CategoriaSelector from '@/components/vehicle/CategoriaSelector'
 import MantencionPanel from '@/components/vehicle/MantencionPanel'
 import DanoActivoPanel from '@/components/vehicle/DanoActivoPanel'
+import ConsumoBencinaPanel from '@/components/vehicle/ConsumoBencinaPanel'
 import VehicleTabs from '@/components/vehicle/VehicleTabs'
 
 export const dynamic = 'force-dynamic'
@@ -157,6 +158,11 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
               danoActivo={vehicle.danoActivo ?? null}
               danoFotoUrl={danoFotoUrl}
               puedeGestionar={canManageVehicle}
+            />
+            <ConsumoBencinaPanel
+              vehicleId={vehicle.id}
+              initial={vehicle.consumo ?? null}
+              puedeEditar={canManageVehicle}
             />
           </div>
         }
