@@ -101,16 +101,13 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
             {vehicle.marca} {vehicle.modelo} · {vehicle.patente}
           </h1>
           <p className="text-sm text-acero">{vehicle.anio} · {vehicle.color}</p>
-          {typeof vehicle.kmActual === 'number' ? (
+          {/* Sin lectura de km no se muestra nada (el espacio queda limpio). */}
+          {typeof vehicle.kmActual === 'number' && (
             <p className="mt-0.5 text-sm text-acero">
               Kilometraje: <span className="font-medium text-tinta">{vehicle.kmActual.toLocaleString('es-CL')} km</span>
               {vehicle.kmActualizadoEn && (
                 <span className="text-xs"> · actualizado el {new Date(vehicle.kmActualizadoEn).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</span>
               )}
-            </p>
-          ) : (
-            <p className="mt-0.5 text-sm text-acero">
-              Kilometraje: sin lectura todavía <span className="text-xs">· se toma de la foto del tablero al entregar</span>
             </p>
           )}
           {categorias.length > 0 && (

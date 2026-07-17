@@ -8,6 +8,7 @@ import {
   VEHICLE_INFO_FIELDS,
   type VehicleDocument,
   type Vehicle,
+  type DanoActivo,
 } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 
@@ -131,6 +132,45 @@ function hora(iso: string): string {
   return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
 }
 
+// Aviso de daño preexistente. Se muestra solo al tomar/entregar (no en el menú),
+// y la foto va colapsada tras un botón para no tapar el formulario.
+function DanoBanner({ dano, fotoUrl }: { dano: DanoActivo; fotoUrl: string | null }) {
+  const [verFoto, setVerFoto] = useState(false)
+  return (
+    <div className="rounded-2xl border border-[#F5C6C6] bg-[#FCE7E7] p-5 shadow-sm">
+      <p className="flex items-center gap-2 text-base font-semibold text-[#C81E1E]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0" aria-hidden="true">
+          <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" />
+        </svg>
+        Este vehículo tiene un daño reportado
+      </p>
+      {dano.nota && <p className="mt-1 text-sm text-tinta">{dano.nota}</p>}
+      {fotoUrl && (
+        <>
+          <button
+            type="button"
+            onClick={() => setVerFoto((v) => !v)}
+            aria-expanded={verFoto}
+            className="mt-3 flex items-center gap-1.5 text-sm font-medium text-[#C81E1E] hover:underline"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`size-4 transition-transform ${verFoto ? 'rotate-90' : ''}`} aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+            {verFoto ? 'Ocultar foto' : 'Ver foto del daño'}
+          </button>
+          {verFoto && (
+            <a href={fotoUrl} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={fotoUrl} alt="Daño reportado" loading="lazy" className="max-h-56 w-full rounded-xl border border-[#F5C6C6] bg-lienzo object-contain" />
+            </a>
+          )}
+        </>
+      )}
+      <p className="mt-2 text-xs text-acero">Ya está registrado. Si tomas el vehículo, no se te atribuirá este daño.</p>
+    </div>
+  )
+}
+
 function MenuBoton({ titulo, subtitulo, onClick }: { titulo: string; subtitulo: string; onClick: () => void }) {
   return (
     <button
@@ -181,25 +221,6 @@ export default function PublicVehicleView({
         </div>
       </div>
 
-      {vehicle.danoActivo && (
-        <div className="rounded-2xl border border-[#F5C6C6] bg-[#FCE7E7] p-5 shadow-sm">
-          <p className="flex items-center gap-2 text-base font-semibold text-[#C81E1E]">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0" aria-hidden="true">
-              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" />
-            </svg>
-            Este vehículo tiene un daño reportado
-          </p>
-          {vehicle.danoActivo.nota && <p className="mt-1 text-sm text-tinta">{vehicle.danoActivo.nota}</p>}
-          {danoFotoUrl && (
-            <a href={danoFotoUrl} target="_blank" rel="noopener noreferrer" className="mt-3 block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={danoFotoUrl} alt="Daño reportado" loading="lazy" className="max-h-56 w-full rounded-xl border border-[#F5C6C6] bg-lienzo object-contain" />
-            </a>
-          )}
-          <p className="mt-2 text-xs text-acero">Ya está registrado. Si tomas el vehículo, no se te atribuirá este daño.</p>
-        </div>
-      )}
-
       {vista === 'menu' ? (
         <div className="space-y-3">
           {drivers.length > 0 && (
@@ -232,6 +253,7 @@ export default function PublicVehicleView({
             </svg>
             Volver
           </button>
+          {vista === 'uso' && vehicle.danoActivo && <DanoBanner dano={vehicle.danoActivo} fotoUrl={danoFotoUrl} />}
           {vista === 'uso' && <UsoPanel token={token} drivers={drivers} enUso={enUso} autoAbrir />}
           {vista === 'docs' && <DocumentosView documents={documents} />}
           {vista === 'info' && <SobreVehiculoView vehicle={vehicle} />}
