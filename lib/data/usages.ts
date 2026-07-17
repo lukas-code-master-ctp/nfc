@@ -65,6 +65,12 @@ export async function deleteUsagesByCompany(companyId: string): Promise<void> {
   await deleteUsageDocs(snap.docs.map((d) => toUsage(d.id, d.data())))
 }
 
+/** Todos los usos de una empresa (para reportes agregados). Una sola query. */
+export async function listUsagesByCompany(companyId: string): Promise<VehicleUsage[]> {
+  const snap = await adminDb.collection(COL).where('companyId', '==', companyId).get()
+  return snap.docs.map((d) => toUsage(d.id, d.data()))
+}
+
 export async function getOpenUsage(vehicleId: string): Promise<VehicleUsage | null> {
   const snap = await adminDb.collection(COL).where('vehicleId', '==', vehicleId).get()
   const abierto = snap.docs.map((d) => toUsage(d.id, d.data())).find((u) => u.estado === 'abierto')

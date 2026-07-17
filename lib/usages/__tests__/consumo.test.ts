@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeConsumo, calcularConsumo } from '@/lib/usages/consumo'
+import { sanitizeConsumo, calcularConsumo, contarConsumoAnomaloPorConductor } from '@/lib/usages/consumo'
 
 describe('sanitizeConsumo', () => {
   it('acepta números válidos', () => {
@@ -65,5 +65,50 @@ describe('calcularConsumo', () => {
 
   it('devuelve null si un nivel de bencina no es reconocido', () => {
     expect(calcularConsumo({ km: 1250, bencina: 'Medio' }, { km: 1000, bencina: 'Lleno' }, params)).toBe(null)
+  })
+})
+
+describe('contarConsumoAnomaloPorConductor', () => {
+  const params = new Map([['v1', { rendimientoKmL: 10, estanqueLitros: 100 }]])
+
+  it('cuenta un uso anómalo y lo atribuye al conductor de ese uso', () => {
+    const usos = [
+      { vehicleId: 'v1', driverId: 'd1', tomadoEn: '2026-01-02', km: 1250, bencina: '1/2' },
+      { vehicleId: 'v1', driverId: 'd2', tomadoEn: '2026-01-01', km: 1000, bencina: 'Lleno' },
+    ]
+    const r = contarConsumoAnomaloPorConductor(usos, params)
+    expect(r.get('d1')).toBe(1)
+    expect(r.get('d2')).toBeUndefined()
+  })
+
+  it('suma las anomalías del mismo conductor a través de varios vehículos', () => {
+    const params2 = new Map([
+      ['v1', { rendimientoKmL: 10, estanqueLitros: 100 }],
+      ['v2', { rendimientoKmL: 10, estanqueLitros: 100 }],
+    ])
+    const usos = [
+      { vehicleId: 'v1', driverId: 'd1', tomadoEn: '2026-01-02', km: 1250, bencina: '1/2' },
+      { vehicleId: 'v1', driverId: 'dx', tomadoEn: '2026-01-01', km: 1000, bencina: 'Lleno' },
+      { vehicleId: 'v2', driverId: 'd1', tomadoEn: '2026-02-02', km: 2250, bencina: '1/2' },
+      { vehicleId: 'v2', driverId: 'dy', tomadoEn: '2026-02-01', km: 2000, bencina: 'Lleno' },
+    ]
+    expect(contarConsumoAnomaloPorConductor(usos, params2).get('d1')).toBe(2)
+  })
+
+  it('no cuenta usos con consumo acorde ni el uso más antiguo (sin previo)', () => {
+    const usos = [
+      { vehicleId: 'v1', driverId: 'd1', tomadoEn: '2026-01-02', km: 1250, bencina: '3/4' }, // bajada acorde
+      { vehicleId: 'v1', driverId: 'd2', tomadoEn: '2026-01-01', km: 1000, bencina: 'Lleno' }, // sin previo
+    ]
+    expect(contarConsumoAnomaloPorConductor(usos, params).size).toBe(0)
+  })
+
+  it('el previo es del mismo vehículo (no toma un uso de otro vehículo como base)', () => {
+    // v1 tiene un solo uso -> sin previo -> no cuenta, aunque exista un uso en v2.
+    const usos = [
+      { vehicleId: 'v1', driverId: 'd1', tomadoEn: '2026-01-02', km: 1250, bencina: '1/2' },
+      { vehicleId: 'v2', driverId: 'd2', tomadoEn: '2026-01-01', km: 1000, bencina: 'Lleno' },
+    ]
+    expect(contarConsumoAnomaloPorConductor(usos, params).size).toBe(0)
   })
 })
