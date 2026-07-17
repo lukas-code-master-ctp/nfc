@@ -81,6 +81,9 @@ export default function ConsumoBencinaPanel({
           <label htmlFor="cb-estanque" className="block text-sm font-medium text-acero">Capacidad del estanque (litros)</label>
           <input id="cb-estanque" type="number" inputMode="decimal" step="1" min="0" value={estanque} onChange={(e) => setEstanque(e.target.value)} placeholder="50" className={inputCls} />
         </div>
+        {(rendimiento.trim() !== '') !== (estanque.trim() !== '') && (
+          <p className="text-xs text-[#B45309]">Completa ambos datos (rendimiento y capacidad) para activar la señal de consumo.</p>
+        )}
         <div className="flex items-center gap-3 pt-1">
           <button type="submit" disabled={saving} className="rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press disabled:opacity-50">
             {saving ? 'Guardando…' : 'Guardar'}
