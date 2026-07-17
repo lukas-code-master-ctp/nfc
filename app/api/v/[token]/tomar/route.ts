@@ -1,9 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getVehicleByToken } from '@/lib/data/vehicles'
+import { NextRequest, NextResponse, after } from 'next/server'
+import { getVehicleByToken, setDanoActivo } from '@/lib/data/vehicles'
 import { verifyDriverPin, getDriver, incrementDriverStats } from '@/lib/data/drivers'
 import { openUsage } from '@/lib/data/usages'
+import { buildDanoActivo } from '@/lib/usages/danoActivo'
+import { getCompany } from '@/lib/data/companies'
+import { alertRecipientEmails } from '@/lib/data/members'
+import { sendIncidenciaEmail } from '@/lib/email/resend'
 
 export const dynamic = 'force-dynamic'
+// El email de incidencia corre post-respuesta vía after(); dale margen a la función.
+export const maxDuration = 30
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -29,6 +35,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   // reporte de responsabilidad; ya no genera alerta ni email.
   if (forced) {
     try { await incrementDriverStats(forced.driverId, 'sinEntrega') } catch { /* best-effort */ }
+  }
+
+  // Incidencia previa: el conductor reporta un daño preexistente al tomar el
+  // vehículo (antes de usarlo). Se guarda como danoActivo del vehículo y avisa
+  // por email a los destinatarios de alertas de la empresa (best-effort).
+  const reporte = body?.dano
+  if (reporte && (reporte.nota || reporte.fotoPath)) {
+    const dano = buildDanoActivo(
+      { nota: typeof reporte.nota === 'string' ? reporte.nota : null, fotoPath: typeof reporte.fotoPath === 'string' && reporte.fotoPath ? reporte.fotoPath : null },
+      'conductor', driver.nombre, new Date().toISOString(),
+    )
+    try { await setDanoActivo(vehicle.id, vehicle.companyId, dano) } catch { /* best-effort */ }
+    const nota = dano.nota
+    after(async () => {
+      try {
+        const company = await getCompany(vehicle.companyId)
+        const emails = company ? await alertRecipientEmails(vehicle.companyId, company.ownerUid) : []
+        for (const to of emails) {
+          await sendIncidenciaEmail(to, { patente: vehicle.patente, vehicleId: vehicle.id, driverNombre: driver.nombre, nota })
+        }
+      } catch { /* best-effort */ }
+    })
   }
 
   return NextResponse.json({ ok: true })

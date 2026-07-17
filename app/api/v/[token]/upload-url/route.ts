@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getVehicleByToken } from '@/lib/data/vehicles'
 import { verifyDriverPin } from '@/lib/data/drivers'
 import { getOpenUsage } from '@/lib/data/usages'
-import { createUsagePhotoUrl } from '@/lib/storage/signedUrls'
+import { createUsagePhotoUrl, createDanoUrl } from '@/lib/storage/signedUrls'
 
 export const dynamic = 'force-dynamic'
 
-const TIPOS = ['tablero', 'cabina', 'dano']
+const TIPOS = ['tablero', 'cabina', 'dano', 'incidencia']
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -23,6 +23,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   const estado = await verifyDriverPin(vehicle.companyId, driverId, pin)
   if (estado === 'locked') return NextResponse.json({ error: 'Demasiados intentos.' }, { status: 429 })
   if (estado !== 'ok') return NextResponse.json({ error: 'PIN incorrecto.' }, { status: 401 })
+
+  // El reporte de incidencia previa (daño preexistente al tomar) no requiere uso
+  // abierto: el conductor lo reporta antes de abrir el uso.
+  if (tipo === 'incidencia') {
+    const { uploadUrl, filePath } = await createDanoUrl(vehicle.id, contentType)
+    return NextResponse.json({ uploadUrl, filePath })
+  }
 
   const abierto = await getOpenUsage(vehicle.id)
   if (!abierto) return NextResponse.json({ error: 'Este vehículo no tiene un uso abierto.' }, { status: 409 })

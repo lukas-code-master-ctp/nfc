@@ -3,6 +3,7 @@ import { reminderSubject, reminderHtml } from '@/lib/email/reminderEmail'
 import { invitationSubject, invitationHtml } from '@/lib/email/invitationEmail'
 import { billingRequestSubject, billingRequestHtml } from '@/lib/email/billingEmail'
 import { danoSubject, danoHtml } from '@/lib/email/danoEmail'
+import { incidenciaSubject, incidenciaHtml } from '@/lib/email/incidenciaEmail'
 import { mantencionSubject, mantencionHtml } from '@/lib/email/mantencionEmail'
 import type { Role } from '@/lib/auth/roles'
 
@@ -58,6 +59,18 @@ export async function sendDanoEmail(
     to,
     subject: danoSubject(p.patente),
     html: danoHtml(p),
+  })
+}
+
+export async function sendIncidenciaEmail(
+  to: string,
+  p: { patente: string; vehicleId: string; driverNombre: string; nota?: string | null },
+): Promise<void> {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM!,
+    to,
+    subject: incidenciaSubject(p.patente),
+    html: incidenciaHtml(p),
   })
 }
 
