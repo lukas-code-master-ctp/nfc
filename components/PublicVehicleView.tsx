@@ -3,6 +3,7 @@ import { useState } from 'react'
 import StatusBadge from '@/components/StatusBadge'
 import { TapCarLockup } from '@/components/brand/Logo'
 import UsoPanel from '@/components/uso/UsoPanel'
+import PdfPreview from '@/components/documento/PdfPreview'
 import {
   DOCUMENT_TYPE_LABELS,
   VEHICLE_INFO_FIELDS,
@@ -69,17 +70,7 @@ function DocumentosView({ documents }: { documents: Item[] }) {
                       <span className="mt-2 block text-center text-sm text-acero">Toca la imagen para ampliar</span>
                     </a>
                   ) : (
-                    <a
-                      href={d.readUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-azul px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-azul-press"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
-                      </svg>
-                      Ver documento (PDF)
-                    </a>
+                    <PdfPreview url={d.readUrl} label={label ?? 'Documento'} />
                   )}
                 </div>
               </li>

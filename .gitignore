@@ -16,3 +16,6 @@ ds-bundle/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules
+
+# Worker de pdf.js copiado desde node_modules en postinstall (artefacto de build)
+/public/pdf.worker.min.mjs
