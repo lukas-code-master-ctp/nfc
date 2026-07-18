@@ -44,20 +44,26 @@ export interface EstadoResult {
 export function estadoMantencion(input: EstadoInput): EstadoResult {
   const { pauta, ultima, kmActual, now } = input
   if (pautaVacia(pauta)) return { estado: 'sin_pauta', detalle: {} }
-  if (!ultima) return { estado: 'sin_registro', detalle: {} }
 
   const detalle: EstadoResult['detalle'] = {}
   const criterios: ('al_dia' | 'proxima' | 'vencida')[] = []
 
-  if (pauta!.cadaKm != null && ultima.km != null && kmActual != null) {
-    const proximaKm = ultima.km + pauta!.cadaKm
+  // Criterio por km. Con una mantención registrada se cuenta desde su km; sin
+  // registro se ancla al odómetro (el múltiplo de la pauta inmediatamente
+  // inferior al km actual), así el primer hito cae en el primer múltiplo
+  // (ej. 10.000) y nunca marca "vencida" sin datos.
+  if (pauta!.cadaKm != null && kmActual != null) {
+    const baseKm = ultima?.km != null ? ultima.km : Math.floor(kmActual / pauta!.cadaKm) * pauta!.cadaKm
+    const proximaKm = baseKm + pauta!.cadaKm
     const kmRestantes = proximaKm - kmActual
     detalle.proximaKm = proximaKm
     detalle.kmRestantes = kmRestantes
     criterios.push(kmRestantes <= 0 ? 'vencida' : kmRestantes <= UMBRAL_KM_PROXIMA ? 'proxima' : 'al_dia')
   }
 
-  if (pauta!.cadaMeses != null) {
+  // Criterio por tiempo: necesita una fecha de referencia, así que solo aplica
+  // con una mantención registrada.
+  if (pauta!.cadaMeses != null && ultima != null) {
     const proximaFecha = addMeses(ultima.fecha, pauta!.cadaMeses)
     const dias = daysUntil(proximaFecha, now)
     detalle.proximaFecha = proximaFecha
