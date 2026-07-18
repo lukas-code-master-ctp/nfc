@@ -11,6 +11,8 @@ import { listAlertas } from '@/lib/data/alertas'
 import { DEFAULT_AVISO_USO_HORAS } from '@/lib/types'
 import { usoProlongado, horasEnUso } from '@/lib/usages/prolongado'
 import type { Categoria } from '@/lib/types'
+import { ultimaMantencion } from '@/lib/data/mantenciones'
+import { estadoMantencion } from '@/lib/mantencion/status'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +38,12 @@ export default async function DashboardPage() {
       const docs = await listDocuments(v.id)
       const statuses: DocStatus[] = docs.map((d) => documentStatus(d.fechaVencimiento, now))
       const uso = v.usoActual ?? null
+      const pauta = v.pautaMantencion ?? company?.pautaMantencion ?? null
+      const ultima = await ultimaMantencion(v.id)
+      const em = estadoMantencion({ pauta, ultima, kmActual: v.kmActual ?? null, now })
+      const mantPartes: string[] = []
+      if (em.detalle.kmRestantes != null) mantPartes.push(em.detalle.kmRestantes <= 0 ? `pasada ${Math.abs(em.detalle.kmRestantes).toLocaleString('es-CL')} km` : `faltan ${em.detalle.kmRestantes.toLocaleString('es-CL')} km`)
+      if (em.detalle.diasRestantes != null) mantPartes.push(em.detalle.diasRestantes < 0 ? `hace ${Math.abs(em.detalle.diasRestantes)} días` : `faltan ${em.detalle.diasRestantes} días`)
       return {
         vehicle: v,
         status: worstStatus(statuses),
@@ -46,6 +54,8 @@ export default async function DashboardPage() {
         categoriaId: v.categoriaId ?? null,
         categoriaNombre: v.categoriaId ? (nombrePorCategoria.get(v.categoriaId) ?? null) : null,
         danoActivo: v.danoActivo != null,
+        mantencion: em.estado,
+        mantencionDetalle: mantPartes.join(' · '),
       }
     }),
   )

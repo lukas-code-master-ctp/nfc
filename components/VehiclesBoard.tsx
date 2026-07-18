@@ -8,6 +8,7 @@ import { normalizarBusqueda, coincideBusqueda } from '@/lib/vehicles/buscar'
 import { rangoPaginas, HUECO } from '@/lib/vehicles/paginacion'
 import type { Vehicle, Categoria } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
+import type { EstadoMantencion } from '@/lib/mantencion/status'
 
 type Item = {
   vehicle: Vehicle
@@ -19,6 +20,8 @@ type Item = {
   categoriaId: string | null
   categoriaNombre: string | null
   danoActivo: boolean
+  mantencion: EstadoMantencion
+  mantencionDetalle: string
 }
 
 // Tope de slots fantasma a dibujar (para flotas grandes no tiene sentido
@@ -388,8 +391,8 @@ export default function VehiclesBoard({
             ) : (
               <>
                 <div className="space-y-3">
-                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre, danoActivo }) => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} danoActivo={danoActivo} />
+                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre, danoActivo, mantencion, mantencionDetalle }) => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} danoActivo={danoActivo} mantencion={mantencion} mantencionDetalle={mantencionDetalle} />
                   ))}
                   {enUltimaPagina && canWrite && filter === 'todos' && !buscando && ghostsBlock}
                 </div>
