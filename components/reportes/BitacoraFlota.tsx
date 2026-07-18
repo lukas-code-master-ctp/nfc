@@ -1,5 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import PillTip from '@/components/PillTip'
 
 interface Opcion { id: string; nombre: string }
@@ -94,14 +95,21 @@ export default function BitacoraFlota({
         <ul className="mt-4 space-y-2">
           {items.length === 0 && !loading && <li className="text-sm text-acero">Sin usos para el filtro.</li>}
           {items.map((u) => (
-            <li key={u.id} className="flex items-center justify-between gap-3 rounded-lg border border-linea px-3 py-2.5">
+            <li key={u.id} className="relative flex items-center justify-between gap-3 rounded-lg border border-linea px-3 py-2.5 transition-colors hover:border-azul/40 hover:bg-lienzo">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-tinta">{patentePorId.get(u.vehicleId) ?? u.vehicleId} · {u.driverNombre}</p>
+                {/* Stretched-link: el ::after cubre toda la fila y lleva a la bitácora del vehículo
+                    (deep-link #uso-{id}). Las pills quedan por encima (z-10) para conservar su tooltip. */}
+                <Link
+                  href={`/vehiculos/${u.vehicleId}#uso-${u.id}`}
+                  className="text-sm font-medium text-tinta after:absolute after:inset-0 hover:text-azul"
+                >
+                  {patentePorId.get(u.vehicleId) ?? u.vehicleId} · {u.driverNombre}
+                </Link>
                 <p className="text-xs text-acero">
                   Tomó {fecha(u.tomadoEn)}{u.entregadoEn ? ` · Entregó ${fecha(u.entregadoEn)}` : ''}
                 </p>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+              <div className="relative z-10 flex shrink-0 flex-wrap items-center justify-end gap-1">
                 {(u.km != null || u.bencina) && (
                   <PillTip label="Tablero" tono="azul">
                     {u.km != null && <p>Kilometraje: {u.km.toLocaleString('es-CL')} km</p>}
