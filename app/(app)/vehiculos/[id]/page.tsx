@@ -141,7 +141,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
             ) : (
               <VehicleInfoView info={vehicle.info ?? {}} />
             )}
-            {/* Ancla para el enlace #mantencion desde la vista de flota /mantenciones. */}
+            {/* Ancla para el enlace #mantencion desde la card del dashboard. */}
             <div id="mantencion" className="scroll-mt-20">
               <MantencionPanel
                 vehicleId={vehicle.id}
