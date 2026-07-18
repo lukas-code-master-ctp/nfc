@@ -2,6 +2,7 @@ import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
 import type { DocStatus } from '@/lib/documents/status'
 import type { Vehicle } from '@/lib/types'
+import type { EstadoMantencion } from '@/lib/mantencion/status'
 
 function horaUso(iso: string): string {
   return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
@@ -17,7 +18,7 @@ function CarIcon({ className }: { className?: string }) {
 }
 
 export default function VehicleCard({
-  vehicle, status, docCount = 0, prolongado = false, horasUso = 0, danoUsageId = null, categoriaNombre = null, danoActivo = false,
+  vehicle, status, docCount = 0, prolongado = false, horasUso = 0, danoUsageId = null, categoriaNombre = null, danoActivo = false, mantencion = 'sin_pauta', mantencionDetalle = '',
 }: {
   vehicle: Vehicle
   status: DocStatus
@@ -27,13 +28,19 @@ export default function VehicleCard({
   danoUsageId?: string | null
   categoriaNombre?: string | null
   danoActivo?: boolean
+  mantencion?: EstadoMantencion
+  mantencionDetalle?: string
 }) {
   const uso = vehicle.usoActual ?? null
   const puntoColor = prolongado ? '#B45309' : '#15803D'
   const tituloPunto = uso
     ? `En uso por ${uso.driverNombre} · desde ${horaUso(uso.tomadoEn)}${prolongado ? ` · sin entregar hace ${horasUso}h` : ''}`
     : ''
-  const href = danoUsageId ? `/vehiculos/${vehicle.id}#uso-${danoUsageId}` : `/vehiculos/${vehicle.id}`
+  const href = danoUsageId
+    ? `/vehiculos/${vehicle.id}#uso-${danoUsageId}`
+    : mantencion === 'vencida' || mantencion === 'proxima'
+      ? `/vehiculos/${vehicle.id}#mantencion`
+      : `/vehiculos/${vehicle.id}`
 
   return (
     <Link
@@ -67,6 +74,12 @@ export default function VehicleCard({
           )}
           {danoUsageId && (
             <span className="whitespace-nowrap rounded-full bg-[#FCE7E7] px-2 py-0.5 text-xs font-medium text-[#C81E1E]">Daño reportado</span>
+          )}
+          {mantencion === 'vencida' && (
+            <span title={mantencionDetalle} className="whitespace-nowrap rounded-full bg-[#FCE7E7] px-2 py-0.5 text-xs font-medium text-[#C81E1E]">Mantención vencida</span>
+          )}
+          {mantencion === 'proxima' && (
+            <span title={mantencionDetalle} className="whitespace-nowrap rounded-full bg-[#FDF1DC] px-2 py-0.5 text-xs font-medium text-[#B45309]">Mantención próxima</span>
           )}
           <StatusBadge status={status} variant="vehicle" />
         </div>

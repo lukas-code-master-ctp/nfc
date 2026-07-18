@@ -8,6 +8,7 @@ import { normalizarBusqueda, coincideBusqueda } from '@/lib/vehicles/buscar'
 import { rangoPaginas, HUECO } from '@/lib/vehicles/paginacion'
 import type { Vehicle, Categoria } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
+import type { EstadoMantencion } from '@/lib/mantencion/status'
 
 type Item = {
   vehicle: Vehicle
@@ -19,6 +20,8 @@ type Item = {
   categoriaId: string | null
   categoriaNombre: string | null
   danoActivo: boolean
+  mantencion: EstadoMantencion
+  mantencionDetalle: string
 }
 
 // Tope de slots fantasma a dibujar (para flotas grandes no tiene sentido
@@ -37,12 +40,14 @@ const STATUS_META: { key: DocStatus; label: string }[] = [
   { key: 'sin_vencimiento', label: 'Sin vencimiento' },
 ]
 const PRIORITY: Record<DocStatus, number> = { vencido: 0, por_vencer: 1, al_dia: 2, sin_vencimiento: 3 }
+const ORDEN_MANT: Record<EstadoMantencion, number> = { vencida: 0, proxima: 1, al_dia: 2, sin_registro: 3, sin_pauta: 4 }
 
 const SORTS = [
   { key: 'urgencia', label: 'Urgencia' },
   { key: 'marca', label: 'Marca / modelo' },
   { key: 'patente', label: 'Patente' },
   { key: 'documentos', label: 'N° de documentos' },
+  { key: 'mantencion', label: 'Mantención' },
 ] as const
 type SortKey = (typeof SORTS)[number]['key']
 
@@ -91,6 +96,7 @@ export default function VehiclesBoard({
   const [sort, setSort] = useState<SortKey>('urgencia')
   const [categoria, setCategoria] = useState<string>('todas')
   const [q, setQ] = useState('')
+  const [mant, setMant] = useState<'todas' | 'proxima' | 'vencida'>('todas')
   const [page, setPage] = useState(1)
   const buscando = q.trim().length > 0
 
@@ -100,6 +106,7 @@ export default function VehiclesBoard({
   const cambiarBusqueda = (v: string) => { setQ(v); setPage(1) }
   const cambiarOrden = (s: SortKey) => { setSort(s); setPage(1) }
   const cambiarCategoria = (c: string) => { setCategoria(c); setPage(1) }
+  const cambiarMant = (v: 'todas' | 'proxima' | 'vencida') => { setMant(v); setPage(1) }
 
   const { used, remaining, atCapacity } = planCapacity(items.length, limit)
   const ghosts = canWrite ? Math.min(remaining, MAX_GHOSTS) : 0
@@ -110,11 +117,19 @@ export default function VehiclesBoard({
     return c
   }, [items])
 
+  const mantCounts = useMemo(() => {
+    let proxima = 0, vencida = 0
+    for (const it of items) { if (it.mantencion === 'proxima') proxima++; else if (it.mantencion === 'vencida') vencida++ }
+    return { proxima, vencida }
+  }, [items])
+  const hayMant = mantCounts.proxima + mantCounts.vencida > 0
+
   const visible = useMemo(() => {
     const query = normalizarBusqueda(q)
     const list = filter === 'todos' ? items : items.filter((i) => i.status === filter)
     const porCategoria = list.filter((i) => categoria === 'todas' || i.categoriaId === categoria)
-    const porBusqueda = porCategoria.filter((i) => coincideBusqueda(i.vehicle, query))
+    const porMant = porCategoria.filter((i) => mant === 'todas' || i.mantencion === mant)
+    const porBusqueda = porMant.filter((i) => coincideBusqueda(i.vehicle, query))
     return [...porBusqueda].sort((a, b) => {
       switch (sort) {
         case 'urgencia':
@@ -125,11 +140,13 @@ export default function VehiclesBoard({
           return a.vehicle.patente.localeCompare(b.vehicle.patente, 'es')
         case 'documentos':
           return b.docCount - a.docCount
+        case 'mantencion':
+          return ORDEN_MANT[a.mantencion] - ORDEN_MANT[b.mantencion] || nombre(a).localeCompare(nombre(b), 'es')
         default:
           return 0
       }
     })
-  }, [items, filter, sort, categoria, q])
+  }, [items, filter, sort, categoria, q, mant])
 
   // Paginación: sobre la lista YA filtrada/buscada (safePage acota si la lista
   // se encogió y la página actual quedó fuera de rango).
@@ -240,6 +257,22 @@ export default function VehiclesBoard({
     )
   }
 
+  const mantOption = (key: 'todas' | 'proxima' | 'vencida', label: string, count: number | null) => {
+    const active = mant === key
+    return (
+      <button
+        key={key}
+        onClick={() => cambiarMant(key)}
+        className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+          active ? 'bg-azul/10 font-semibold text-azul' : 'text-tinta hover:bg-lienzo'
+        }`}
+      >
+        <span>{label}</span>
+        {count != null && <span className="tabular-nums text-xs text-acero">{count}</span>}
+      </button>
+    )
+  }
+
   const searchBar = (
     <div className="relative">
       <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-acero" />
@@ -345,6 +378,16 @@ export default function VehiclesBoard({
                 {categoriaSelect}
               </div>
             )}
+            {hayMant && (
+              <div className="rounded-2xl border border-linea bg-superficie p-3 shadow-sm">
+                <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-acero">Mantención</p>
+                <div className="space-y-0.5">
+                  {mantOption('todas', 'Todas', null)}
+                  {mantCounts.proxima > 0 && mantOption('proxima', 'Próxima', mantCounts.proxima)}
+                  {mantCounts.vencida > 0 && mantOption('vencida', 'Vencida', mantCounts.vencida)}
+                </div>
+              </div>
+            )}
           </aside>
 
           <div className="min-w-0">
@@ -365,6 +408,18 @@ export default function VehiclesBoard({
                   >
                     <option value="todas">Todas las categorías</option>
                     {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                )}
+                {hayMant && (
+                  <select
+                    aria-label="Mantención"
+                    value={mant}
+                    onChange={(e) => cambiarMant(e.target.value as 'todas' | 'proxima' | 'vencida')}
+                    className="rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+                  >
+                    <option value="todas">Mantención: todas</option>
+                    {mantCounts.proxima > 0 && <option value="proxima">Próxima ({mantCounts.proxima})</option>}
+                    {mantCounts.vencida > 0 && <option value="vencida">Vencida ({mantCounts.vencida})</option>}
                   </select>
                 )}
                 <select
@@ -388,15 +443,15 @@ export default function VehiclesBoard({
             ) : (
               <>
                 <div className="space-y-3">
-                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre, danoActivo }) => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} danoActivo={danoActivo} />
+                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre, danoActivo, mantencion, mantencionDetalle }) => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} danoActivo={danoActivo} mantencion={mantencion} mantencionDetalle={mantencionDetalle} />
                   ))}
-                  {enUltimaPagina && canWrite && filter === 'todos' && !buscando && ghostsBlock}
+                  {enUltimaPagina && canWrite && filter === 'todos' && mant === 'todas' && !buscando && ghostsBlock}
                 </div>
                 {pager}
               </>
             )}
-            {enUltimaPagina && canWrite && filter === 'todos' && !buscando && footerBlock}
+            {enUltimaPagina && canWrite && filter === 'todos' && mant === 'todas' && !buscando && footerBlock}
           </div>
         </div>
       )}
