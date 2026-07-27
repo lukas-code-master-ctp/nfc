@@ -196,8 +196,18 @@ export default function PublicVehicleView({
 
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-6 px-4 py-10">
-      <div className="flex justify-center">
+      <div className="relative flex justify-center">
         <TapCarLockup iconClassName="size-6" wordClassName="text-lg" />
+        <a
+          href="/login"
+          title="Iniciar sesión"
+          aria-label="Iniciar sesión"
+          className="absolute right-0 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-lg text-acero transition-colors hover:bg-superficie hover:text-azul"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden="true">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5" /><path d="M15 12H3" />
+          </svg>
+        </a>
       </div>
 
       <div className="flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-6 shadow-sm">
