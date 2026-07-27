@@ -49,7 +49,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   )
 
   const usos = await Promise.all(
-    (await listUsages(vehicle.id)).map(async (u) => ({
+    (await listUsages(vehicle.id, m.companyId)).map(async (u) => ({
       id: u.id,
       driverNombre: u.driverNombre,
       tomadoEn: u.tomadoEn,
