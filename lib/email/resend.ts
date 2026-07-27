@@ -9,6 +9,7 @@ import {
   transferenciaRecibidaSubject, transferenciaRecibidaHtml,
   transferenciaEnviadaSubject, transferenciaEnviadaHtml,
   transferenciaAceptadaSubject, transferenciaAceptadaHtml,
+  transferenciaSinCuentaSubject, transferenciaSinCuentaHtml,
 } from '@/lib/email/transferenciaEmail'
 import type { Role } from '@/lib/auth/roles'
 
@@ -112,6 +113,18 @@ export async function sendTransferenciaEnviadaEmail(
     to,
     subject: transferenciaEnviadaSubject(p.patente),
     html: transferenciaEnviadaHtml(p),
+  })
+}
+
+export async function sendTransferenciaSinCuentaEmail(
+  to: string,
+  p: { patente: string; deCompanyNombre: string; deEmail: string; paraEmail: string; registrarUrl: string },
+): Promise<void> {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM!,
+    to,
+    subject: transferenciaSinCuentaSubject(p.patente),
+    html: transferenciaSinCuentaHtml(p),
   })
 }
 

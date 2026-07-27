@@ -2,6 +2,7 @@ import { adminDb } from '@/lib/firebase/admin'
 import { nanoid } from 'nanoid'
 import type { Transferencia } from '@/lib/types'
 import { transferenciaVigente } from '@/lib/transferencias/estado'
+import { normalizeEmail } from '@/lib/data/invitations'
 
 const COL = 'transferencias'
 const TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -65,6 +66,24 @@ export async function cancelTransferencia(id: string, deCompanyId: string): Prom
   const doc = await ref.get()
   if (!doc.exists || doc.data()?.deCompanyId !== deCompanyId) throw new Error('forbidden')
   await ref.update({ status: 'cancelada' })
+}
+
+/** Transferencias vigentes dirigidas a un correo (para el banner del dashboard). */
+export async function listPendientesPara(email: string): Promise<Transferencia[]> {
+  const snap = await adminDb.collection(COL).where('paraEmail', '==', normalizeEmail(email)).get()
+  const nowIso = new Date().toISOString()
+  return snap.docs
+    .map((d) => toTransferencia(d.id, d.data()))
+    .filter((t) => transferenciaVigente(t, nowIso))
+}
+
+/** Transferencias vigentes que envió una empresa (para la pill del dashboard). */
+export async function listPendientesDe(companyId: string): Promise<Transferencia[]> {
+  const snap = await adminDb.collection(COL).where('deCompanyId', '==', companyId).get()
+  const nowIso = new Date().toISOString()
+  return snap.docs
+    .map((d) => toTransferencia(d.id, d.data()))
+    .filter((t) => transferenciaVigente(t, nowIso))
 }
 
 export async function markAceptada(id: string, aceptadaPorUid: string): Promise<void> {

@@ -47,6 +47,31 @@ export function transferenciaEnviadaHtml(p: {
   })
 }
 
+export function transferenciaSinCuentaSubject(patente: string): string {
+  return `Te quieren transferir el vehículo ${patente} en TapCar`
+}
+
+export function transferenciaSinCuentaHtml(p: {
+  patente: string
+  deCompanyNombre: string
+  deEmail: string
+  paraEmail: string
+  registrarUrl: string
+}): string {
+  const empresa = p.deCompanyNombre.trim() || 'Otra empresa'
+  return emailLayout({
+    titulo: `Te quieren transferir el ${p.patente}`,
+    contenidoHtml: `
+      <p><strong>${empresa}</strong> (${p.deEmail}) quiere transferirte el vehículo <strong>${p.patente}</strong> en TapCar, donde se guardan sus documentos.</p>
+      <p>Todavía no tienes cuenta. Crea una gratis y el vehículo te va a estar esperando con sus documentos y su historial de mantenciones.</p>
+      ${ctaButton('Crear mi cuenta en TapCar', p.registrarUrl)}
+      <p style="${GRIS}">Regístrate con este mismo correo (<strong>${p.paraEmail}</strong>): si usas otro, no vas a poder aceptar la transferencia.</p>
+      <p style="${GRIS}">La transferencia vence en 7 días.</p>
+    `,
+    motivo: 'Si no esperabas este correo, puedes ignorarlo: sin tu aceptación no pasa nada.',
+  })
+}
+
 export function transferenciaAceptadaSubject(patente: string): string {
   return `${patente} ya es de su nuevo dueño`
 }
