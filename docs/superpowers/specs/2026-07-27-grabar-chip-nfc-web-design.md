@@ -92,7 +92,15 @@ record `text` no lo haría). Pesa ~50 bytes: entra en cualquier NTAG213 (144 B).
 ### Protección de sobrescritura
 
 Primer intento siempre con `overwrite: false`. Si el chip no estaba vacío, la
-escritura falla y pasamos a `confirmar` en vez de pisarlo. Sin esto, regrabar un
+escritura falla y pasamos a `confirmar` en vez de pisarlo.
+
+**Cuidado:** el spec de Web NFC usa `NotAllowedError` para dos casos distintos —
+permiso denegado y «`overwrite: false` sobre un chip con datos»— así que el
+`name` de la excepción no alcanza para distinguirlos. En el `catch` se consulta
+`navigator.permissions.query({ name: 'nfc' })`: si el permiso está en `granted`,
+el `NotAllowedError` solo pudo venir del chip con datos. Si la consulta de
+permisos falla o no existe, se asume permiso denegado (falla hacia el mensaje
+más seguro, sin sobrescribir nada). Sin esto, regrabar un
 chip ya asignado dejaría al otro vehículo con un chip muerto y nadie se enteraría
 hasta que un fiscalizador lo escaneara. NFC Tools no hace esta pregunta.
 
