@@ -7,7 +7,12 @@ vi.mock('@/lib/firebase/admin', () => ({
   adminDb: { collection: () => ({ where: mockWhere, add: mockAdd }) },
 }))
 
-import { getTransferenciaByToken, getPendienteByVehicle } from '@/lib/data/transferencias'
+import {
+  getTransferenciaByToken,
+  getPendienteByVehicle,
+  listPendientesPara,
+  listPendientesDe,
+} from '@/lib/data/transferencias'
 
 const futuro = '2999-01-01T00:00:00.000Z'
 const pasado = '2000-01-01T00:00:00.000Z'
@@ -64,5 +69,27 @@ describe('getPendienteByVehicle', () => {
   it('devuelve la pendiente vigente', async () => {
     mockGet.mockResolvedValue({ docs: [doc('t1', { status: 'cancelada' }), doc('t2')] })
     expect((await getPendienteByVehicle('v1'))?.id).toBe('t2')
+  })
+})
+
+describe('listPendientesPara', () => {
+  it('devuelve solo las vigentes dirigidas a ese correo', async () => {
+    mockGet.mockResolvedValue({ docs: [doc('t1'), doc('t2', { status: 'cancelada' }), doc('t3', { expiresAt: pasado })] })
+    const lista = await listPendientesPara('a@b.cl')
+    expect(lista.map((t) => t.id)).toEqual(['t1'])
+  })
+
+  it('normaliza el correo antes de consultar', async () => {
+    mockGet.mockResolvedValue({ docs: [] })
+    await listPendientesPara('  A@B.CL ')
+    expect(mockWhere).toHaveBeenCalledWith('paraEmail', '==', 'a@b.cl')
+  })
+})
+
+describe('listPendientesDe', () => {
+  it('devuelve solo las vigentes de esa empresa', async () => {
+    mockGet.mockResolvedValue({ docs: [doc('t1', { status: 'aceptada' }), doc('t2')] })
+    const lista = await listPendientesDe('c1')
+    expect(lista.map((t) => t.id)).toEqual(['t2'])
   })
 })

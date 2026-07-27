@@ -6,6 +6,8 @@ import {
   transferenciaEnviadaHtml,
   transferenciaAceptadaSubject,
   transferenciaAceptadaHtml,
+  transferenciaSinCuentaSubject,
+  transferenciaSinCuentaHtml,
 } from '@/lib/email/transferenciaEmail'
 
 describe('correo al destinatario', () => {
@@ -49,5 +51,33 @@ describe('aviso de aceptación al emisor', () => {
   it('el CTA va al dashboard porque el vehículo ya no es suyo', () => {
     expect(html).toContain('/dashboard')
     expect(html).not.toContain('/vehiculos/')
+  })
+})
+
+describe('correo a quien no tiene cuenta', () => {
+  const html = transferenciaSinCuentaHtml({
+    patente: 'ABCD-12',
+    deCompanyNombre: 'Transportes Uno',
+    deEmail: 'jefe@uno.cl',
+    paraEmail: 'nuevo@dos.cl',
+    registrarUrl: 'https://app.tapcar.cl/login?transferencia=tok',
+  })
+
+  it('el asunto lleva la patente', () => {
+    expect(transferenciaSinCuentaSubject('ABCD-12')).toContain('ABCD-12')
+  })
+
+  it('el CTA lleva a registrarse con el token', () => {
+    expect(html).toContain('https://app.tapcar.cl/login?transferencia=tok')
+    expect(html).toContain('Crear mi cuenta en TapCar')
+  })
+
+  it('insiste en que use ese mismo correo, o no podrá aceptar', () => {
+    expect(html).toContain('nuevo@dos.cl')
+    expect(html).toContain('mismo correo')
+  })
+
+  it('nombra a quién le está transfiriendo', () => {
+    expect(html).toContain('Transportes Uno')
   })
 })

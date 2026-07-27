@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import VehicleCard from '@/components/VehicleCard'
 import NewVehicleModal from '@/components/NewVehicleModal'
+import TransferenciasEntrantes from '@/components/transferencias/TransferenciasEntrantes'
 import { planCapacity } from '@/lib/plan'
 import { normalizarBusqueda, coincideBusqueda } from '@/lib/vehicles/buscar'
 import { rangoPaginas, HUECO } from '@/lib/vehicles/paginacion'
@@ -22,6 +23,7 @@ type Item = {
   danoActivo: boolean
   mantencion: EstadoMantencion
   mantencionDetalle: string
+  transferenciaPendiente: boolean
 }
 
 // Tope de slots fantasma a dibujar (para flotas grandes no tiene sentido
@@ -85,11 +87,13 @@ export default function VehiclesBoard({
   limit,
   canWrite,
   categorias,
+  entrantes = [],
 }: {
   items: Item[]
   limit: number
   canWrite: boolean
   categorias: Categoria[]
+  entrantes?: { token: string; patente: string; deCompanyNombre: string }[]
 }) {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<Filter>('todos')
@@ -332,6 +336,8 @@ export default function VehiclesBoard({
         )}
       </div>
 
+      <TransferenciasEntrantes items={entrantes} />
+
       {items.length === 0 ? (
         <div className="mx-auto max-w-2xl">
           {canWrite ? (
@@ -443,8 +449,8 @@ export default function VehiclesBoard({
             ) : (
               <>
                 <div className="space-y-3">
-                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre, danoActivo, mantencion, mantencionDetalle }) => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} danoActivo={danoActivo} mantencion={mantencion} mantencionDetalle={mantencionDetalle} />
+                  {paginados.map(({ vehicle, status, docCount, prolongado, horasUso, danoUsageId, categoriaNombre, danoActivo, mantencion, mantencionDetalle, transferenciaPendiente }) => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} status={status} docCount={docCount} prolongado={prolongado} horasUso={horasUso} danoUsageId={danoUsageId} categoriaNombre={categoriaNombre} danoActivo={danoActivo} mantencion={mantencion} mantencionDetalle={mantencionDetalle} transferenciaPendiente={transferenciaPendiente} />
                   ))}
                   {enUltimaPagina && canWrite && filter === 'todos' && mant === 'todas' && !buscando && ghostsBlock}
                 </div>

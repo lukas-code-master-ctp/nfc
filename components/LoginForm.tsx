@@ -43,7 +43,7 @@ async function establishSession(user: User) {
   })
 }
 
-export default function LoginForm() {
+export default function LoginForm({ destino }: { destino?: string }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -55,7 +55,9 @@ export default function LoginForm() {
 
   async function afterAuth(user: User) {
     await establishSession(user)
-    router.push('/dashboard')
+    // `destino` viene del enlace de una transferencia: sin esto, quien se
+    // registra desde el correo cae al dashboard y pierde el enlace.
+    router.push(destino ?? '/dashboard')
     router.refresh()
   }
 
