@@ -8,6 +8,7 @@ import { documentStatus, worstStatus, type DocStatus } from '@/lib/documents/sta
 import { maxVehiculosDe } from '@/lib/plan'
 import VehiclesBoard from '@/components/VehiclesBoard'
 import { listAlertas } from '@/lib/data/alertas'
+import { listPendientesPara, listPendientesDe } from '@/lib/data/transferencias'
 import { DEFAULT_AVISO_USO_HORAS } from '@/lib/types'
 import { usoProlongado, horasEnUso } from '@/lib/usages/prolongado'
 import type { Categoria } from '@/lib/types'
@@ -20,10 +21,12 @@ export default async function DashboardPage() {
   const m = await getMembership()
   if (!m) redirect('/login')
 
-  const [vehicles, company, alertas] = await Promise.all([
+  const [vehicles, company, alertas, entrantes, salientes] = await Promise.all([
     listVehicles(m.companyId),
     getCompany(m.companyId),
     listAlertas(m.companyId),
+    listPendientesPara(m.email),
+    listPendientesDe(m.companyId),
   ])
   const limit = maxVehiculosDe(company?.plan)
   const avisoUsoHoras = company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS
@@ -31,6 +34,7 @@ export default async function DashboardPage() {
   const nombrePorCategoria = new Map(categorias.map((c) => [c.id, c.nombre]))
   const danoPorVehiculo = new Map<string, string>() // vehicleId -> usageId
   for (const a of alertas) if (a.tipo === 'dano') danoPorVehiculo.set(a.vehicleId, a.usageId)
+  const conTransferencia = new Set(salientes.map((t) => t.vehicleId))
 
   const now = new Date()
   const items = await Promise.all(
@@ -56,9 +60,18 @@ export default async function DashboardPage() {
         danoActivo: v.danoActivo != null,
         mantencion: em.estado,
         mantencionDetalle: mantPartes.join(' · '),
+        transferenciaPendiente: conTransferencia.has(v.id),
       }
     }),
   )
 
-  return <VehiclesBoard items={items} limit={limit} canWrite={can(m.role, 'vehicle:write')} categorias={categorias} />
+  return (
+    <VehiclesBoard
+      items={items}
+      limit={limit}
+      canWrite={can(m.role, 'vehicle:write')}
+      categorias={categorias}
+      entrantes={entrantes.map((t) => ({ token: t.token, patente: t.patente, deCompanyNombre: t.deCompanyNombre }))}
+    />
+  )
 }

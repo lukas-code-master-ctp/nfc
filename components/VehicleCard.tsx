@@ -18,7 +18,7 @@ function CarIcon({ className }: { className?: string }) {
 }
 
 export default function VehicleCard({
-  vehicle, status, docCount = 0, prolongado = false, horasUso = 0, danoUsageId = null, categoriaNombre = null, danoActivo = false, mantencion = 'sin_pauta', mantencionDetalle = '',
+  vehicle, status, docCount = 0, prolongado = false, horasUso = 0, danoUsageId = null, categoriaNombre = null, danoActivo = false, mantencion = 'sin_pauta', mantencionDetalle = '', transferenciaPendiente = false,
 }: {
   vehicle: Vehicle
   status: DocStatus
@@ -30,6 +30,7 @@ export default function VehicleCard({
   danoActivo?: boolean
   mantencion?: EstadoMantencion
   mantencionDetalle?: string
+  transferenciaPendiente?: boolean
 }) {
   const uso = vehicle.usoActual ?? null
   const puntoColor = prolongado ? '#B45309' : '#15803D'
@@ -80,6 +81,9 @@ export default function VehicleCard({
           )}
           {mantencion === 'proxima' && (
             <span title={mantencionDetalle} className="whitespace-nowrap rounded-full bg-[#FDF1DC] px-2 py-0.5 text-xs font-medium text-[#B45309]">Mantención próxima</span>
+          )}
+          {transferenciaPendiente && (
+            <span className="whitespace-nowrap rounded-full bg-[#EEF0F3] px-2 py-0.5 text-xs font-medium text-acero">Transferencia pendiente</span>
           )}
           <StatusBadge status={status} variant="vehicle" />
         </div>
