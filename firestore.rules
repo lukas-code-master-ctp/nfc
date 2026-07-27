@@ -58,5 +58,10 @@ service cloud.firestore {
     match /mantenciones/{id} {
       allow read, write: if false;
     }
+
+    // Transferencias de vehículos: solo server-side (Admin SDK). Cliente sin acceso.
+    match /transferencias/{id} {
+      allow read, write: if false;
+    }
   }
 }
