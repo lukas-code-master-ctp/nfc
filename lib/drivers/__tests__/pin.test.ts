@@ -15,7 +15,9 @@ describe('isValidPinFormat', () => {
 describe('hashPin / verifyPin', () => {
   it('el hash no es el PIN y verify distingue', () => {
     const h = hashPin('1234')
-    expect(h).not.toContain('1234')
+    // No se compara por substring: el hash es hex aleatorio y contiene "1234" por azar ~1 de cada 700 corridas.
+    expect(h).not.toBe('1234')
+    expect(h).toMatch(/^[0-9a-f]{32}:[0-9a-f]{64}$/)
     expect(verifyPin('1234', h)).toBe(true)
     expect(verifyPin('0000', h)).toBe(false)
   })

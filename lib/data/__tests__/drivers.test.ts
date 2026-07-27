@@ -15,7 +15,7 @@ vi.mock('@/lib/firebase/admin', () => ({
 }))
 
 import { listActiveDrivers, verifyDriverPin, createDriver } from '@/lib/data/drivers'
-import { hashPin } from '@/lib/drivers/pin'
+import { hashPin, verifyPin } from '@/lib/drivers/pin'
 
 beforeEach(() => {
   whereGet.mockReset(); docGet.mockReset(); docUpdate.mockReset(); add.mockReset()
@@ -26,7 +26,10 @@ describe('createDriver', () => {
     add.mockResolvedValue({ id: 'd1' })
     await createDriver('c1', 'u1', { nombre: 'Ana', pin: '1234' })
     const saved = add.mock.calls[0][0]
-    expect(saved.pinHash).not.toContain('1234')
+    // No se compara por substring: el hash es hex aleatorio y contiene "1234" por azar ~1 de cada 700 corridas.
+    expect(saved.pinHash).not.toBe('1234')
+    expect(saved.pinHash).toMatch(/^[0-9a-f]{32}:[0-9a-f]{64}$/)
+    expect(verifyPin('1234', saved.pinHash)).toBe(true)
     expect(saved.companyId).toBe('c1')
     expect(saved.activo).toBe(true)
   })
