@@ -34,8 +34,10 @@ Firestore.
    atrás.
 2. **Viajan documentos y mantenciones.** La bitácora de usos se queda con el
    emisor (son datos de sus conductores) y el daño activo no viaja.
-3. **Si el correo no tiene cuenta en TapCar, se rechaza** con un mensaje
-   accionable. No se crean transferencias a la espera de que alguien se registre.
+3. **Se puede transferir a un correo sin cuenta.** La transferencia se crea igual
+   y al destinatario le llega un correo pidiéndole que se registre. *(Revisado el
+   2026-07-27: la versión original rechazaba estos correos con 404 `sin_cuenta`.
+   Ver «Transferencia a correos sin cuenta» al final.)*
 4. **La transferencia vive en su propia colección** `transferencias/{id}`, no
    como campo del vehículo ni mezclada con `invitations`. Un cambio de propiedad
    merece dejar rastro.
@@ -189,8 +191,95 @@ Playwright cuesta más de lo que aporta. Queda una verificación manual en el pl
 ## Fuera de alcance
 
 - Transferir varios vehículos de una vez.
-- Transferir a un correo sin cuenta (queda rechazado).
 - Deshacer una transferencia ya aceptada: la vuelta se hace transfiriendo de
   regreso.
 - Historial de transferencias visible en la UI. Los documentos quedan en
   Firestore, pero no hay pantalla que los liste.
+- Congelar el vehículo mientras la transferencia está pendiente. Sigue operando
+  normal: la aceptación puede tardar días y entretanto el vehículo circula y sus
+  documentos vencen.
+
+---
+
+# Transferencia a correos sin cuenta
+
+**Fecha:** 2026-07-27 (revisión del diseño anterior)
+**Estado:** diseño aprobado
+
+## Qué cambia
+
+La versión original rechazaba con 404 `sin_cuenta` cualquier transferencia a un
+correo sin cuenta en TapCar. Eso deja fuera el caso más común de un traspaso
+real: le vendes el auto a alguien que todavía no usa la plataforma.
+
+Ahora la transferencia **se crea igual** y el destinatario recibe un correo
+pidiéndole que se registre. Para el emisor no cambia nada conceptual: el
+vehículo queda pendiente hasta que acepten, tuviera o no cuenta el destinatario.
+
+## Creación
+
+`POST /api/vehicles/[id]/transferir` resuelve la empresa del correo; si es
+`null`, sigue adelante en vez de cortar. La única validación que sobrevive de las
+tres anteriores es `misma_empresa` (y `ya_pendiente`, que no depende del
+destinatario).
+
+El correo al destinatario tiene **dos variantes**:
+
+| Caso | Asunto y CTA |
+|---|---|
+| Tiene cuenta | El actual: «Revisar la transferencia» → `/transferencias/<token>` |
+| No tiene cuenta | «Crear mi cuenta en TapCar» → `/login?transferencia=<token>`, avisando explícitamente que debe registrarse **con ese mismo correo** o no podrá aceptar |
+
+## Llegada del destinatario
+
+El login siempre redirige a `/dashboard` tras autenticar, así que sin cambios
+alguien se registraría y perdería el enlace. Tres piezas lo resuelven:
+
+1. **`GET /api/transferencias/[token]` vuelve al diseño**, ahora **público** y
+   acotado a patente, empresa de origen, correo destino y estado. El plan lo
+   había eliminado por no tener consumidor; ese razonamiento valía mientras el
+   destinatario siempre tuviera cuenta. El banner del login lo consume sin sesión.
+2. **`components/transferencias/TransferenciaBanner.tsx`** en `/login`, hermano
+   de `InvitationBanner`: nombra la patente y el correo con el que hay que entrar.
+3. **`LoginForm` aprende un destino:** si la URL traía `?transferencia=<token>`,
+   después de `establishSession` empuja a `/transferencias/<token>` en vez de
+   `/dashboard`.
+
+Y como red de seguridad —para quien cerró el correo o se registró por su
+cuenta— el **dashboard muestra un banner de transferencias entrantes**
+consultando por `paraEmail`. Es lo único que sobrevive a que el enlace se pierda.
+
+## Estado pendiente para el emisor
+
+El dashboard consulta las transferencias pendientes de la empresa y muestra una
+pill **«Transferencia pendiente»** en la card del vehículo ofrecido. El vehículo
+sigue operando normal: documentos, bitácora y chip NFC intactos.
+
+Son dos consultas nuevas por render del dashboard (`paraEmail` y `deCompanyId`),
+ambas de un solo campo, sin índice compuesto.
+
+## Qué NO cambia
+
+- Las cinco reglas de `puedeAceptar`, incluida la comparación de correo: quien se
+  registra pasa por exactamente el mismo filtro que quien ya tenía cuenta.
+- `ensureProvisioned` ya crea una empresa propia para el usuario nuevo y lo deja
+  como Administrador, que es el permiso que exige aceptar. Sin cambios.
+- La expiración de 7 días.
+
+**Borde conocido, sin código:** si ese correo tuviera además una invitación de
+equipo pendiente, la invitación gana y el usuario entra a otra empresa, quizá sin
+rol de Administrador. Ahí vería «Necesitas ser Administrador de tu empresa» al
+intentar aceptar. Es un cruce muy improbable y el mensaje ya es accionable.
+
+## Pruebas
+
+- **Endpoint de crear:** los dos tests de `sin_cuenta` se reemplazan por su
+  opuesto —que **sí** cree la transferencia sin cuenta— más uno que verifique
+  que elige la plantilla de correo correcta en cada caso.
+- **Plantilla nueva:** que el CTA apunte a `/login?transferencia=` y mencione el
+  correo con el que hay que registrarse.
+- **`GET` público:** que responda sin sesión y que no exponga más que los cuatro
+  campos acordados.
+- **Banners:** el del login y el del dashboard, con @testing-library.
+- **`LoginForm`:** que redirija al token cuando viene en la URL y al dashboard
+  cuando no.
