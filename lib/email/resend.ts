@@ -5,6 +5,11 @@ import { billingRequestSubject, billingRequestHtml } from '@/lib/email/billingEm
 import { danoSubject, danoHtml } from '@/lib/email/danoEmail'
 import { incidenciaSubject, incidenciaHtml } from '@/lib/email/incidenciaEmail'
 import { mantencionSubject, mantencionHtml } from '@/lib/email/mantencionEmail'
+import {
+  transferenciaRecibidaSubject, transferenciaRecibidaHtml,
+  transferenciaEnviadaSubject, transferenciaEnviadaHtml,
+  transferenciaAceptadaSubject, transferenciaAceptadaHtml,
+} from '@/lib/email/transferenciaEmail'
 import type { Role } from '@/lib/auth/roles'
 
 let _resend: Resend | undefined
@@ -83,5 +88,41 @@ export async function sendMantencionEmail(
     to,
     subject: mantencionSubject(p.estado, p.patente),
     html: mantencionHtml(p),
+  })
+}
+
+export async function sendTransferenciaRecibidaEmail(
+  to: string,
+  p: { patente: string; deCompanyNombre: string; deEmail: string; aceptarUrl: string },
+): Promise<void> {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM!,
+    to,
+    subject: transferenciaRecibidaSubject(p.patente),
+    html: transferenciaRecibidaHtml(p),
+  })
+}
+
+export async function sendTransferenciaEnviadaEmail(
+  to: string,
+  p: { patente: string; paraEmail: string; vehicleId: string },
+): Promise<void> {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM!,
+    to,
+    subject: transferenciaEnviadaSubject(p.patente),
+    html: transferenciaEnviadaHtml(p),
+  })
+}
+
+export async function sendTransferenciaAceptadaEmail(
+  to: string,
+  p: { patente: string; paraEmail: string },
+): Promise<void> {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM!,
+    to,
+    subject: transferenciaAceptadaSubject(p.patente),
+    html: transferenciaAceptadaHtml(p),
   })
 }

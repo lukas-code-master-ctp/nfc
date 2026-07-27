@@ -191,6 +191,22 @@ export interface Invitation {
   acceptedAt?: string
 }
 
+export interface Transferencia {
+  id: string
+  vehicleId: string
+  patente: string // denormalizado: el correo y la página lo muestran sin leer el vehículo
+  deCompanyId: string
+  deCompanyNombre: string
+  paraEmail: string // normalizado a minúsculas
+  token: string
+  status: 'pendiente' | 'aceptada' | 'cancelada'
+  creadaPorUid: string
+  createdAt: string // ISO
+  expiresAt: string // ISO
+  aceptadaPorUid?: string
+  aceptadaEn?: string
+}
+
 export interface Driver {
   id: string
   companyId: string

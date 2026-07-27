@@ -6,6 +6,7 @@ import { listDocuments } from '@/lib/data/documents'
 import { listUsages } from '@/lib/data/usages'
 import { getCompany } from '@/lib/data/companies'
 import { listMantenciones, ultimaMantencion } from '@/lib/data/mantenciones'
+import { getPendienteByVehicle } from '@/lib/data/transferencias'
 import { documentStatus } from '@/lib/documents/status'
 import { estadoMantencion } from '@/lib/mantencion/status'
 import { createReadUrl } from '@/lib/storage/signedUrls'
@@ -22,6 +23,7 @@ import MantencionPanel from '@/components/vehicle/MantencionPanel'
 import DanoActivoPanel from '@/components/vehicle/DanoActivoPanel'
 import ConsumoBencinaPanel from '@/components/vehicle/ConsumoBencinaPanel'
 import VehicleTabs from '@/components/vehicle/VehicleTabs'
+import TransferirVehiculoPanel from '@/components/vehicle/TransferirVehiculoPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +36,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
 
   const canEditDocs = can(m.role, 'document:write')
   const canManageVehicle = can(m.role, 'vehicle:write')
+  const transferenciaPendiente = canManageVehicle ? await getPendienteByVehicle(vehicle.id) : null
 
   const company = await getCompany(m.companyId)
   const categorias = company?.categorias ?? []
@@ -49,7 +52,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   )
 
   const usos = await Promise.all(
-    (await listUsages(vehicle.id)).map(async (u) => ({
+    (await listUsages(vehicle.id, m.companyId)).map(async (u) => ({
       id: u.id,
       driverNombre: u.driverNombre,
       tomadoEn: u.tomadoEn,
@@ -173,6 +176,17 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         ajustes={
           <div className="space-y-6">
             <NfcTokenPanel vehicleId={vehicle.id} initialUrl={publicUrl} patente={vehicle.patente} />
+            {canManageVehicle && (
+              <TransferirVehiculoPanel
+                vehicleId={vehicle.id}
+                patente={vehicle.patente}
+                pendiente={
+                  transferenciaPendiente
+                    ? { paraEmail: transferenciaPendiente.paraEmail, expiresAt: transferenciaPendiente.expiresAt }
+                    : null
+                }
+              />
+            )}
             {canManageVehicle && (
               <DeleteVehicleButton
                 vehicleId={vehicle.id}

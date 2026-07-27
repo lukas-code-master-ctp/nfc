@@ -28,10 +28,17 @@ function toUsage(id: string, d: FirebaseFirestore.DocumentData): VehicleUsage {
   }
 }
 
-export async function listUsages(vehicleId: string): Promise<VehicleUsage[]> {
+/**
+ * Usos de un vehículo. Con `companyId` filtra a los de esa empresa: tras una
+ * transferencia los usos del dueño anterior siguen apuntando al mismo
+ * `vehicleId` y el nuevo dueño no debe verlos. Sin el parámetro devuelve todos,
+ * que es lo que necesitan la cascada de borrado y el recálculo de kilometraje.
+ */
+export async function listUsages(vehicleId: string, companyId?: string): Promise<VehicleUsage[]> {
   const snap = await adminDb.collection(COL).where('vehicleId', '==', vehicleId).get()
   return snap.docs
     .map((d) => toUsage(d.id, d.data()))
+    .filter((u) => !companyId || u.companyId === companyId)
     .sort((a, b) => (a.tomadoEn < b.tomadoEn ? 1 : -1))
 }
 
