@@ -1,8 +1,17 @@
 'use client'
 import { useState } from 'react'
 import InfoTip from '@/components/InfoTip'
+import GrabarChip from '@/components/nfc/GrabarChip'
 
-export default function NfcTokenPanel({ vehicleId, initialUrl }: { vehicleId: string; initialUrl: string }) {
+export default function NfcTokenPanel({
+  vehicleId,
+  initialUrl,
+  patente,
+}: {
+  vehicleId: string
+  initialUrl: string
+  patente: string
+}) {
   const [url, setUrl] = useState(initialUrl)
   const [copied, setCopied] = useState(false)
 
@@ -53,12 +62,15 @@ export default function NfcTokenPanel({ vehicleId, initialUrl }: { vehicleId: st
           )}
         </button>
       </div>
+      <GrabarChip url={url} patente={patente} />
       <p className="mt-2 flex items-center gap-1.5 text-xs text-acero">
         Graba esta URL en el chip NFC del vehículo.
         <InfoTip label="Cómo grabar el chip NFC">
           <p className="text-sm font-semibold text-tinta">Cómo grabar el chip</p>
           <p className="mt-1 text-xs text-acero">
-            Recomendamos la app gratuita <strong className="text-tinta">NFC Tools</strong> (Android e iPhone).
+            Desde un Android con Chrome puedes usar el botón <strong className="text-tinta">Grabar chip</strong>.
+            En iPhone no se puede grabar desde el navegador: usa la app gratuita{' '}
+            <strong className="text-tinta">NFC Tools</strong>.
           </p>
           <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-xs text-acero">
             <li>Copia esta URL con el botón <strong className="text-tinta">Copiar</strong>.</li>
