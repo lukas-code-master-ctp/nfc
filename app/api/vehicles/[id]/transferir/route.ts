@@ -10,7 +10,11 @@ import {
   getPendienteByVehicle,
   cancelTransferencia,
 } from '@/lib/data/transferencias'
-import { sendTransferenciaRecibidaEmail, sendTransferenciaEnviadaEmail } from '@/lib/email/resend'
+import {
+  sendTransferenciaRecibidaEmail,
+  sendTransferenciaEnviadaEmail,
+  sendTransferenciaSinCuentaEmail,
+} from '@/lib/email/resend'
 import { appUrl } from '@/lib/email/layout'
 
 export const dynamic = 'force-dynamic'
@@ -45,14 +49,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'correo_invalido', mensaje: 'Revisa el correo.' }, { status: 400 })
   }
 
+  // `null` = el correo todavía no tiene cuenta. No es un error: se le manda una
+  // invitación a registrarse y la transferencia queda pendiente igual.
   const destino = await companyIdDelCorreo(email)
-  if (!destino) {
-    return NextResponse.json(
-      { error: 'sin_cuenta', mensaje: 'Ese correo no tiene cuenta en TapCar. Pídele que se registre primero.' },
-      { status: 404 },
-    )
-  }
-  if (destino === m.companyId) {
+  if (destino && destino === m.companyId) {
     return NextResponse.json(
       { error: 'misma_empresa', mensaje: 'Ese correo pertenece a tu misma empresa.' },
       { status: 400 },
@@ -77,14 +77,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   })
 
   // Correos best-effort: si Resend falla, la transferencia igual queda creada.
+  // Dos caminos: quien ya tiene cuenta va directo a aceptar; quien no, primero se registra.
   const aceptarUrl = `${appUrl()}/transferencias/${t.token}`
+  const registrarUrl = `${appUrl()}/login?transferencia=${t.token}`
   try {
-    await sendTransferenciaRecibidaEmail(email, {
-      patente: vehicle.patente,
-      deCompanyNombre: razonSocial,
-      deEmail: m.email,
-      aceptarUrl,
-    })
+    if (destino) {
+      await sendTransferenciaRecibidaEmail(email, {
+        patente: vehicle.patente,
+        deCompanyNombre: razonSocial,
+        deEmail: m.email,
+        aceptarUrl,
+      })
+    } else {
+      await sendTransferenciaSinCuentaEmail(email, {
+        patente: vehicle.patente,
+        deCompanyNombre: razonSocial,
+        deEmail: m.email,
+        paraEmail: email,
+        registrarUrl,
+      })
+    }
   } catch (err) {
     console.error('[transferir] correo al destinatario', err)
   }

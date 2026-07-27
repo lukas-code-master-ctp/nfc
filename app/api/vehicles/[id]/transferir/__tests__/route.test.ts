@@ -9,6 +9,8 @@ const getPendienteByVehicle = vi.fn()
 const cancelTransferencia = vi.fn()
 const getUserByEmail = vi.fn()
 const userDocGet = vi.fn()
+const sendRecibida = vi.fn()
+const sendSinCuenta = vi.fn()
 
 vi.mock('@/lib/auth/membership', () => ({ getMembership: () => getMembership() }))
 vi.mock('@/lib/data/vehicles', () => ({ getVehicle: (...a: unknown[]) => getVehicle(...a) }))
@@ -23,8 +25,9 @@ vi.mock('@/lib/firebase/admin', () => ({
   adminDb: { collection: () => ({ doc: () => ({ get: () => userDocGet() }) }) },
 }))
 vi.mock('@/lib/email/resend', () => ({
-  sendTransferenciaRecibidaEmail: () => Promise.resolve(),
+  sendTransferenciaRecibidaEmail: (...a: unknown[]) => sendRecibida(...a),
   sendTransferenciaEnviadaEmail: () => Promise.resolve(),
+  sendTransferenciaSinCuentaEmail: (...a: unknown[]) => sendSinCuenta(...a),
 }))
 
 import { POST, DELETE } from '@/app/api/vehicles/[id]/transferir/route'
@@ -37,6 +40,7 @@ beforeEach(() => {
   getMembership.mockReset(); getVehicle.mockReset(); getCompany.mockReset()
   createTransferencia.mockReset(); getPendienteByVehicle.mockReset(); cancelTransferencia.mockReset()
   getUserByEmail.mockReset(); userDocGet.mockReset()
+  sendRecibida.mockReset(); sendSinCuenta.mockReset()
 
   getMembership.mockResolvedValue({ uid: 'u1', email: 'jefe@uno.cl', companyId: 'c1', role: 'admin' })
   getVehicle.mockResolvedValue({ id: 'v1', companyId: 'c1', patente: 'ABCD-12' })
@@ -67,16 +71,31 @@ describe('POST transferir', () => {
     expect((await POST(req({ email: 'no-es-correo' }), ctx('v1'))).status).toBe(400)
   })
 
-  it('404 sin_cuenta si el correo no tiene cuenta', async () => {
+  it('crea la transferencia aunque el correo no tenga cuenta', async () => {
     getUserByEmail.mockRejectedValue(new Error('user not found'))
     const res = await POST(req({ email: 'nadie@x.cl' }), ctx('v1'))
-    expect(res.status).toBe(404)
-    expect((await res.json()).error).toBe('sin_cuenta')
+    expect(res.status).toBe(200)
+    expect(createTransferencia).toHaveBeenCalledWith(expect.objectContaining({ paraEmail: 'nadie@x.cl' }))
   })
 
-  it('404 sin_cuenta si el usuario existe pero no tiene empresa', async () => {
+  it('crea la transferencia si el usuario existe pero no tiene empresa', async () => {
     userDocGet.mockResolvedValue({ exists: true, data: () => ({}) })
-    expect((await POST(req({ email: 'a@b.cl' }), ctx('v1'))).status).toBe(404)
+    expect((await POST(req({ email: 'a@b.cl' }), ctx('v1'))).status).toBe(200)
+  })
+
+  it('usa la plantilla de registro cuando el correo no tiene cuenta', async () => {
+    getUserByEmail.mockRejectedValue(new Error('user not found'))
+    await POST(req({ email: 'nadie@x.cl' }), ctx('v1'))
+    expect(sendSinCuenta).toHaveBeenCalledWith('nadie@x.cl', expect.objectContaining({
+      patente: 'ABCD-12', paraEmail: 'nadie@x.cl',
+    }))
+    expect(sendRecibida).not.toHaveBeenCalled()
+  })
+
+  it('usa la plantilla normal cuando el correo sí tiene cuenta', async () => {
+    await POST(req({ email: 'nuevo@dos.cl' }), ctx('v1'))
+    expect(sendRecibida).toHaveBeenCalled()
+    expect(sendSinCuenta).not.toHaveBeenCalled()
   })
 
   it('400 misma_empresa si el correo es de la misma empresa', async () => {
