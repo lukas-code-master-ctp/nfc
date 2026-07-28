@@ -154,10 +154,15 @@ se ignora, el permiso de circulación sale acostado en el PDF. Se decodifica con
 
 **Doble submit.** El botón queda desactivado mientras trabaja (ya lo hace hoy).
 
-Los errores son **por página, no globales**: si una foto no se puede leer, esa miniatura se marca
-con "No pudimos leer esta foto, bórrala y sácala de nuevo" y las demás siguen su curso. Un
-documento de cinco páginas no se pierde porque la tercera salió corrupta. Si ninguna página
-sobrevive, no se sube nada y el formulario muestra su error.
+Los errores se **señalan por página**: si una foto no se puede leer, se marca esa miniatura con
+"No pudimos leer esta foto, bórrala y sácala de nuevo" y el resto del formulario queda intacto —
+el usuario no pierde las otras nueve páginas ni los datos que ya llenó.
+
+Explícito, porque admite otra lectura: en ese caso **no se sube nada**. El PDF no se arma
+saltándose la página mala. Que a un permiso de circulación se le caiga la página 3 en silencio y
+nadie lo note es peor que obligar al usuario a borrarla o sacarla de nuevo. Como la compresión de
+todas las páginas ocurre **antes** de la primera llamada de red, una foto ilegible se detecta sin
+haber subido nada a Storage.
 
 ## Tests
 
