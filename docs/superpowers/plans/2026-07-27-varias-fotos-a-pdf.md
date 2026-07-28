@@ -285,13 +285,15 @@ describe('construirPdf', () => {
     expect(doc.getPage(0).getHeight()).toBe(1)
   })
 
-  it('sin imágenes devuelve un PDF vacío en vez de reventar', async () => {
-    const pdf = await construirPdf([])
-    const { PDFDocument } = await import('pdf-lib')
-    const doc = await PDFDocument.load(await pdf.arrayBuffer())
-    expect(doc.getPageCount()).toBe(0)
-  })
 })
+```
+
+`construirPdf` **no** lleva un caso para la lista vacía: quien la usa (`subirPaginas`, Task 3)
+corta antes cuando no hay páginas y solo la invoca con dos o más imágenes. Un test del caso
+vacío obliga a inventar una rama que escriba bytes de PDF a mano, que es justo lo que este
+diseño descartó.
+
+```
 ```
 
 - [ ] **Step 3: Correr el test para verificar que falla**
@@ -333,7 +335,7 @@ export async function construirPdf(jpegs: Blob[]): Promise<Blob> {
 - [ ] **Step 5: Correr el test para verificar que pasa**
 
 Run: `npm test -- documentos/__tests__/pdf`
-Expected: PASS, 3 tests.
+Expected: PASS, 2 tests.
 
 - [ ] **Step 6: Verificar que el import dinámico no arrastró pdf-lib al bundle inicial**
 
@@ -1192,7 +1194,7 @@ Expected: sin salida.
 ```bash
 npm test
 ```
-Expected: toda la suite verde, incluidos los 35 tests nuevos de los tasks 1-4.
+Expected: toda la suite verde, incluidos los 34 tests nuevos de los tasks 1-4.
 
 ```bash
 npx eslint app components lib
