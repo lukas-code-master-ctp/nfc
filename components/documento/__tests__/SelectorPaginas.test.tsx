@@ -33,7 +33,7 @@ function elegir(archivos: File[]) {
 }
 
 function paginaFalsa(i: number): Pagina {
-  return { id: `p${i}`, file: foto(`f${i}.jpg`), url: 'blob:falso' }
+  return { id: `p${i}`, file: foto(`f${i}.jpg`) }
 }
 
 describe('SelectorPaginas', () => {

@@ -4,8 +4,10 @@ import { nanoid } from 'nanoid'
 import { MAX_PAGINAS, cabenPaginas, esImagen, type Pagina } from '@/lib/documentos/paginas'
 
 /**
- * Cada miniatura revoca su propio objectURL al desmontarse (al borrarla o al cerrar
- * el formulario). Las keys son el id de la página, así que reordenar no desmonta nada.
+ * Cada miniatura es dueña completa del ciclo de vida de su objectURL: la crea y la revoca
+ * dentro del mismo efecto, así Strict Mode (que en dev corre mount → cleanup → mount) la
+ * vuelve a crear en el remount en vez de dejarla muerta. Las keys son el id de la página,
+ * así que reordenar no desmonta nada (no dispara el efecto de nuevo).
  */
 function Miniatura({
   pagina,
@@ -22,7 +24,12 @@ function Miniatura({
   onQuitar: () => void
   onMover: (delta: number) => void
 }) {
-  useEffect(() => () => URL.revokeObjectURL(pagina.url), [pagina.url])
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    const u = URL.createObjectURL(pagina.file)
+    setUrl(u)
+    return () => URL.revokeObjectURL(u)
+  }, [pagina.file])
 
   const flecha = 'flex size-7 items-center justify-center rounded-md border border-linea bg-superficie text-acero disabled:opacity-30'
 
@@ -30,7 +37,7 @@ function Miniatura({
     <li className={`rounded-xl border p-2 ${conError ? 'border-vencido bg-[#FCE7E7]' : 'border-linea bg-superficie'}`}>
       <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-lienzo">
         {esImagen(pagina.file.type) ? (
-          <img src={pagina.url} alt={`Página ${indice + 1}`} className="size-full object-cover" />
+          url && <img src={url} alt={`Página ${indice + 1}`} className="size-full object-cover" />
         ) : (
           <div className="flex size-full flex-col items-center justify-center gap-1.5 p-2 text-center">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-7 text-acero" aria-hidden="true">
@@ -92,7 +99,7 @@ export default function SelectorPaginas({
   const lleno = hayPdf || paginas.length >= MAX_PAGINAS
 
   function nueva(file: File): Pagina {
-    return { id: nanoid(8), file, url: URL.createObjectURL(file) }
+    return { id: nanoid(8), file }
   }
 
   function agregar(lista: FileList | File[] | null) {

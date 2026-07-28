@@ -28,6 +28,14 @@ export async function subirPaginas(
   let fileName: string
   let contentType: string
 
+  // La UI reemplaza la lista entera cuando aparece un PDF, así que hoy `paginas[0]` alcanza
+  // para decidir. Pero si una lista mixta (PDF + fotos) llegara igual, subir solo `paginas[0]`
+  // descartaría el resto en silencio: preferimos fallar ruidosamente a subir un documento
+  // incompleto, así que blindamos el invariante en vez de confiar en que la UI nunca cambie.
+  if (salida === 'archivo' && paginas.length > 1) {
+    throw new Error('lista_mixta')
+  }
+
   const soloArchivo = salida === 'archivo' && !esImagen(paginas[0].file.type)
   if (soloArchivo) {
     // Un PDF del usuario viaja intacto.

@@ -12,7 +12,7 @@ vi.mock('@/lib/documentos/pdf', () => ({ construirPdf: mocks.construirPdf }))
 const { subirPaginas, ErrorPagina } = await import('@/lib/documentos/subir')
 
 function pagina(id: string, type: string, nombre: string): Pagina {
-  return { id, file: new File(['x'], nombre, { type }), url: 'blob:x' }
+  return { id, file: new File(['x'], nombre, { type }) }
 }
 
 const fetchMock = vi.fn()
@@ -93,6 +93,13 @@ describe('subirPaginas', () => {
     const avances: unknown[] = []
     await subirPaginas('v1', [pagina('a', 'image/jpeg', 'a.jpg'), pagina('b', 'image/jpeg', 'b.jpg')], (p) => avances.push(p))
     expect(avances).toEqual([{ hechas: 0, total: 2 }, { hechas: 1, total: 2 }, 'subiendo'])
+  })
+
+  it('una lista mixta de PDF y fotos no descarta páginas en silencio: falla ruidosamente', async () => {
+    await expect(
+      subirPaginas('v1', [pagina('a', 'application/pdf', 'permiso.pdf'), pagina('b', 'image/jpeg', 'b.jpg')]),
+    ).rejects.toThrow('lista_mixta')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('propaga el fallo del PUT a Storage', async () => {

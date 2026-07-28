@@ -10,7 +10,7 @@ import {
 } from '@/lib/documentos/paginas'
 
 function pagina(type: string, nombre = 'foto.jpg'): Pagina {
-  return { id: nombre, file: new File([''], nombre, { type }), url: 'blob:x' }
+  return { id: nombre, file: new File([''], nombre, { type }) }
 }
 
 const JPG = 'image/jpeg'

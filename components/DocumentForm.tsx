@@ -92,7 +92,11 @@ export default function DocumentForm({ vehicleId }: { vehicleId: string }) {
       )}
       <div className="space-y-1.5">
         <label className={labelCls}>Archivo del documento</label>
-        <SelectorPaginas paginas={paginas} onChange={setPaginas} paginaConError={paginaConError} />
+        <SelectorPaginas
+          paginas={paginas}
+          onChange={(p) => { setPaginas(p); setPaginaConError(null); setError(null) }}
+          paginaConError={paginaConError}
+        />
       </div>
       {error && <p role="alert" className="rounded-lg bg-[#FCE7E7] px-3 py-2 text-sm text-[#C81E1E]">{error}</p>}
       <div className="flex gap-2 pt-1">
@@ -100,7 +104,7 @@ export default function DocumentForm({ vehicleId }: { vehicleId: string }) {
           className="rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press disabled:opacity-50">
           {loading ? textoProgreso(progreso) : 'Guardar'}
         </button>
-        <button type="button" onClick={() => setOpen(false)}
+        <button type="button" onClick={() => { setOpen(false); setPaginas([]); setPaginaConError(null); setError(null) }}
           className="rounded-lg border border-linea bg-superficie px-4 py-2.5 text-sm font-medium text-tinta transition-colors hover:bg-lienzo">
           Cancelar
         </button>

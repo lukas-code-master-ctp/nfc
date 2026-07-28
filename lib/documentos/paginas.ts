@@ -1,8 +1,8 @@
 // Lógica pura de la lista de páginas de un documento: sin DOM, sin red, sin Firebase.
 // El único tipo del navegador que aparece acá es File, y solo como tipo.
 
-/** Una página de la lista: el archivo elegido y su objectURL para la miniatura. */
-export type Pagina = { id: string; file: File; url: string }
+/** Una página de la lista: el archivo elegido. La miniatura crea y revoca su propio objectURL. */
+export type Pagina = { id: string; file: File }
 
 /** Qué se termina subiendo a Storage. */
 export type Salida = 'ninguno' | 'archivo' | 'pdf'
