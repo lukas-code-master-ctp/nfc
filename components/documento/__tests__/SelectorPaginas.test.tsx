@@ -13,6 +13,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   vi.mocked(URL.createObjectURL).mockClear()
+  vi.mocked(URL.revokeObjectURL).mockClear()
 })
 
 /** El componente es controlado; el test necesita un padre que guarde el estado. */
@@ -57,6 +58,22 @@ describe('SelectorPaginas', () => {
     expect(screen.getAllByRole('img')).toHaveLength(1)
   })
 
+  it('al borrar una página revoca exactamente su objectURL', () => {
+    render(<Host />)
+    elegir([foto('a.jpg'), foto('b.jpg')])
+    fireEvent.click(screen.getAllByRole('button', { name: /quitar página/i })[0])
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:a.jpg')
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith('blob:b.jpg')
+  })
+
+  it('al desmontar el componente revoca las objectURL de todas las páginas', () => {
+    const { unmount } = render(<Host />)
+    elegir([foto('a.jpg'), foto('b.jpg')])
+    unmount()
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:a.jpg')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:b.jpg')
+  })
+
   it('al llegar al tope desactiva el botón y avisa cuántas quedaron fuera', () => {
     render(<Host inicial={Array.from({ length: 9 }, (_, i) => paginaFalsa(i))} />)
     elegir([foto('x.jpg'), foto('y.jpg'), foto('z.jpg')])
@@ -77,6 +94,19 @@ describe('SelectorPaginas', () => {
     expect(screen.getByRole('button', { name: /agregar otra página/i })).toHaveProperty('disabled', true)
   })
 
+  it('si se eligen fotos junto con un PDF, se queda solo con el PDF y avisa', () => {
+    render(<Host />)
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    Object.defineProperty(input, 'files', {
+      value: [foto('a.jpg'), new File(['x'], 'permiso.pdf', { type: 'application/pdf' }), foto('b.jpg')],
+      configurable: true,
+    })
+    fireEvent.change(input)
+    expect(screen.getByText('permiso.pdf')).toBeDefined()
+    expect(screen.queryAllByRole('img')).toHaveLength(0)
+    expect(screen.getByText('Un PDF se sube solo, sin más páginas.')).toBeDefined()
+  })
+
   it('reordena con las flechas', () => {
     render(<Host />)
     elegir([foto('a.jpg'), foto('b.jpg')])
@@ -86,9 +116,19 @@ describe('SelectorPaginas', () => {
     expect(orden()).toEqual(['blob:b.jpg', 'blob:a.jpg'])
   })
 
-  it('marca con un aviso la página que no se pudo leer', () => {
+  it('reordenar con las flechas no revoca ninguna objectURL', () => {
+    render(<Host />)
+    elegir([foto('a.jpg'), foto('b.jpg')])
+    fireEvent.click(screen.getByRole('button', { name: /mover página 1 a la derecha/i }))
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('marca con un aviso solo la página que no se pudo leer', () => {
     const paginas = [paginaFalsa(0), paginaFalsa(1)]
-    render(<Host inicial={paginas} error="p1" />)
-    expect(screen.getByText(/no pudimos leer esta foto/i)).toBeDefined()
+    const { container } = render(<Host inicial={paginas} error="p1" />)
+    const items = container.querySelectorAll('li')
+    expect(items).toHaveLength(2)
+    expect(items[0].textContent).not.toMatch(/no pudimos leer esta foto/i)
+    expect(items[1].textContent).toMatch(/no pudimos leer esta foto/i)
   })
 })
