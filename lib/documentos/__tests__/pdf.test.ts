@@ -36,11 +36,4 @@ describe('construirPdf', () => {
     expect(doc.getPage(0).getWidth()).toBe(1)
     expect(doc.getPage(0).getHeight()).toBe(1)
   })
-
-  it('sin imágenes devuelve un PDF vacío en vez de reventar', async () => {
-    const pdf = await construirPdf([])
-    const { PDFDocument } = await import('pdf-lib')
-    const doc = await PDFDocument.load(await pdf.arrayBuffer())
-    expect(doc.getPageCount()).toBe(0)
-  })
 })

@@ -6,29 +6,11 @@
  *
  * pdf-lib se carga con import() dinámico a propósito: solo se descarga cuando
  * alguien realmente arma un PDF, no en cada visita a la ficha del vehículo.
+ *
+ * Siempre se llama con al menos una imagen: quien la usa corta antes si la lista
+ * está vacía. Por eso no hay una rama para el caso sin páginas.
  */
 export async function construirPdf(jpegs: Blob[]): Promise<Blob> {
-  // Caso especial: PDF completamente vacío (sin páginas).
-  // pdf-lib agrega una página por defecto al crear un documento, así que
-  // para devolver un PDF con 0 páginas creamos uno vacío a mano.
-  if (jpegs.length === 0) {
-    // PDF mínimo válido sin páginas.
-    const pdfText = `%PDF-1.4
-1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
-2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj
-xref
-0 3
-0000000000 65535 f
-0000000009 00000 n
-0000000056 00000 n
-trailer<</Size 3/Root 1 0 R>>
-startxref
-111
-%%EOF`
-    const bytes = new TextEncoder().encode(pdfText)
-    return new Blob([bytes], { type: 'application/pdf' })
-  }
-
   const { PDFDocument } = await import('pdf-lib')
   const doc = await PDFDocument.create()
 
