@@ -21,6 +21,10 @@ import { cargarSenales } from '@/lib/onboarding/cargar'
 import { debeElegirTipo, debeMostrarTarjeta, pasosDe, todosListos, type Paso } from '@/lib/onboarding/pasos'
 
 export const dynamic = 'force-dynamic'
+// El `after()` que estampa `completadoEn` corre después de responder, pero sigue
+// contando contra el límite de ejecución: por eso el tope va explícito, igual
+// que en las rutas de tomar/entregar.
+export const maxDuration = 30
 
 export default async function DashboardPage() {
   const m = await getMembership()

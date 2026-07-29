@@ -13,8 +13,12 @@ vi.mock('@/lib/data/drivers', () => ({ listActiveDrivers: mocks.listActiveDriver
 
 const { cargarSenales } = await import('@/lib/onboarding/cargar')
 
+// El id de la empresa es distinto del companyId de la sesión a propósito: si
+// fueran iguales, el test de "consulta con el companyId de la sesión" pasaría
+// igual con una implementación que usara `args.company?.id`, que es incorrecta
+// (rompería con `company: null`, consultando con undefined).
 const COMPANY = {
-  id: 'c1',
+  id: 'c-del-doc',
   ownerUid: 'u1',
   company: { razonSocial: 'Transportes SpA', rut: '', giro: '', direccion: '', telefono: '' },
   plan: { maxVehiculos: 3 },
