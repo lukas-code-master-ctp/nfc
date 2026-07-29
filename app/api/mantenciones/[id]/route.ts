@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
-import { deleteMantencion } from '@/lib/data/mantenciones'
+import { deleteMantencion, refreshResumenMantencion } from '@/lib/data/mantenciones'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +11,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!m) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   if (!can(m.role, 'document:write')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   try {
-    await deleteMantencion(id, m.companyId)
+    const vehicleId = await deleteMantencion(id, m.companyId)
+    await refreshResumenMantencion(vehicleId)
   } catch {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { getVehicle } from '@/lib/data/vehicles'
-import { createDocument } from '@/lib/data/documents'
+import { createDocument, refreshResumenDocs } from '@/lib/data/documents'
 import { tipoTieneVencimiento } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
@@ -22,5 +22,6 @@ export async function POST(req: NextRequest) {
     fileUrl: fileUrl ?? '',
     filePath: filePath ?? '',
   })
+  await refreshResumenDocs(doc.vehicleId)
   return NextResponse.json(doc, { status: 201 })
 }

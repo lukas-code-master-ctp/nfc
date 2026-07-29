@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { getVehicle } from '@/lib/data/vehicles'
-import { createMantencion, listMantenciones } from '@/lib/data/mantenciones'
+import { createMantencion, listMantenciones, refreshResumenMantencion } from '@/lib/data/mantenciones'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,5 +32,6 @@ export async function POST(req: NextRequest) {
   const nota = typeof body?.nota === 'string' && body.nota.trim() ? body.nota.trim().slice(0, 500) : null
   const filePath = typeof body?.filePath === 'string' && body.filePath ? body.filePath : null
   const mant = await createMantencion(m.companyId, m.uid, { vehicleId, fecha, km, nota, filePath, fileUrl: filePath })
+  await refreshResumenMantencion(vehicleId)
   return NextResponse.json({ ok: true, id: mant.id })
 }
