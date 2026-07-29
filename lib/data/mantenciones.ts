@@ -46,7 +46,13 @@ export async function createMantencion(
 
 export async function listMantenciones(vehicleId: string): Promise<Mantencion[]> {
   const snap = await adminDb.collection(COL).where('vehicleId', '==', vehicleId).get()
-  return snap.docs.map((d) => toMantencion(d.id, d.data())).sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+  return snap.docs.map((d) => toMantencion(d.id, d.data())).sort(
+    // Comparador antisimétrico y determinista: por fecha descendente, y ante
+    // empate por id descendente. El comparador anterior devolvía -1 en ambos
+    // sentidos para fechas iguales, así que el orden dependía del algoritmo de
+    // sort de V8 — y `ultimaMantencion` (que toma el primero) era arbitrario.
+    (a, b) => (a.fecha !== b.fecha ? (a.fecha < b.fecha ? 1 : -1) : a.id < b.id ? 1 : -1),
+  )
 }
 
 export async function ultimaMantencion(vehicleId: string): Promise<{ km: number | null; fecha: string } | null> {
@@ -55,13 +61,16 @@ export async function ultimaMantencion(vehicleId: string): Promise<{ km: number 
   return { km: lista[0].km, fecha: lista[0].fecha }
 }
 
-export async function deleteMantencion(id: string, companyId: string): Promise<void> {
+/** Devuelve el vehicleId para que el llamador refresque su resumen. */
+export async function deleteMantencion(id: string, companyId: string): Promise<string> {
   const ref = adminDb.collection(COL).doc(id)
   const doc = await ref.get()
   if (!doc.exists || doc.data()?.companyId !== companyId) throw new Error('forbidden')
+  const vehicleId = doc.data()!.vehicleId as string
   const filePath = doc.data()?.filePath
   if (filePath) await adminBucket.file(filePath).delete({ ignoreNotFound: true })
   await ref.delete()
+  return vehicleId
 }
 
 async function borrarDocs(docs: FirebaseFirestore.QueryDocumentSnapshot[]): Promise<void> {
@@ -80,4 +89,22 @@ export async function deleteMantencionesByVehicle(vehicleId: string): Promise<vo
 export async function deleteMantencionesByCompany(companyId: string): Promise<void> {
   const snap = await adminDb.collection(COL).where('companyId', '==', companyId).get()
   await borrarDocs(snap.docs)
+}
+
+/**
+ * Recalcula la última mantención denormalizada del vehículo.
+ *
+ * Best-effort, igual que refreshVehicleKm. El envoltorio `{ ultima }` es
+ * deliberado: `{ ultima: null }` dice "calculado, no hay mantenciones", mientras
+ * que el campo ausente dice "nunca se calculó" y dispara la consulta en vivo.
+ */
+export async function refreshResumenMantencion(vehicleId: string): Promise<void> {
+  try {
+    const ultima = await ultimaMantencion(vehicleId)
+    await adminDb.collection('vehicles').doc(vehicleId).update({
+      resumenMantencion: { ultima: ultima ?? null },
+    })
+  } catch (err) {
+    console.error('[refreshResumenMantencion]', vehicleId, err)
+  }
 }

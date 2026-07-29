@@ -9,7 +9,14 @@ import type { Vehicle, DanoActivo } from '@/lib/types'
 
 const COL = 'vehicles'
 
-type VehicleInput = Omit<Vehicle, 'id' | 'companyId' | 'createdByUid' | 'publicToken' | 'createdAt'>
+// `resumenDocs`/`resumenMantencion` quedan fuera: los siembra `createVehicle`
+// (ver más abajo), no el llamador. Si un llamador futuro pasara
+// `resumenDocs: undefined` explícito, pisaría la siembra con `undefined` y
+// Firestore Admin lanzaría al escribir (ver Gotchas en CLAUDE.md).
+type VehicleInput = Omit<
+  Vehicle,
+  'id' | 'companyId' | 'createdByUid' | 'publicToken' | 'createdAt' | 'resumenDocs' | 'resumenMantencion'
+>
 
 function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
   return {
@@ -32,6 +39,10 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
     mantencionReminders: data.mantencionReminders ?? [],
     danoActivo: data.danoActivo ?? null,
     consumo: data.consumo ?? null,
+    // OJO: `?? undefined`, NO `?? null`. La ausencia del campo es información:
+    // significa "nunca calculado" y dispara el fallback a consulta en vivo.
+    resumenDocs: data.resumenDocs ?? undefined,
+    resumenMantencion: data.resumenMantencion ?? undefined,
   }
 }
 
@@ -42,8 +53,20 @@ export async function createVehicle(
 ): Promise<Vehicle> {
   const publicToken = nanoid(21)
   const createdAt = new Date().toISOString()
-  const ref = await adminDb.collection(COL).add({ ...data, companyId, createdByUid, publicToken, createdAt })
-  return { id: ref.id, companyId, createdByUid, publicToken, createdAt, ...data }
+  // Se siembran los dos resúmenes al crear. `resumenDocs` se sobrescribe apenas
+  // se sube el primer documento, así que aquí el daño de omitirlo sería chico;
+  // pero `resumenMantencion` SOLO se escribe al registrar o borrar una
+  // mantención, y la mayoría de los vehículos nunca tienen una — sin esta
+  // siembra el campo quedaría ausente para siempre y el dashboard consultaría
+  // `ultimaMantencion` en cada render, indefinidamente.
+  const resumenes = {
+    resumenDocs: { total: 0, proximoVencimiento: null },
+    resumenMantencion: { ultima: null },
+  }
+  const ref = await adminDb
+    .collection(COL)
+    .add({ ...resumenes, ...data, companyId, createdByUid, publicToken, createdAt })
+  return { id: ref.id, companyId, createdByUid, publicToken, createdAt, ...resumenes, ...data }
 }
 
 export async function listVehicles(companyId: string): Promise<Vehicle[]> {
