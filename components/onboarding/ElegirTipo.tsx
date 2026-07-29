@@ -82,7 +82,9 @@ export default function ElegirTipo() {
       {opcion('personal', AutoIcon, 'Un vehículo particular', 'Guarda tus documentos y recibe avisos antes de que venzan.')}
       {opcion('empresa', FlotaIcon, 'Una flota de la empresa', 'Además: equipo, conductores con PIN, bitácora de uso y pauta de mantención.')}
       {error && <p className="text-sm text-vencido">{error}</p>}
-      <p className="text-center text-sm text-acero">Puedes cambiarlo después.</p>
+      <p className="text-center text-sm text-acero">
+        Si partes con un vehículo particular, más adelante puedes sumar tu flota sin perder nada.
+      </p>
     </div>
   )
 }
