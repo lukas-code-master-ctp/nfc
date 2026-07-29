@@ -157,6 +157,40 @@ describe('acciones', () => {
     expect(screen.queryByRole('button', { name: /administro una flota/i })).toBeNull()
   })
 
+  it('avisa al padre cuando ocultar se guardó bien, para que muestre el toast', async () => {
+    const onOcultada = vi.fn()
+    render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" onOcultada={onOcultada} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }))
+    await waitFor(() => expect(onOcultada).toHaveBeenCalledTimes(1))
+  })
+
+  it('NO avisa al padre si el servidor rechazó: la tarjeta sigue ahí, avisar seria mentir', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false } as Response)))
+    const onOcultada = vi.fn()
+    render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" onOcultada={onOcultada} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ocultar' })).not.toBeDisabled())
+    expect(onOcultada).not.toHaveBeenCalled()
+  })
+
+  it('NO avisa al padre si la red falló', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('sin conexión'))))
+    const onOcultada = vi.fn()
+    render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" onOcultada={onOcultada} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ocultar' })).not.toBeDisabled())
+    expect(onOcultada).not.toHaveBeenCalled()
+  })
+
+  it('los otros botones no avisan al padre: solo ocultar muestra el toast', async () => {
+    const onOcultada = vi.fn()
+    render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" onOcultada={onOcultada} />)
+    desplegar()
+    fireEvent.click(screen.getByRole('button', { name: 'Entendido' }))
+    await waitFor(() => expect(refresh).toHaveBeenCalled())
+    expect(onOcultada).not.toHaveBeenCalled()
+  })
+
   it('si el fetch rechaza (sin conexión), el botón vuelve a habilitarse', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('sin conexión'))))
     render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" />)

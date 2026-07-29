@@ -11,6 +11,7 @@ import type { Vehicle, Categoria, TipoCuenta } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 import type { EstadoMantencion } from '@/lib/mantencion/status'
 import TarjetaProgreso from '@/components/onboarding/TarjetaProgreso'
+import Toast from '@/components/Toast'
 import type { Paso } from '@/lib/onboarding/pasos'
 
 type Item = {
@@ -106,6 +107,7 @@ export default function VehiclesBoard({
   const [q, setQ] = useState('')
   const [mant, setMant] = useState<'todas' | 'proxima' | 'vencida'>('todas')
   const [page, setPage] = useState(1)
+  const [guiaOculta, setGuiaOculta] = useState(false)
   const buscando = q.trim().length > 0
 
   // Cualquier cambio de filtro/búsqueda/categoría/orden vuelve a la página 1
@@ -341,7 +343,25 @@ export default function VehiclesBoard({
       </div>
 
       {onboarding && (
-        <TarjetaProgreso pasos={onboarding.pasos} tipoCuenta={onboarding.tipoCuenta} onNuevoVehiculo={() => setOpen(true)} />
+        <TarjetaProgreso
+          pasos={onboarding.pasos}
+          tipoCuenta={onboarding.tipoCuenta}
+          onNuevoVehiculo={() => setOpen(true)}
+          onOcultada={() => setGuiaOculta(true)}
+        />
+      )}
+
+      {/* El aviso lo monta el board y no la tarjeta: al ocultarse, el servidor
+          deja de renderizar la tarjeta, así que un aviso propio se desmontaría
+          antes de que alguien lo lea. */}
+      {guiaOculta && (
+        <Toast onCerrar={() => setGuiaOculta(false)}>
+          Ocultamos la guía de configuración. Puedes volver a mostrarla desde{' '}
+          <Link href="/configuracion" className="font-medium text-azul hover:underline">
+            Configuración
+          </Link>
+          .
+        </Toast>
       )}
 
       <TransferenciasEntrantes items={entrantes} />

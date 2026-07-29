@@ -25,6 +25,7 @@ export default function TarjetaProgreso({
   pasos,
   tipoCuenta,
   onNuevoVehiculo,
+  onOcultada,
 }: {
   pasos: Paso[]
   tipoCuenta: TipoCuenta
@@ -32,6 +33,11 @@ export default function TarjetaProgreso({
    *  no hay ficha a la que ir, así que un `<a href="/dashboard">` dentro del
    *  propio dashboard solo hace scroll al tope. */
   onNuevoVehiculo?: () => void
+  /** Se llama solo si ocultar se guardó bien. El aviso de que la guía se puede
+   *  reabrir desde Configuración lo monta el padre, no esta tarjeta: al
+   *  ocultarse, el servidor deja de renderizarla y un aviso propio se
+   *  desmontaría antes de que alguien lo lea. */
+  onOcultada?: () => void
 }) {
   const router = useRouter()
   const [ocupado, setOcupado] = useState(false)
@@ -44,7 +50,7 @@ export default function TarjetaProgreso({
   // `completadoEn` esconda la tarjeta): se muestra la lista entera.
   const visibles = abierta || !pendiente ? pasos : [pendiente]
 
-  async function patch(body: Record<string, unknown>) {
+  async function patch(body: Record<string, unknown>, alGuardar?: () => void) {
     setOcupado(true)
     // Si el fetch rechaza (sin conexión, timeout, DNS — común en celular) el
     // catch libera "ocupado" igual que el camino !ok, para que los botones no
@@ -56,7 +62,10 @@ export default function TarjetaProgreso({
         body: JSON.stringify(body),
       })
       setOcupado(false)
-      if (res.ok) router.refresh()
+      if (res.ok) {
+        alGuardar?.()
+        router.refresh()
+      }
     } catch {
       setOcupado(false)
     }
@@ -86,7 +95,7 @@ export default function TarjetaProgreso({
           )}
           <button
             type="button"
-            onClick={() => patch({ descartado: true })}
+            onClick={() => patch({ descartado: true }, onOcultada)}
             disabled={ocupado}
             className="cursor-pointer rounded-lg px-2 py-1 text-sm text-acero hover:bg-lienzo disabled:opacity-60"
           >
