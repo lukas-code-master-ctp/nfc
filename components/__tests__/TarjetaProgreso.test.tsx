@@ -97,4 +97,13 @@ describe('acciones', () => {
     render(<TarjetaProgreso pasos={PASOS} tipoCuenta="empresa" />)
     expect(screen.queryByRole('button', { name: /administro una flota/i })).toBeNull()
   })
+
+  it('si el fetch rechaza (sin conexión), el botón vuelve a habilitarse', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('sin conexión'))))
+    render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" />)
+    const boton = screen.getByRole('button', { name: 'Ocultar' })
+    fireEvent.click(boton)
+    await waitFor(() => expect(boton).not.toBeDisabled())
+    expect(refresh).not.toHaveBeenCalled()
+  })
 })
