@@ -1,4 +1,4 @@
-import { Bloque, Linea } from '@/components/skeleton/Skeleton'
+import { Linea } from '@/components/skeleton/Skeleton'
 
 export default function Loading() {
   return (
