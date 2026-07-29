@@ -83,6 +83,16 @@ describe('refresco del resumen de documentos', () => {
     const patchEnviado = mocks.updateDocument.mock.calls[0][2]
     expect(patchEnviado).not.toHaveProperty('vehicleId')
   })
+
+  it('responde 400 cuando el PATCH solo trae campos descartados', async () => {
+    const res = await docsId.PATCH(req({ vehicleId: 'v-ajeno', companyId: 'c-ajeno' }), {
+      params: Promise.resolve({ id: 'd1' }),
+    })
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'nada que actualizar' })
+    expect(mocks.updateDocument).not.toHaveBeenCalled()
+    expect(mocks.refreshResumenDocs).not.toHaveBeenCalled()
+  })
 })
 
 describe('refresco del resumen de mantención', () => {

@@ -23,6 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (patch.tipo && !tipoTieneVencimiento(patch.tipo as DocumentType)) patch.fechaVencimiento = null
   // Si cambia la fecha de vencimiento, reiniciar recordatorios.
   if ('fechaVencimiento' in patch) patch.remindersSent = []
+  if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'nada que actualizar' }, { status: 400 })
   try {
     const vehicleId = await updateDocument(id, m.companyId, patch)
     await refreshResumenDocs(vehicleId)
