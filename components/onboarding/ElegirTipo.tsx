@@ -31,12 +31,21 @@ export default function ElegirTipo() {
   async function elegir(tipoCuenta: TipoCuenta) {
     setGuardando(tipoCuenta)
     setError(null)
-    const res = await fetch('/api/onboarding', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipoCuenta }),
-    })
-    if (!res.ok) {
+    // /bienvenida es un embudo obligatorio sin navegación ni menú: si el fetch
+    // rechaza (sin conexión, timeout, DNS) en vez de responder !ok, sin este
+    // catch el botón queda disabled para siempre y el usuario no tiene salida.
+    try {
+      const res = await fetch('/api/onboarding', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipoCuenta }),
+      })
+      if (!res.ok) {
+        setGuardando(null)
+        setError('No se pudo guardar. Inténtalo de nuevo.')
+        return
+      }
+    } catch {
       setGuardando(null)
       setError('No se pudo guardar. Inténtalo de nuevo.')
       return
@@ -63,7 +72,7 @@ export default function ElegirTipo() {
       <span className="min-w-0">
         <span className="block font-semibold text-tinta">{titulo}</span>
         <span className="mt-1 block text-sm text-acero">{detalle}</span>
-        {guardando === tipo && <span className="mt-2 block text-sm text-azul">Preparando tu cuenta…</span>}
+        {guardando === tipo && <span aria-live="polite" className="mt-2 block text-sm text-azul">Preparando tu cuenta…</span>}
       </span>
     </button>
   )
