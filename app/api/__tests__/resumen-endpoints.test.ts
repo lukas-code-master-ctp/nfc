@@ -109,6 +109,24 @@ describe('validación de fechaVencimiento en documentos', () => {
     expect(mocks.updateDocument).not.toHaveBeenCalled()
     expect(mocks.refreshResumenDocs).not.toHaveBeenCalled()
   })
+
+  it('POST /api/documents responde 400 cuando fechaVencimiento no es texto (array que pasaría el regex) y no crea el documento', async () => {
+    const res = await docs.POST(
+      req({ vehicleId: 'v1', tipo: 'permiso_circulacion', fechaVencimiento: ['2026-09-01'] }),
+    )
+    expect(res.status).toBe(400)
+    expect(mocks.createDocument).not.toHaveBeenCalled()
+    expect(mocks.refreshResumenDocs).not.toHaveBeenCalled()
+  })
+
+  it('PATCH /api/documents/[id] responde 400 cuando fechaVencimiento no es texto (array que pasaría el regex) y no actualiza', async () => {
+    const res = await docsId.PATCH(req({ fechaVencimiento: ['2027-01-01'] }), {
+      params: Promise.resolve({ id: 'd1' }),
+    })
+    expect(res.status).toBe(400)
+    expect(mocks.updateDocument).not.toHaveBeenCalled()
+    expect(mocks.refreshResumenDocs).not.toHaveBeenCalled()
+  })
 })
 
 describe('refresco del resumen de mantención', () => {

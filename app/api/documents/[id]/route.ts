@@ -10,10 +10,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!can(m.role, 'document:write')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const { id } = await params
   const body = await req.json()
-  // `fechaVencimiento` es opcional (el Padrón no vence; `null` la limpia), pero si
-  // viene con valor debe ser 'YYYY-MM-DD': una cadena mal formada produce NaN en
-  // daysUntil() y el documento se pinta "al día" en vez de fallar ruidosamente.
-  if (body.fechaVencimiento && !/^\d{4}-\d{2}-\d{2}$/.test(body.fechaVencimiento)) {
+  // `fechaVencimiento` es opcional (el Padrón no vence; `null` la limpia y es
+  // legítimo), pero si viene con valor debe ser un string 'YYYY-MM-DD':
+  // `regex.test()` coacciona a texto, así que sin el `typeof` un array como
+  // `["2026-09-01"]` pasaría el regex (se coacciona a ese mismo string) y se
+  // guardaría tal cual — luego `documentStatus` truena al hacer `.split()`
+  // sobre un array.
+  if (
+    body.fechaVencimiento &&
+    (typeof body.fechaVencimiento !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.fechaVencimiento))
+  ) {
     return NextResponse.json({ error: 'Formato de fecha inválido (usa AAAA-MM-DD).' }, { status: 400 })
   }
   // Whitelist: solo los campos que envían los formularios (DocumentForm/DocumentEditForm).

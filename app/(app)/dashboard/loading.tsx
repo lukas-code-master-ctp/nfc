@@ -19,7 +19,7 @@ export default function Loading() {
       <p className="sr-only" role="status">Cargando los vehículos</p>
 
       {/* Encabezado real: h1 text-2xl + subtítulo text-sm + botón, mismo mb-6.
-          Sin esto el contenido real llega ~56px más abajo que las tarjetas
+          Sin esto el contenido real llega ~80px más abajo que las tarjetas
           fantasma y todo salta al cargar. */}
       <div className="mb-6 flex items-end justify-between gap-4">
         <div className="min-w-0">
@@ -37,6 +37,12 @@ export default function Loading() {
         <div className="min-w-0">
           {/* Buscador real: input py-2.5 text-sm con borde, ~42px, mismo mb-3. */}
           <Bloque className="mb-3 h-[42px] w-full rounded-lg" />
+          {/* Filtros compactos reales (solo mobile, VehiclesBoard.tsx): fila de
+              chips (py-1.5 text-sm + borde = 34px, más pb-1 = 38px) + fila de
+              selectores (py-1.5 text-sm + borde = 34px), separadas por
+              space-y-2 (8px), más el mb-3 final: 38 + 8 + 34 + 12 = 92px
+              total. Sin esto el bloque salta ~92px en móvil al cargar. */}
+          <Bloque className="mb-3 h-[80px] w-full rounded-lg sm:hidden" />
           <div className="space-y-3">
             {Array.from({ length: 6 }, (_, i) => <TarjetaFantasma key={i} />)}
           </div>

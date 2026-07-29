@@ -9,7 +9,14 @@ import type { Vehicle, DanoActivo } from '@/lib/types'
 
 const COL = 'vehicles'
 
-type VehicleInput = Omit<Vehicle, 'id' | 'companyId' | 'createdByUid' | 'publicToken' | 'createdAt'>
+// `resumenDocs`/`resumenMantencion` quedan fuera: los siembra `createVehicle`
+// (ver más abajo), no el llamador. Si un llamador futuro pasara
+// `resumenDocs: undefined` explícito, pisaría la siembra con `undefined` y
+// Firestore Admin lanzaría al escribir (ver Gotchas en CLAUDE.md).
+type VehicleInput = Omit<
+  Vehicle,
+  'id' | 'companyId' | 'createdByUid' | 'publicToken' | 'createdAt' | 'resumenDocs' | 'resumenMantencion'
+>
 
 function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
   return {
