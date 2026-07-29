@@ -46,8 +46,20 @@ export async function createVehicle(
 ): Promise<Vehicle> {
   const publicToken = nanoid(21)
   const createdAt = new Date().toISOString()
-  const ref = await adminDb.collection(COL).add({ ...data, companyId, createdByUid, publicToken, createdAt })
-  return { id: ref.id, companyId, createdByUid, publicToken, createdAt, ...data }
+  // Se siembran los dos resúmenes al crear. `resumenDocs` se sobrescribe apenas
+  // se sube el primer documento, así que aquí el daño de omitirlo sería chico;
+  // pero `resumenMantencion` SOLO se escribe al registrar o borrar una
+  // mantención, y la mayoría de los vehículos nunca tienen una — sin esta
+  // siembra el campo quedaría ausente para siempre y el dashboard consultaría
+  // `ultimaMantencion` en cada render, indefinidamente.
+  const resumenes = {
+    resumenDocs: { total: 0, proximoVencimiento: null },
+    resumenMantencion: { ultima: null },
+  }
+  const ref = await adminDb
+    .collection(COL)
+    .add({ ...resumenes, ...data, companyId, createdByUid, publicToken, createdAt })
+  return { id: ref.id, companyId, createdByUid, publicToken, createdAt, ...resumenes, ...data }
 }
 
 export async function listVehicles(companyId: string): Promise<Vehicle[]> {

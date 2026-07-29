@@ -95,6 +95,22 @@ describe('refresco del resumen de documentos', () => {
   })
 })
 
+describe('validación de fechaVencimiento en documentos', () => {
+  it('POST /api/documents responde 400 con una fecha mal formada y no crea el documento', async () => {
+    const res = await docs.POST(req({ vehicleId: 'v1', tipo: 'permiso_circulacion', fechaVencimiento: '01-09-2026' }))
+    expect(res.status).toBe(400)
+    expect(mocks.createDocument).not.toHaveBeenCalled()
+    expect(mocks.refreshResumenDocs).not.toHaveBeenCalled()
+  })
+
+  it('PATCH /api/documents/[id] responde 400 con una fecha mal formada y no actualiza', async () => {
+    const res = await docsId.PATCH(req({ fechaVencimiento: '01-09-2026' }), { params: Promise.resolve({ id: 'd1' }) })
+    expect(res.status).toBe(400)
+    expect(mocks.updateDocument).not.toHaveBeenCalled()
+    expect(mocks.refreshResumenDocs).not.toHaveBeenCalled()
+  })
+})
+
 describe('refresco del resumen de mantención', () => {
   it('al registrar una mantención', async () => {
     await mants.POST(req({ vehicleId: 'v1', fecha: '2026-07-01', km: 30000 }))

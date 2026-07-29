@@ -3,7 +3,8 @@ import { TapCarLockup } from '@/components/brand/Logo'
 
 export default function Loading() {
   return (
-    <main className="mx-auto min-h-dvh max-w-xl space-y-6 px-4 py-10" role="status" aria-label="Cargando el vehículo">
+    <main className="mx-auto min-h-dvh max-w-xl space-y-6 px-4 py-10">
+      <p className="sr-only" role="status">Cargando el vehículo</p>
       {/* El logo se pinta de verdad: es lo único que ya sabemos, y ancla la pantalla. */}
       <div className="flex justify-center">
         <TapCarLockup iconClassName="size-6" wordClassName="text-lg" />

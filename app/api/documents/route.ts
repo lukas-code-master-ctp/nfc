@@ -11,6 +11,12 @@ export async function POST(req: NextRequest) {
   if (!can(m.role, 'document:write')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const body = await req.json()
   const { vehicleId, tipo, nombrePersonalizado, fechaVencimiento, fileUrl, filePath } = body
+  // `fechaVencimiento` es opcional (el Padrón no vence), pero si viene debe ser
+  // 'YYYY-MM-DD': una cadena mal formada produce NaN en daysUntil() y el
+  // documento se pinta "al día" en vez de fallar ruidosamente.
+  if (fechaVencimiento && !/^\d{4}-\d{2}-\d{2}$/.test(fechaVencimiento)) {
+    return NextResponse.json({ error: 'Formato de fecha inválido (usa AAAA-MM-DD).' }, { status: 400 })
+  }
   const v = await getVehicle(vehicleId)
   if (!v || v.companyId !== m.companyId) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const doc = await createDocument(m.companyId, m.uid, {

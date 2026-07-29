@@ -30,6 +30,7 @@ describe('resolverResumen', () => {
     const c = cargas([{ fechaVencimiento: '2026-09-01' }, { fechaVencimiento: '2026-08-10' }])
     const r = await resolverResumen({ id: 'v1', resumenMantencion: { ultima: null } }, c)
     expect(c.cargarDocumentos).toHaveBeenCalledWith('v1')
+    expect(c.cargarUltimaMantencion).not.toHaveBeenCalled()
     expect(r.docs).toEqual({ total: 2, proximoVencimiento: '2026-08-10' })
   })
 
@@ -37,6 +38,7 @@ describe('resolverResumen', () => {
     const c = cargas()
     const r = await resolverResumen({ id: 'v1', resumenDocs: { total: 0, proximoVencimiento: null } }, c)
     expect(c.cargarUltimaMantencion).toHaveBeenCalledWith('v1')
+    expect(c.cargarDocumentos).not.toHaveBeenCalled()
     expect(r.ultimaMantencion).toEqual(ULTIMA)
   })
 

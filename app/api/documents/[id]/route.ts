@@ -10,6 +10,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!can(m.role, 'document:write')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const { id } = await params
   const body = await req.json()
+  // `fechaVencimiento` es opcional (el Padrón no vence; `null` la limpia), pero si
+  // viene con valor debe ser 'YYYY-MM-DD': una cadena mal formada produce NaN en
+  // daysUntil() y el documento se pinta "al día" en vez de fallar ruidosamente.
+  if (body.fechaVencimiento && !/^\d{4}-\d{2}-\d{2}$/.test(body.fechaVencimiento)) {
+    return NextResponse.json({ error: 'Formato de fecha inválido (usa AAAA-MM-DD).' }, { status: 400 })
+  }
   // Whitelist: solo los campos que envían los formularios (DocumentForm/DocumentEditForm).
   // companyId/vehicleId nunca vienen del cliente: si se aceptaran tal cual, un miembro
   // con permiso de escritura podría plantar el documento en la ficha de otro vehículo.

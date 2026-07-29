@@ -2,7 +2,8 @@ import { Bloque, Linea } from '@/components/skeleton/Skeleton'
 
 export default function Loading() {
   return (
-    <main className="mx-auto max-w-2xl space-y-6 px-4 py-8" role="status" aria-label="Cargando el vehículo">
+    <main className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+      <p className="sr-only" role="status">Cargando el vehículo</p>
       <Linea className="w-24" />
 
       <div className="flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
