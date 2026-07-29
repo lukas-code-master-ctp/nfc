@@ -404,13 +404,16 @@ export default function VehiclesBoard({
                 {filterChip('todos', 'Todos', items.length)}
                 {STATUS_META.filter((s) => counts[s.key] > 0).map((s) => filterChip(s.key, s.label, counts[s.key]))}
               </div>
-              <div className="flex flex-wrap justify-end gap-2">
+              {/* Grilla de 2 columnas: los selectores quedan lado a lado y
+                  llenan de izquierda a derecha (con `justify-end` el que
+                  sobraba se iba solo a la derecha y dejaba un hueco). */}
+              <div className="grid grid-cols-2 gap-2">
                 {categorias.length > 0 && (
                   <select
                     aria-label="Categoría"
                     value={categoria}
                     onChange={(e) => cambiarCategoria(e.target.value)}
-                    className="rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+                    className="w-full min-w-0 rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
                   >
                     <option value="todas">Todas las categorías</option>
                     {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
@@ -421,7 +424,7 @@ export default function VehiclesBoard({
                     aria-label="Mantención"
                     value={mant}
                     onChange={(e) => cambiarMant(e.target.value as 'todas' | 'proxima' | 'vencida')}
-                    className="rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+                    className="w-full min-w-0 rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
                   >
                     <option value="todas">Mantención: todas</option>
                     {mantCounts.proxima > 0 && <option value="proxima">Próxima ({mantCounts.proxima})</option>}
@@ -432,7 +435,7 @@ export default function VehiclesBoard({
                   aria-label="Ordenar por"
                   value={sort}
                   onChange={(e) => cambiarOrden(e.target.value as SortKey)}
-                  className="rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
+                  className="w-full min-w-0 rounded-lg border border-linea bg-superficie px-3 py-1.5 text-sm text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
                 >
                   {SORTS.map((s) => (
                     <option key={s.key} value={s.key}>{s.label}</option>
