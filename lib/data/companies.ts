@@ -1,5 +1,6 @@
+import { FieldValue } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/firebase/admin'
-import { DEFAULT_PLAN, EMPTY_COMPANY, type Categoria, type Company, type CompanyData, type PlanData, type PautaMantencion } from '@/lib/types'
+import { DEFAULT_PLAN, EMPTY_COMPANY, type Categoria, type Company, type CompanyData, type PlanData, type PautaMantencion, type TipoCuenta } from '@/lib/types'
 import { findPendingInvitationByEmail, markInvitationAccepted } from '@/lib/data/invitations'
 
 const COL = 'companies'
@@ -16,6 +17,7 @@ export async function getCompany(companyId: string): Promise<Company | null> {
     avisoUsoHoras: d.avisoUsoHoras,
     categorias: d.categorias ?? [],
     pautaMantencion: d.pautaMantencion ?? undefined,
+    onboarding: d.onboarding ?? undefined,
     createdAt: d.createdAt ?? null,
   }
 }
@@ -85,6 +87,37 @@ export async function ensureProvisioned(uid: string, email: string): Promise<voi
     patch.createdAt = new Date().toISOString()
   }
   await userRef.set(patch, { merge: true })
+}
+
+/**
+ * Actualiza el onboarding de la empresa. Solo un Administrador llega acá
+ * (validado en la capa /api).
+ *
+ * Escribe con `set(..., { merge: true })` sobre el mapa `onboarding` para no
+ * pisar los campos que no vienen en el patch, y usa `arrayUnion` para `vistos`
+ * en vez de leer-modificar-escribir.
+ */
+export async function saveOnboarding(
+  companyId: string,
+  patch: {
+    tipoCuenta?: TipoCuenta
+    agregarVisto?: string
+    descartadoEn?: string | null
+    completadoEn?: string | null
+  },
+): Promise<void> {
+  const data: Record<string, unknown> = {}
+  if (patch.tipoCuenta !== undefined) {
+    data.tipoCuenta = patch.tipoCuenta
+    // Elegir (o cambiar) el tipo reabre la evaluación: pasar de personal a
+    // empresa suma seis pasos, y dejarlo marcado como completo los ocultaría.
+    data.completadoEn = null
+  }
+  if (patch.agregarVisto !== undefined) data.vistos = FieldValue.arrayUnion(patch.agregarVisto)
+  if (patch.descartadoEn !== undefined) data.descartadoEn = patch.descartadoEn
+  if (patch.completadoEn !== undefined) data.completadoEn = patch.completadoEn
+  if (Object.keys(data).length === 0) return
+  await adminDb.collection(COL).doc(companyId).set({ onboarding: data }, { merge: true })
 }
 
 export async function listCompaniasParaMantencion(): Promise<{ id: string; ownerUid: string; pauta: PautaMantencion | null }[]> {
