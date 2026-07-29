@@ -184,8 +184,10 @@ export type TipoCuenta = 'personal' | 'empresa'
  */
 export interface Onboarding {
   tipoCuenta: TipoCuenta
-  /** Ids de los pasos informativos reconocidos con "Entendido". */
-  vistos: string[]
+  /** Ids de los pasos informativos reconocidos con "Entendido". Ausente en la
+   *  primera elección de tipo: `saveOnboarding` todavía no escribe este campo
+   *  hasta el primer "Entendido" (arrayUnion crea el campo recién ahí). */
+  vistos?: string[]
   /** Se estampa cuando todos los pasos quedan listos. Ver "el enganche del final". */
   completadoEn?: string | null
   descartadoEn?: string | null
