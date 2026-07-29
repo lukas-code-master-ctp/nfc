@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   pasosDe,
   todosListos,
+  primerPendiente,
   esPasoInformativo,
   debeElegirTipo,
   debeMostrarTarjeta,
@@ -151,6 +152,32 @@ describe('todosListos — es lo que dispara el enganche de completadoEn', () => 
       miembros: 2, conductores: 1, vistos: ['chip', 'reportes'],
     }))
     expect(todosListos(pasos)).toBe(true)
+  })
+})
+
+describe('primerPendiente — el paso que la tarjeta muestra contraída', () => {
+  it('sin nada hecho es el primero de la lista', () => {
+    expect(primerPendiente(pasosDe('empresa', VACIAS))!.id).toBe('vehiculo')
+  })
+
+  it('salta los que ya están listos, aunque estén intercalados', () => {
+    // vehiculo y documentos listos, chip pendiente: el siguiente es chip.
+    const pasos = pasosDe('empresa', con({ vehiculos: 1, documentos: 1, primerVehiculoId: 'v1' }))
+    expect(primerPendiente(pasos)!.id).toBe('chip')
+  })
+
+  it('respeta el orden de la lista y no devuelve un pendiente posterior', () => {
+    // Con las categorías hechas pero el vehículo no, sigue tocando el vehículo.
+    const pasos = pasosDe('empresa', con({ categorias: 1 }))
+    expect(primerPendiente(pasos)!.id).toBe('vehiculo')
+  })
+
+  it('es null cuando no queda ninguno', () => {
+    const pasos = pasosDe('personal', con({
+      vehiculos: 1, documentos: 1, primerVehiculoId: 'v1', vistos: ['chip'],
+    }))
+    expect(todosListos(pasos)).toBe(true)
+    expect(primerPendiente(pasos)).toBeNull()
   })
 })
 

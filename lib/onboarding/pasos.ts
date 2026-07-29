@@ -154,6 +154,21 @@ export function todosListos(pasos: Paso[]): boolean {
   return pasos.every((p) => p.listo)
 }
 
+/**
+ * El paso en el que toca trabajar ahora: el primero que todavía no está listo.
+ *
+ * La tarjeta del dashboard muestra solo este paso y esconde el resto detrás de
+ * un chevron — con nueve pasos, la lista completa empuja la flota fuera de la
+ * pantalla. Como el progreso se deriva de los datos, al completar un paso el
+ * siguiente pasa a ser el actual sin que nadie lleve un índice.
+ *
+ * Devuelve `null` cuando no queda ninguno: es el render transitorio en el que
+ * `todosListos` dispara el estampado de `completadoEn`.
+ */
+export function primerPendiente(pasos: Paso[]): Paso | null {
+  return pasos.find((p) => !p.listo) ?? null
+}
+
 /** ¿Hay que mandarlo a /bienvenida a elegir tipo de cuenta? */
 export function debeElegirTipo(o: Onboarding | undefined, puedeConfigurar: boolean): boolean {
   return puedeConfigurar && !o?.tipoCuenta
