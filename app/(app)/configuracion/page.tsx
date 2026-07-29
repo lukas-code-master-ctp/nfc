@@ -61,11 +61,11 @@ export default async function ConfiguracionPage() {
       )}
 
       {esAdmin && <PlataformaCard avisoUsoHoras={company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS} />}
-      {esAdmin && <div id="categorias"><CategoriasCard initial={company?.categorias ?? []} /></div>}
-      {esAdmin && <div id="mantencion"><PautaMantencionCard initial={company?.pautaMantencion ?? {}} /></div>}
+      {esAdmin && <div id="categorias" className="scroll-mt-20"><CategoriasCard initial={company?.categorias ?? []} /></div>}
+      {esAdmin && <div id="mantencion" className="scroll-mt-20"><PautaMantencionCard initial={company?.pautaMantencion ?? {}} /></div>}
 
-      {esAdmin && <div id="equipo"><TeamCard currentUid={m.uid} /></div>}
-      {puedeGestionarConductores && <div id="conductores"><DriversCard /></div>}
+      {esAdmin && <div id="equipo" className="scroll-mt-20"><TeamCard currentUid={m.uid} /></div>}
+      {puedeGestionarConductores && <div id="conductores" className="scroll-mt-20"><DriversCard /></div>}
 
       {esAdmin && company?.onboarding?.descartadoEn && <RecuperarGuia />}
     </main>
