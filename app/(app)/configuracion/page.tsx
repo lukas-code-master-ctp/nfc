@@ -67,7 +67,15 @@ export default async function ConfiguracionPage() {
       {esAdmin && <div id="equipo" className="scroll-mt-20"><TeamCard currentUid={m.uid} /></div>}
       {puedeGestionarConductores && <div id="conductores" className="scroll-mt-20"><DriversCard /></div>}
 
-      {esAdmin && company?.onboarding?.descartadoEn && <RecuperarGuia />}
+      {/* La tarjeta del dashboard desaparece al completarse y el enlace para pasar
+          a cuenta de empresa vive dentro de ella: esta card es la única salida que
+          le queda a una cuenta personal ya terminada. */}
+      {esAdmin && (company?.onboarding?.descartadoEn || company?.onboarding?.tipoCuenta === 'personal') && (
+        <RecuperarGuia
+          descartada={Boolean(company?.onboarding?.descartadoEn)}
+          esPersonal={company?.onboarding?.tipoCuenta === 'personal'}
+        />
+      )}
     </main>
   )
 }
