@@ -169,6 +169,30 @@ export const DEFAULT_PLAN: PlanData = { maxVehiculos: 3 }
 /** Horas por default antes de avisar que un vehículo lleva mucho en uso sin entregar. */
 export const DEFAULT_AVISO_USO_HORAS = 12
 
+export type TipoCuenta = 'personal' | 'empresa'
+
+/**
+ * Estado del onboarding de la empresa.
+ *
+ * Vive en la empresa y no en el usuario a propósito: un invitado (Editor o
+ * Visor) no tiene permisos para casi ningún paso, así que el onboarding lo ve
+ * solo el Administrador. Si viviera en `users/{uid}`, cada miembro arrastraría
+ * su propio estado de un proceso que no le corresponde ejecutar.
+ *
+ * `tipoCuenta` ausente = esta cuenta todavía no eligió (dispara /bienvenida).
+ * Por eso no hace falta migración: las cuentas que ya existen caen ahí solas.
+ */
+export interface Onboarding {
+  tipoCuenta: TipoCuenta
+  /** Ids de los pasos informativos reconocidos con "Entendido". Ausente en la
+   *  primera elección de tipo: `saveOnboarding` todavía no escribe este campo
+   *  hasta el primer "Entendido" (arrayUnion crea el campo recién ahí). */
+  vistos?: string[]
+  /** Se estampa cuando todos los pasos quedan listos. Ver "el enganche del final". */
+  completadoEn?: string | null
+  descartadoEn?: string | null
+}
+
 export interface Company {
   id: string
   ownerUid: string // Administrador que la creó
@@ -177,6 +201,7 @@ export interface Company {
   avisoUsoHoras?: number // horas antes de avisar "uso sin entregar" en /flota
   categorias?: Categoria[]
   pautaMantencion?: PautaMantencion
+  onboarding?: Onboarding
   createdAt: string | null
 }
 

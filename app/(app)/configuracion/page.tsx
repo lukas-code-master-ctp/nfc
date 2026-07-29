@@ -10,6 +10,7 @@ import CategoriasCard from '@/components/company/CategoriasCard'
 import PautaMantencionCard from '@/components/company/PautaMantencionCard'
 import TeamCard from '@/components/company/TeamCard'
 import DriversCard from '@/components/drivers/DriversCard'
+import RecuperarGuia from '@/components/onboarding/RecuperarGuia'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,11 +61,29 @@ export default async function ConfiguracionPage() {
       )}
 
       {esAdmin && <PlataformaCard avisoUsoHoras={company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS} />}
-      {esAdmin && <CategoriasCard initial={company?.categorias ?? []} />}
-      {esAdmin && <PautaMantencionCard initial={company?.pautaMantencion ?? {}} />}
+      {esAdmin && <div id="categorias" className="scroll-mt-20"><CategoriasCard initial={company?.categorias ?? []} /></div>}
+      {esAdmin && <div id="mantencion" className="scroll-mt-20"><PautaMantencionCard initial={company?.pautaMantencion ?? {}} /></div>}
 
-      {esAdmin && <TeamCard currentUid={m.uid} />}
-      {puedeGestionarConductores && <DriversCard />}
+      {esAdmin && <div id="equipo" className="scroll-mt-20"><TeamCard currentUid={m.uid} /></div>}
+      {puedeGestionarConductores && <div id="conductores" className="scroll-mt-20"><DriversCard /></div>}
+
+      {/* La tarjeta del dashboard desaparece al completarse y el enlace para pasar
+          a cuenta de empresa vive dentro de ella: esta card es la única salida que
+          le queda a una cuenta personal ya terminada. Se renderiza si aplica al
+          menos uno de sus dos bloques: "volver a mostrarla" (descartada y NO
+          completa; completa no tiene nada que reaparecer) o "cambiar a empresa"
+          (cuenta personal, completa o no). Un Administrador de una cuenta de
+          empresa con el onboarding terminado no cae en ninguno: no ve nada. */}
+      {esAdmin && (
+        (company?.onboarding?.descartadoEn && !company?.onboarding?.completadoEn) ||
+        company?.onboarding?.tipoCuenta === 'personal'
+      ) && (
+        <RecuperarGuia
+          descartada={Boolean(company?.onboarding?.descartadoEn)}
+          completada={Boolean(company?.onboarding?.completadoEn)}
+          esPersonal={company?.onboarding?.tipoCuenta === 'personal'}
+        />
+      )}
     </main>
   )
 }

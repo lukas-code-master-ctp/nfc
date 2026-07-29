@@ -15,8 +15,16 @@ import type { Categoria } from '@/lib/types'
 import { ultimaMantencion } from '@/lib/data/mantenciones'
 import { estadoMantencion } from '@/lib/mantencion/status'
 import { resolverResumen } from '@/lib/vehicles/resumen'
+import { after } from 'next/server'
+import { saveOnboarding } from '@/lib/data/companies'
+import { cargarSenales } from '@/lib/onboarding/cargar'
+import { debeElegirTipo, debeMostrarTarjeta, pasosDe, todosListos, type Paso } from '@/lib/onboarding/pasos'
 
 export const dynamic = 'force-dynamic'
+// El `after()` que estampa `completadoEn` corre después de responder, pero sigue
+// contando contra el límite de ejecución: por eso el tope va explícito, igual
+// que en las rutas de tomar/entregar.
+export const maxDuration = 30
 
 export default async function DashboardPage() {
   const m = await getMembership()
@@ -29,6 +37,14 @@ export default async function DashboardPage() {
     listPendientesPara(m.email),
     listPendientesDe(m.companyId),
   ])
+
+  // El portero vive acá y no en el layout de (app) a propósito: el layout
+  // envuelve las nueve páginas, así que la comprobación costaría una lectura
+  // extra de Firestore en cada navegación, para siempre. El dashboard ya leyó
+  // la empresa, así que acá sale gratis.
+  const puedeConfigurar = can(m.role, 'billing:manage')
+  if (debeElegirTipo(company?.onboarding, puedeConfigurar)) redirect('/bienvenida')
+
   const limit = maxVehiculosDe(company?.plan)
   const avisoUsoHoras = company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS
   const categorias: Categoria[] = company?.categorias ?? []
@@ -71,6 +87,39 @@ export default async function DashboardPage() {
     }),
   )
 
+  // El checklist se deriva de los datos, así que solo se calcula mientras el
+  // onboarding sigue vivo. `completadoEn` engancha el final: sin él, estas
+  // consultas se pagarían en cada carga del dashboard para siempre.
+  let pasos: Paso[] | null = null
+  const onboarding = company?.onboarding
+  if (onboarding?.tipoCuenta && debeMostrarTarjeta(onboarding, puedeConfigurar)) {
+    const senales = await cargarSenales({
+      companyId: m.companyId,
+      company,
+      tipoCuenta: onboarding.tipoCuenta,
+      vehiculos: vehicles.length,
+      // De los items ya resueltos y NO de `v.resumenDocs` directo: un vehículo
+      // creado antes del feature de resúmenes tiene el campo ausente, y es
+      // `resolverResumen` quien cubre ese caso.
+      documentos: items.reduce((n, i) => n + i.docCount, 0),
+      primerVehiculoId: vehicles[0]?.id ?? null,
+      vistos: onboarding.vistos ?? [],
+    })
+    pasos = pasosDe(onboarding.tipoCuenta, senales)
+    if (todosListos(pasos)) {
+      const companyId = m.companyId
+      after(async () => {
+        try {
+          await saveOnboarding(companyId, { completadoEn: new Date().toISOString() })
+        } catch (e) {
+          // Best-effort, como los refrescos de resumen: si falla, la próxima
+          // carga vuelve a calcular y lo intenta de nuevo.
+          console.error('marcar onboarding completo', e)
+        }
+      })
+    }
+  }
+
   return (
     <VehiclesBoard
       items={items}
@@ -78,6 +127,7 @@ export default async function DashboardPage() {
       canWrite={can(m.role, 'vehicle:write')}
       categorias={categorias}
       entrantes={entrantes.map((t) => ({ token: t.token, patente: t.patente, deCompanyNombre: t.deCompanyNombre }))}
+      onboarding={pasos && onboarding?.tipoCuenta ? { pasos, tipoCuenta: onboarding.tipoCuenta } : null}
     />
   )
 }

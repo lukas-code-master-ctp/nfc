@@ -7,9 +7,11 @@ import TransferenciasEntrantes from '@/components/transferencias/TransferenciasE
 import { planCapacity } from '@/lib/plan'
 import { normalizarBusqueda, coincideBusqueda } from '@/lib/vehicles/buscar'
 import { rangoPaginas, HUECO } from '@/lib/vehicles/paginacion'
-import type { Vehicle, Categoria } from '@/lib/types'
+import type { Vehicle, Categoria, TipoCuenta } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
 import type { EstadoMantencion } from '@/lib/mantencion/status'
+import TarjetaProgreso from '@/components/onboarding/TarjetaProgreso'
+import type { Paso } from '@/lib/onboarding/pasos'
 
 type Item = {
   vehicle: Vehicle
@@ -88,12 +90,14 @@ export default function VehiclesBoard({
   canWrite,
   categorias,
   entrantes = [],
+  onboarding = null,
 }: {
   items: Item[]
   limit: number
   canWrite: boolean
   categorias: Categoria[]
   entrantes?: { token: string; patente: string; deCompanyNombre: string }[]
+  onboarding?: { pasos: Paso[]; tipoCuenta: TipoCuenta } | null
 }) {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<Filter>('todos')
@@ -335,6 +339,10 @@ export default function VehiclesBoard({
           </button>
         )}
       </div>
+
+      {onboarding && (
+        <TarjetaProgreso pasos={onboarding.pasos} tipoCuenta={onboarding.tipoCuenta} onNuevoVehiculo={() => setOpen(true)} />
+      )}
 
       <TransferenciasEntrantes items={entrantes} />
 
