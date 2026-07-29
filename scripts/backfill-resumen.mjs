@@ -38,13 +38,20 @@ function resumirDocumentos(docs) {
   return { total: docs.length, proximoVencimiento }
 }
 
-// La mantención más reciente por fecha, igual que ultimaMantencion().
+// La mantención más reciente por fecha, igual que ultimaMantencion() en
+// lib/data/mantenciones.ts. Ante empate de fecha gana el id mayor (comparación
+// de strings, igual que allá) — desempate determinista para que este backfill
+// y el refrescador de la app siempre elijan la misma mantención.
 function ultimaMantencion(docs) {
   let mejor = null
+  let mejorId = null
   for (const doc of docs) {
     const d = doc.data()
     if (!d.fecha) continue
-    if (!mejor || d.fecha > mejor.fecha) mejor = { km: d.km ?? null, fecha: d.fecha }
+    if (!mejor || d.fecha > mejor.fecha || (d.fecha === mejor.fecha && doc.id > mejorId)) {
+      mejor = { km: d.km ?? null, fecha: d.fecha }
+      mejorId = doc.id
+    }
   }
   return mejor
 }
@@ -71,6 +78,6 @@ for (const v of vehiculos.docs) {
   }
 }
 
-console.log(`\nVehículos: ${vehiculos.size} · resúmenes a escribir: ${escritos}`)
+console.log(`\nVehículos: ${vehiculos.size} · resúmenes calculados: ${escritos}`)
 console.log(APPLY ? '\nBackfill aplicado. ✅' : '\n[DRY-RUN] No se escribió nada. Corre con --apply para aplicar.')
 process.exit(0)

@@ -67,6 +67,20 @@ describe('refreshResumenMantencion', () => {
     })
   })
 
+  it('ante empate de fecha, desempata por id mayor (determinista)', async () => {
+    // Mismo día, dos registros distintos (ej. "cambio de aceite" y
+    // "neumáticos" cargados por separado). snapshot() asigna ids d0, d1, ...
+    // en orden de aparición, así que el segundo elemento es 'd1' > 'd0'.
+    mocks.get.mockResolvedValue(snapshot([
+      { vehicleId: 'v1', fecha: '2026-05-01', km: 30000, companyId: 'c1', createdAt: '2026-05-01' },
+      { vehicleId: 'v1', fecha: '2026-05-01', km: 31500, companyId: 'c1', createdAt: '2026-05-01' },
+    ]))
+    await refreshResumenMantencion('v1')
+    expect(mocks.update).toHaveBeenCalledWith({
+      resumenMantencion: { ultima: { km: 31500, fecha: '2026-05-01' } },
+    })
+  })
+
   it('sin mantenciones guarda ultima: null, que NO es lo mismo que no haber calculado', async () => {
     mocks.get.mockResolvedValue(snapshot([]))
     await refreshResumenMantencion('v1')

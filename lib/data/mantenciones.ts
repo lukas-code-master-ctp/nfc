@@ -46,7 +46,13 @@ export async function createMantencion(
 
 export async function listMantenciones(vehicleId: string): Promise<Mantencion[]> {
   const snap = await adminDb.collection(COL).where('vehicleId', '==', vehicleId).get()
-  return snap.docs.map((d) => toMantencion(d.id, d.data())).sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+  return snap.docs.map((d) => toMantencion(d.id, d.data())).sort(
+    // Comparador antisimétrico y determinista: por fecha descendente, y ante
+    // empate por id descendente. El comparador anterior devolvía -1 en ambos
+    // sentidos para fechas iguales, así que el orden dependía del algoritmo de
+    // sort de V8 — y `ultimaMantencion` (que toma el primero) era arbitrario.
+    (a, b) => (a.fecha !== b.fecha ? (a.fecha < b.fecha ? 1 : -1) : a.id < b.id ? 1 : -1),
+  )
 }
 
 export async function ultimaMantencion(vehicleId: string): Promise<{ km: number | null; fecha: string } | null> {
