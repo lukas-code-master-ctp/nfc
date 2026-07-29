@@ -389,7 +389,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     {
       id: 'chip',
       titulo: 'Vincula el chip NFC',
-      detalle: 'Pégalo en el parabrisas: al acercarle un celular se abre la ficha del vehículo con sus documentos.',
+      detalle: 'Va en el llavero del auto: al acercarle un celular se abre la ficha del vehículo con sus documentos.',
       href: ficha('ajustes'),
       listo: visto('chip'),
       informativo: true,

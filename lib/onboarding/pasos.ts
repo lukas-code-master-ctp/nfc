@@ -88,7 +88,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     {
       id: 'chip',
       titulo: 'Vincula el chip NFC',
-      detalle: 'Pégalo en el parabrisas: al acercarle un celular se abre la ficha del vehículo con sus documentos.',
+      detalle: 'Va en el llavero del auto: al acercarle un celular se abre la ficha del vehículo con sus documentos.',
       href: ficha('ajustes'),
       listo: visto('chip'),
       informativo: true,
@@ -152,6 +152,21 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
 
 export function todosListos(pasos: Paso[]): boolean {
   return pasos.every((p) => p.listo)
+}
+
+/**
+ * El paso en el que toca trabajar ahora: el primero que todavía no está listo.
+ *
+ * La tarjeta del dashboard muestra solo este paso y esconde el resto detrás de
+ * un chevron — con nueve pasos, la lista completa empuja la flota fuera de la
+ * pantalla. Como el progreso se deriva de los datos, al completar un paso el
+ * siguiente pasa a ser el actual sin que nadie lleve un índice.
+ *
+ * Devuelve `null` cuando no queda ninguno: es el render transitorio en el que
+ * `todosListos` dispara el estampado de `completadoEn`.
+ */
+export function primerPendiente(pasos: Paso[]): Paso | null {
+  return pasos.find((p) => !p.listo) ?? null
 }
 
 /** ¿Hay que mandarlo a /bienvenida a elegir tipo de cuenta? */

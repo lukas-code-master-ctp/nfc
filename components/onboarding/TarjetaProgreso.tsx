@@ -2,13 +2,21 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { Paso } from '@/lib/onboarding/pasos'
+import { primerPendiente, type Paso } from '@/lib/onboarding/pasos'
 import type { TipoCuenta } from '@/lib/types'
 
 function CheckIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="m5 13 4 4L19 7" />
+    </svg>
+  )
+}
+
+function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
     </svg>
   )
 }
@@ -27,7 +35,14 @@ export default function TarjetaProgreso({
 }) {
   const router = useRouter()
   const [ocupado, setOcupado] = useState(false)
+  // Contraída por defecto: con nueve pasos la lista completa empuja la flota
+  // fuera de la pantalla, y el dashboard es para ver la flota.
+  const [abierta, setAbierta] = useState(false)
   const hechos = pasos.filter((p) => p.listo).length
+  const pendiente = primerPendiente(pasos)
+  // Sin pendientes no hay nada que contraer (render transitorio antes de que
+  // `completadoEn` esconda la tarjeta): se muestra la lista entera.
+  const visibles = abierta || !pendiente ? pasos : [pendiente]
 
   async function patch(body: Record<string, unknown>) {
     setOcupado(true)
@@ -56,22 +71,36 @@ export default function TarjetaProgreso({
             <span className="font-medium text-tinta">{hechos} de {pasos.length}</span> · Puedes hacerlo cuando quieras.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => patch({ descartado: true })}
-          disabled={ocupado}
-          className="shrink-0 rounded-lg px-2 py-1 text-sm text-acero hover:bg-lienzo disabled:opacity-60"
-        >
-          Ocultar
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          {pendiente && (
+            <button
+              type="button"
+              onClick={() => setAbierta((v) => !v)}
+              aria-expanded={abierta}
+              aria-controls="onboarding-pasos"
+              className="cursor-pointer rounded-lg p-1 text-acero hover:bg-lienzo"
+            >
+              <span className="sr-only">{abierta ? 'Ver solo el paso actual' : 'Ver todos los pasos'}</span>
+              <ChevronIcon className={`size-5 transition-transform ${abierta ? 'rotate-180' : ''}`} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => patch({ descartado: true })}
+            disabled={ocupado}
+            className="cursor-pointer rounded-lg px-2 py-1 text-sm text-acero hover:bg-lienzo disabled:opacity-60"
+          >
+            Ocultar
+          </button>
+        </div>
       </div>
 
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-lienzo" aria-hidden="true">
         <div className="h-full rounded-full bg-azul transition-all" style={{ width: `${(hechos / pasos.length) * 100}%` }} />
       </div>
 
-      <ul className="mt-4 space-y-1">
-        {pasos.map((p) => (
+      <ul id="onboarding-pasos" className="mt-4 space-y-1">
+        {visibles.map((p) => (
           <li key={p.id} className="flex items-start gap-3 rounded-xl px-2 py-2">
             <span
               className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${
