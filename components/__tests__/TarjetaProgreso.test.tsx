@@ -58,6 +58,27 @@ describe('render', () => {
     render(<TarjetaProgreso pasos={[paso({ id: 'documentos' })]} tipoCuenta="personal" />)
     expect(screen.queryByRole('button', { name: 'Entendido' })).toBeNull()
   })
+
+  it('un paso pendiente sin destino (href null) no es un enlace, solo texto', () => {
+    render(<TarjetaProgreso pasos={[paso({ id: 'documentos', href: null })]} tipoCuenta="personal" />)
+    expect(screen.queryByRole('link', { name: /Título documentos/ })).toBeNull()
+    expect(screen.getByText('Título documentos')).toBeTruthy()
+  })
+
+  it('el paso "vehiculo" pendiente con onNuevoVehiculo se renderiza como botón e invoca la función al hacer clic', () => {
+    const onNuevoVehiculo = vi.fn()
+    render(
+      <TarjetaProgreso
+        pasos={[paso({ id: 'vehiculo' })]}
+        tipoCuenta="personal"
+        onNuevoVehiculo={onNuevoVehiculo}
+      />,
+    )
+    const boton = screen.getByRole('button', { name: 'Título vehiculo' })
+    fireEvent.click(boton)
+    expect(onNuevoVehiculo).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('link', { name: /Título vehiculo/ })).toBeNull()
+  })
 })
 
 describe('acciones', () => {

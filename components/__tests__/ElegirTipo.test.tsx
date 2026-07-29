@@ -44,9 +44,9 @@ describe('ElegirTipo', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
-  it('/bienvenida no promete un camino de vuelta de empresa a personal', () => {
+  it('/bienvenida deja claro que se puede sumar la flota después, sin perder nada', () => {
     render(<ElegirTipo />)
-    expect(screen.queryByText(/cambiarlo después/i)).toBeNull()
+    expect(screen.getByText(/más adelante puedes sumar tu flota sin perder nada/i)).toBeTruthy()
   })
 
   // /bienvenida no tiene barra de navegación: si el fetch rechaza (sin conexión,

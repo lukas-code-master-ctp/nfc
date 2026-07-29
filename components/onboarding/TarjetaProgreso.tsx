@@ -90,7 +90,7 @@ export default function TarjetaProgreso({
                     <button
                       type="button"
                       onClick={onNuevoVehiculo}
-                      className="text-sm font-medium text-azul hover:underline"
+                      className="cursor-pointer text-left text-sm font-medium text-azul hover:underline"
                     >
                       {p.titulo}
                     </button>
