@@ -84,6 +84,32 @@ export const VEHICLE_INFO_FIELDS: {
   { key: 'notas', label: 'Notas', placeholder: 'Cualquier dato útil para quien maneje el vehículo', multiline: true },
 ]
 
+/**
+ * Resumen de los documentos del vehículo, denormalizado para el dashboard.
+ *
+ * `proximoVencimiento` es la fecha más próxima entre los documentos que vencen
+ * (null si ninguno vence). Guardamos la FECHA y no el estado a propósito: un
+ * documento pasa de "al día" a "por vencer" a la medianoche, sin que nadie
+ * escriba nada. Con la fecha, el estado se calcula en cada render contra el
+ * reloj de ese momento; con el estado guardado, el dashboard mostraría badges
+ * verdes de documentos ya vencidos.
+ */
+export interface ResumenDocs {
+  total: number
+  proximoVencimiento: string | null
+}
+
+/**
+ * Última mantención del vehículo, denormalizada.
+ *
+ * El envoltorio existe para distinguir dos cosas distintas: el campo AUSENTE
+ * significa "nunca se calculó" (hay que consultar en vivo), mientras que
+ * `{ ultima: null }` significa "calculado, este vehículo no tiene mantenciones".
+ */
+export interface ResumenMantencion {
+  ultima: { km: number | null; fecha: string } | null
+}
+
 export interface Vehicle {
   id: string
   patente: string
@@ -106,6 +132,10 @@ export interface Vehicle {
   mantencionReminders?: ('proxima' | 'vencida')[]
   danoActivo?: DanoActivo | null
   consumo?: ConsumoBencina | null
+  // Resúmenes denormalizados que alimentan la tarjeta del dashboard. Ausentes
+  // = nunca calculados; el dashboard cae a consultar en vivo ese vehículo.
+  resumenDocs?: ResumenDocs
+  resumenMantencion?: ResumenMantencion
 }
 
 export interface CompanyData {
