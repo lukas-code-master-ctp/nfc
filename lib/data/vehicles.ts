@@ -32,6 +32,10 @@ function toVehicle(id: string, data: FirebaseFirestore.DocumentData): Vehicle {
     mantencionReminders: data.mantencionReminders ?? [],
     danoActivo: data.danoActivo ?? null,
     consumo: data.consumo ?? null,
+    // OJO: `?? undefined`, NO `?? null`. La ausencia del campo es información:
+    // significa "nunca calculado" y dispara el fallback a consulta en vivo.
+    resumenDocs: data.resumenDocs ?? undefined,
+    resumenMantencion: data.resumenMantencion ?? undefined,
   }
 }
 

@@ -21,7 +21,9 @@ export async function GET(req: NextRequest) {
       allDocuments: listAllDocuments,
       vehicleInfo: vehicleInfoForReminder,
       sendReminderEmail,
-      markReminderSent: (id, companyId, remindersSent) => updateDocument(id, companyId, { remindersSent }),
+      markReminderSent: async (id, companyId, remindersSent) => {
+        await updateDocument(id, companyId, { remindersSent })
+      },
     },
     new Date(),
   )
