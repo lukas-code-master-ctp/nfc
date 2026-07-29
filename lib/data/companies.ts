@@ -110,8 +110,11 @@ export async function saveOnboarding(
   if (patch.tipoCuenta !== undefined) {
     data.tipoCuenta = patch.tipoCuenta
     // Elegir (o cambiar) el tipo reabre la evaluación: pasar de personal a
-    // empresa suma seis pasos, y dejarlo marcado como completo los ocultaría.
+    // empresa suma seis pasos, así que ni completadoEn (marcaría "listo" con
+    // pasos nuevos sin hacer) ni descartadoEn (la tarjeta seguiría oculta)
+    // pueden quedar en pie.
     data.completadoEn = null
+    data.descartadoEn = null
   }
   if (patch.agregarVisto !== undefined) data.vistos = FieldValue.arrayUnion(patch.agregarVisto)
   if (patch.descartadoEn !== undefined) data.descartadoEn = patch.descartadoEn

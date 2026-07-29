@@ -69,10 +69,18 @@ export default async function ConfiguracionPage() {
 
       {/* La tarjeta del dashboard desaparece al completarse y el enlace para pasar
           a cuenta de empresa vive dentro de ella: esta card es la única salida que
-          le queda a una cuenta personal ya terminada. */}
-      {esAdmin && (company?.onboarding?.descartadoEn || company?.onboarding?.tipoCuenta === 'personal') && (
+          le queda a una cuenta personal ya terminada. Se renderiza si aplica al
+          menos uno de sus dos bloques: "volver a mostrarla" (descartada y NO
+          completa; completa no tiene nada que reaparecer) o "cambiar a empresa"
+          (cuenta personal, completa o no). Un Administrador de una cuenta de
+          empresa con el onboarding terminado no cae en ninguno: no ve nada. */}
+      {esAdmin && (
+        (company?.onboarding?.descartadoEn && !company?.onboarding?.completadoEn) ||
+        company?.onboarding?.tipoCuenta === 'personal'
+      ) && (
         <RecuperarGuia
           descartada={Boolean(company?.onboarding?.descartadoEn)}
+          completada={Boolean(company?.onboarding?.completadoEn)}
           esPersonal={company?.onboarding?.tipoCuenta === 'personal'}
         />
       )}

@@ -10,19 +10,32 @@ import { useRouter } from 'next/navigation'
  * ella: sin esta card, quien elige cuenta personal y termina sus tres pasos
  * pierde para siempre la forma de pedir los pasos de flota.
  *
- * `PATCH /api/onboarding` con `tipoCuenta` limpia `completadoEn`, así que
- * cambiar a cuenta de empresa hace reaparecer la tarjeta con los seis pasos
- * nuevos y los ya cumplidos marcados.
+ * `PATCH /api/onboarding` con `tipoCuenta` limpia `completadoEn` y
+ * `descartadoEn`, así que cambiar a cuenta de empresa hace reaparecer la
+ * tarjeta con los seis pasos nuevos y los ya cumplidos marcados, incluso si
+ * la habías ocultado antes.
+ *
+ * El bloque "Volver a mostrarla" solo se ofrece si `descartada && !completada`:
+ * con el onboarding ya completo no hay tarjeta que reaparezca
+ * (`debeMostrarTarjeta` exige `!completadoEn`), así que el botón no puede
+ * cumplir lo que promete.
  */
 export default function RecuperarGuia({
   descartada,
+  completada,
   esPersonal,
 }: {
   descartada: boolean
+  /** Onboarding ya completo: no hay nada que "volver a mostrar". */
+  completada: boolean
   esPersonal: boolean
 }) {
   const router = useRouter()
   const [ocupado, setOcupado] = useState(false)
+  // Con el onboarding completo no queda nada que reaparezca (debeMostrarTarjeta
+  // exige !completadoEn), así que ofrecer el botón sería prometer un efecto
+  // que no ocurre.
+  const ofrecerVolver = descartada && !completada
 
   async function patch(body: Record<string, unknown>) {
     setOcupado(true)
@@ -32,7 +45,10 @@ export default function RecuperarGuia({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      if (res.ok) router.push('/dashboard')
+      if (res.ok) {
+        router.push('/dashboard')
+        router.refresh()
+      }
     } catch {
       // Sin conexión o falló la red: se libera el botón en el finally para
       // que puedas reintentar.
@@ -53,10 +69,10 @@ export default function RecuperarGuia({
   )
 
   return (
-    <section className="mt-4 rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
+    <section className="mt-5 rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-tinta">Guía de configuración</h2>
 
-      {descartada && (
+      {ofrecerVolver && (
         <div>
           <p className="mt-1 text-sm text-acero">La ocultaste del dashboard. Puedes volver a verla cuando quieras.</p>
           {boton('Volver a mostrarla', 'Mostrando…', { descartado: false })}
@@ -64,7 +80,7 @@ export default function RecuperarGuia({
       )}
 
       {esPersonal && (
-        <div className={descartada ? 'mt-5 border-t border-linea pt-4' : ''}>
+        <div className={ofrecerVolver ? 'mt-5 border-t border-linea pt-4' : ''}>
           <p className="mt-1 text-sm text-acero">
             Tu cuenta está configurada como un vehículo particular. Si administras una flota, te mostramos lo que falta:
             datos de la empresa, categorías, pauta de mantención, equipo y conductores.

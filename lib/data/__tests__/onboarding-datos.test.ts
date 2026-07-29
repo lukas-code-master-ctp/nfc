@@ -31,15 +31,16 @@ describe('saveOnboarding', () => {
       expect(mocks.collection).toHaveBeenCalledWith('companies')
       expect(mocks.doc).toHaveBeenCalledWith('c1')
       const [data, opts] = mocks.set.mock.calls[0]
-      expect(data).toEqual({ onboarding: { tipoCuenta: 'empresa', completadoEn: null } })
+      expect(data).toEqual({ onboarding: { tipoCuenta: 'empresa', completadoEn: null, descartadoEn: null } })
       expect(opts).toEqual({ merge: true })
     })
   })
 
-  it('elegir tipo limpia completadoEn, porque cambiar de personal a empresa suma pasos', async () => {
+  it('elegir tipo limpia completadoEn y descartadoEn, porque cambiar de tipo reabre la evaluación', async () => {
     await saveOnboarding('c1', { tipoCuenta: 'empresa' })
     const [data] = mocks.set.mock.calls[0] as [{ onboarding: Record<string, unknown> }]
     expect(data.onboarding.completadoEn).toBeNull()
+    expect(data.onboarding.descartadoEn).toBeNull()
   })
 
   it('agrega un visto con arrayUnion, para no pisar los que ya estaban', async () => {
