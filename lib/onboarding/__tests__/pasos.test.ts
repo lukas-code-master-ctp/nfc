@@ -125,10 +125,10 @@ describe('pasosDe — los enlaces a la ficha necesitan un vehículo', () => {
     expect(pasos.find((p) => p.id === 'chip')!.href).toBe('/vehiculos/abc#ajustes')
   })
 
-  it('sin vehículo caen al dashboard, que es donde se agrega uno', () => {
+  it('sin vehículo todavía no tienen destino', () => {
     const pasos = pasosDe('personal', VACIAS)
-    expect(pasos.find((p) => p.id === 'documentos')!.href).toBe('/dashboard')
-    expect(pasos.find((p) => p.id === 'chip')!.href).toBe('/dashboard')
+    expect(pasos.find((p) => p.id === 'documentos')!.href).toBeNull()
+    expect(pasos.find((p) => p.id === 'chip')!.href).toBeNull()
   })
 })
 

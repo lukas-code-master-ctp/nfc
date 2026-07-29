@@ -45,7 +45,8 @@ export interface Paso {
   id: PasoId
   titulo: string
   detalle: string
-  href: string
+  /** null = todavía no hay destino (p.ej. "documentos"/"chip" sin vehículo). */
+  href: string | null
   listo: boolean
   informativo: boolean
 }
@@ -60,14 +61,18 @@ export interface Paso {
  */
 export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
   const visto = (id: PasoId) => s.vistos.includes(id)
-  // Sin vehículo no hay ficha a la que ir: el dashboard es donde se agrega uno.
-  const ficha = (hash: string) => (s.primerVehiculoId ? `/vehiculos/${s.primerVehiculoId}#${hash}` : '/dashboard')
+  // Sin vehículo todavía no hay ficha a la que ir: TarjetaProgreso abre el
+  // modal de alta en su lugar para el paso "vehiculo"; "documentos" y "chip"
+  // quedan sin destino (null) hasta que exista un primer vehículo.
+  const ficha = (hash: string) => (s.primerVehiculoId ? `/vehiculos/${s.primerVehiculoId}#${hash}` : null)
 
   const comunes: Paso[] = [
     {
       id: 'vehiculo',
       titulo: 'Agrega tu primer vehículo',
       detalle: 'Con la patente, la marca y el modelo basta para partir.',
+      // Respaldo si el paso se renderiza fuera del dashboard: ahí TarjetaProgreso
+      // ignora este href y abre el modal de alta directamente.
       href: '/dashboard',
       listo: s.vehiculos > 0,
       informativo: false,

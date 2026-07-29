@@ -13,7 +13,18 @@ function CheckIcon({ className }: { className?: string }) {
   )
 }
 
-export default function TarjetaProgreso({ pasos, tipoCuenta }: { pasos: Paso[]; tipoCuenta: TipoCuenta }) {
+export default function TarjetaProgreso({
+  pasos,
+  tipoCuenta,
+  onNuevoVehiculo,
+}: {
+  pasos: Paso[]
+  tipoCuenta: TipoCuenta
+  /** El paso "vehiculo" abre el modal de alta en vez de enlazar: sin vehículos
+   *  no hay ficha a la que ir, así que un `<a href="/dashboard">` dentro del
+   *  propio dashboard solo hace scroll al tope. */
+  onNuevoVehiculo?: () => void
+}) {
   const router = useRouter()
   const [ocupado, setOcupado] = useState(false)
   const hechos = pasos.filter((p) => p.listo).length
@@ -75,9 +86,21 @@ export default function TarjetaProgreso({ pasos, tipoCuenta }: { pasos: Paso[]; 
                 <p className="text-sm font-medium text-acero line-through">{p.titulo}</p>
               ) : (
                 <>
-                  <Link href={p.href} className="text-sm font-medium text-azul hover:underline">
-                    {p.titulo}
-                  </Link>
+                  {p.id === 'vehiculo' && onNuevoVehiculo ? (
+                    <button
+                      type="button"
+                      onClick={onNuevoVehiculo}
+                      className="text-sm font-medium text-azul hover:underline"
+                    >
+                      {p.titulo}
+                    </button>
+                  ) : p.href === null ? (
+                    <p className="text-sm font-medium text-tinta">{p.titulo}</p>
+                  ) : (
+                    <Link href={p.href} className="text-sm font-medium text-azul hover:underline">
+                      {p.titulo}
+                    </Link>
+                  )}
                   <p className="mt-0.5 text-sm text-acero">{p.detalle}</p>
                   {p.informativo && (
                     <button

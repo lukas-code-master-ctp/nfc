@@ -340,7 +340,9 @@ export default function VehiclesBoard({
         )}
       </div>
 
-      {onboarding && <TarjetaProgreso pasos={onboarding.pasos} tipoCuenta={onboarding.tipoCuenta} />}
+      {onboarding && (
+        <TarjetaProgreso pasos={onboarding.pasos} tipoCuenta={onboarding.tipoCuenta} onNuevoVehiculo={() => setOpen(true)} />
+      )}
 
       <TransferenciasEntrantes items={entrantes} />
 
