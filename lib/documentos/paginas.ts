@@ -32,8 +32,9 @@ export function cabenPaginas(actuales: number, nuevas: number): { acepta: number
 
 export function decidirSalida(paginas: Pagina[]): Salida {
   if (paginas.length === 0) return 'ninguno'
-  // Un PDF del usuario se sube tal cual. La UI garantiza que va solo, pero si algo
-  // se colara junto a fotos, subir el PDF es mejor que intentar armar uno con él adentro.
+  // Un PDF del usuario se sube tal cual, y la UI garantiza que va solo. Si igual se
+  // colara junto a fotos, `subirPaginas` rechaza la lista con `lista_mixta` en vez de
+  // descartar páginas en silencio.
   if (paginas.some((p) => !esImagen(p.file.type))) return 'archivo'
   return paginas.length === 1 ? 'archivo' : 'pdf'
 }
