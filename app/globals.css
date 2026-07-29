@@ -20,6 +20,63 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Mockups animados del onboarding. Se aplican con la variante `motion-safe:`,
+     así que con `prefers-reduced-motion` no corren y queda la ilustración fija.
+     Por eso cada keyframe TERMINA en el estado base del elemento: el mockup
+     estático tiene que leerse igual de bien que el animado. */
+  --animate-mock-escribir: mock-escribir 4s ease-in-out infinite;
+  --animate-mock-pulso: mock-pulso 4s ease-in-out infinite;
+  --animate-mock-entrar: mock-entrar 4s ease-in-out infinite;
+  --animate-mock-foto: mock-foto 4s ease-in-out infinite;
+  --animate-mock-acercar: mock-acercar 4s ease-in-out infinite;
+  --animate-mock-onda: mock-onda 4s ease-in-out infinite;
+  --animate-mock-turno: mock-turno 4s ease-in-out infinite;
+}
+
+/* El texto "escribiéndose" dentro de un campo: crece de izquierda a derecha. */
+@keyframes mock-escribir {
+  0%, 8% { transform: scaleX(0); }
+  40%, 100% { transform: scaleX(1); }
+}
+
+/* El botón que recibe el clic después de que el campo se llenó. */
+@keyframes mock-pulso {
+  0%, 50% { opacity: 1; }
+  62% { opacity: 0.55; }
+  74%, 100% { opacity: 1; }
+}
+
+/* Un panel que aparece sobre la pantalla (el modal de alta de vehículo). */
+@keyframes mock-entrar {
+  0%, 15% { opacity: 0; transform: translateY(8px) scale(0.96); }
+  45%, 100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Cada foto que se suma a la lista de páginas del documento. */
+@keyframes mock-foto {
+  0%, 10% { opacity: 0; transform: translateY(6px); }
+  35%, 100% { opacity: 1; transform: translateY(0); }
+}
+
+/* El celular acercándose al chip del llavero. */
+@keyframes mock-acercar {
+  0%, 12% { transform: translateX(26px); }
+  50%, 100% { transform: translateX(0); }
+}
+
+/* Las ondas NFC que salen del chip cuando el celular ya está cerca. */
+@keyframes mock-onda {
+  0%, 45% { opacity: 0; transform: scale(0.5); }
+  70% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
+/* La alternancia de foco entre las dos pantallas (Dashboard y Reportes). */
+@keyframes mock-turno {
+  0%, 40% { opacity: 1; }
+  55%, 90% { opacity: 0.25; }
+  100% { opacity: 1; }
 }
 
 body {

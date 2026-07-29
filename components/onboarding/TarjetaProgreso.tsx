@@ -2,8 +2,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { primerPendiente, type Paso } from '@/lib/onboarding/pasos'
 import type { TipoCuenta } from '@/lib/types'
+
+// Dinámico a propósito: los cinco mockups animados y sus textos no entran al
+// bundle del dashboard hasta que alguien abre un paso, y nunca para quien ya
+// terminó el onboarding.
+const AyudaPaso = dynamic(() => import('@/components/onboarding/AyudaPaso'))
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -44,6 +50,11 @@ export default function TarjetaProgreso({
   // Contraída por defecto: con nueve pasos la lista completa empuja la flota
   // fuera de la pantalla, y el dashboard es para ver la flota.
   const [abierta, setAbierta] = useState(false)
+  // Qué pasos tienen su ayuda desplegada. Independientes entre sí: cerrar uno
+  // al abrir otro sorprende más de lo que ordena.
+  const [conAyuda, setConAyuda] = useState<string[]>([])
+  const alternarAyuda = (id: string) =>
+    setConAyuda((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
   const hechos = pasos.filter((p) => p.listo).length
   const pendiente = primerPendiente(pasos)
   // Sin pendientes no hay nada que contraer (render transitorio antes de que
@@ -124,22 +135,36 @@ export default function TarjetaProgreso({
                 <p className="text-sm font-medium text-acero line-through">{p.titulo}</p>
               ) : (
                 <>
-                  {p.id === 'vehiculo' && onNuevoVehiculo ? (
+                  <div className="flex items-start gap-1.5">
+                    {p.id === 'vehiculo' && onNuevoVehiculo ? (
+                      <button
+                        type="button"
+                        onClick={onNuevoVehiculo}
+                        className="cursor-pointer text-left text-sm font-medium text-azul hover:underline"
+                      >
+                        {p.titulo}
+                      </button>
+                    ) : p.href === null ? (
+                      <p className="text-sm font-medium text-tinta">{p.titulo}</p>
+                    ) : (
+                      <Link href={p.href} className="text-sm font-medium text-azul hover:underline">
+                        {p.titulo}
+                      </Link>
+                    )}
                     <button
                       type="button"
-                      onClick={onNuevoVehiculo}
-                      className="cursor-pointer text-left text-sm font-medium text-azul hover:underline"
+                      onClick={() => alternarAyuda(p.id)}
+                      aria-expanded={conAyuda.includes(p.id)}
+                      className="-mt-0.5 shrink-0 cursor-pointer rounded p-0.5 text-acero hover:bg-lienzo"
                     >
-                      {p.titulo}
+                      <span className="sr-only">
+                        {conAyuda.includes(p.id) ? `Ocultar cómo hacerlo: ${p.titulo}` : `Ver cómo hacerlo: ${p.titulo}`}
+                      </span>
+                      <ChevronIcon className={`size-4 transition-transform ${conAyuda.includes(p.id) ? 'rotate-180' : ''}`} />
                     </button>
-                  ) : p.href === null ? (
-                    <p className="text-sm font-medium text-tinta">{p.titulo}</p>
-                  ) : (
-                    <Link href={p.href} className="text-sm font-medium text-azul hover:underline">
-                      {p.titulo}
-                    </Link>
-                  )}
+                  </div>
                   <p className="mt-0.5 text-sm text-acero">{p.detalle}</p>
+                  {conAyuda.includes(p.id) && <AyudaPaso pasoId={p.id} />}
                   {p.informativo && (
                     <button
                       type="button"
