@@ -10,6 +10,7 @@ import CategoriasCard from '@/components/company/CategoriasCard'
 import PautaMantencionCard from '@/components/company/PautaMantencionCard'
 import TeamCard from '@/components/company/TeamCard'
 import DriversCard from '@/components/drivers/DriversCard'
+import RecuperarGuia from '@/components/onboarding/RecuperarGuia'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,11 +61,13 @@ export default async function ConfiguracionPage() {
       )}
 
       {esAdmin && <PlataformaCard avisoUsoHoras={company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS} />}
-      {esAdmin && <CategoriasCard initial={company?.categorias ?? []} />}
-      {esAdmin && <PautaMantencionCard initial={company?.pautaMantencion ?? {}} />}
+      {esAdmin && <div id="categorias"><CategoriasCard initial={company?.categorias ?? []} /></div>}
+      {esAdmin && <div id="mantencion"><PautaMantencionCard initial={company?.pautaMantencion ?? {}} /></div>}
 
-      {esAdmin && <TeamCard currentUid={m.uid} />}
-      {puedeGestionarConductores && <DriversCard />}
+      {esAdmin && <div id="equipo"><TeamCard currentUid={m.uid} /></div>}
+      {puedeGestionarConductores && <div id="conductores"><DriversCard /></div>}
+
+      {esAdmin && company?.onboarding?.descartadoEn && <RecuperarGuia />}
     </main>
   )
 }
