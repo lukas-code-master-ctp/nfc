@@ -16,7 +16,9 @@ export default function AyudaPaso({ pasoId }: { pasoId: PasoId }) {
 
   return (
     <div className="mt-2 rounded-xl bg-lienzo p-3">
-      {a.mock === 'formulario' && <MockFormulario campo={a.campo ?? ''} boton={a.boton ?? ''} />}
+      {a.mock === 'formulario' && (
+        <MockFormulario campo={a.campo ?? ''} boton={a.boton ?? ''} ejemplo={a.ejemplo ?? ''} />
+      )}
       {a.mock === 'modal' && <MockModal />}
       {a.mock === 'subida' && <MockSubida />}
       {a.mock === 'chip' && <MockChip />}

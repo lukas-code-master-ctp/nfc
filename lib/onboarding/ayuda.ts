@@ -15,6 +15,8 @@ export interface Ayuda {
   campo?: string
   /** Etiqueta del botón que dibuja el mockup. Solo la usa `formulario`. */
   boton?: string
+  /** Lo que se ve escribiéndose en el campo. Solo la usa `formulario`. */
+  ejemplo?: string
   /** Cómo hacerlo, en pasos cortos y concretos. */
   comoHacerlo: string[]
 }
@@ -55,6 +57,7 @@ export const AYUDA: Record<PasoId, Ayuda> = {
   empresa: {
     mock: 'formulario',
     campo: 'Razón social',
+    ejemplo: 'Transportes Andes SpA',
     boton: 'Guardar',
     comoHacerlo: [
       'Entra a Configuración.',
@@ -65,6 +68,7 @@ export const AYUDA: Record<PasoId, Ayuda> = {
   categorias: {
     mock: 'formulario',
     campo: 'Nombre de la categoría',
+    ejemplo: 'Camionetas',
     boton: 'Agregar',
     comoHacerlo: [
       'En Configuración, busca «Categorías de vehículos».',
@@ -75,6 +79,7 @@ export const AYUDA: Record<PasoId, Ayuda> = {
   mantencion: {
     mock: 'formulario',
     campo: 'Cada cuántos km',
+    ejemplo: '10.000',
     boton: 'Guardar',
     comoHacerlo: [
       'En Configuración, busca «Pauta de mantención».',
@@ -85,6 +90,7 @@ export const AYUDA: Record<PasoId, Ayuda> = {
   equipo: {
     mock: 'formulario',
     campo: 'Correo',
+    ejemplo: 'ana@transportesandes.cl',
     boton: 'Invitar',
     comoHacerlo: [
       'En Configuración, busca «Equipo».',
@@ -95,6 +101,7 @@ export const AYUDA: Record<PasoId, Ayuda> = {
   conductores: {
     mock: 'formulario',
     campo: 'Nombre del conductor',
+    ejemplo: 'Ana Soto',
     boton: 'Agregar',
     comoHacerlo: [
       'En Configuración, busca «Conductores».',

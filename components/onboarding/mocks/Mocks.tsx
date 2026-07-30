@@ -1,188 +1,264 @@
 /**
- * Los cinco mockups animados que ilustran los pasos del onboarding.
+ * Mini-escenas animadas del onboarding: la UI real de TapCar en miniatura,
+ * mostrando el gesto que el paso pide.
  *
- * Viven juntos en un archivo porque comparten la misma caja, la misma paleta y
- * las mismas convenciones de dibujo; separarlos multiplicaría el andamiaje sin
- * separar responsabilidades.
+ * No son esquemas abstractos: usan las mismas clases que los componentes
+ * reales (cards `rounded-2xl border-linea bg-superficie shadow-sm`, botones
+ * `bg-azul font-semibold`, las pills de estado con los hex de `StatusBadge`) y
+ * heredan la tipografía Geist del body. Si la UI real cambia de estilo, estas
+ * escenas se actualizan a mano — son cinco, y verse "como la app" es su razón
+ * de ser.
  *
- * Reglas de estos dibujos:
- * - Todo el movimiento va con la variante `motion-safe:`, así que con
- *   `prefers-reduced-motion` el mockup queda fijo. Los keyframes de
- *   `app/globals.css` terminan en el estado base justamente para eso: la
- *   ilustración estática tiene que leerse igual de bien que la animada.
- * - Son esquemas, no capturas: si la UI real cambia de color o de posición, un
- *   esquema sigue siendo cierto y una captura queda mintiendo.
- * - `aria-hidden`: lo que el mockup muestra ya está escrito en la lista de
- *   "cómo hacerlo" que va al lado. Para un lector de pantalla es decoración.
+ * Reglas:
+ * - Todo el movimiento va con `motion-safe:`; los keyframes de
+ *   `app/globals.css` terminan en el estado base, así que con
+ *   `prefers-reduced-motion` queda una viñeta fija que se lee igual.
+ * - `aria-hidden` + `pointer-events-none`: lo que la escena muestra ya está
+ *   escrito en el "cómo hacerlo" de al lado. Para un lector de pantalla es
+ *   decoración; para el mouse, nada clickeable que prometa serlo.
+ * - Ciclo común de 5s: el tap, la presión del botón y las apariciones están
+ *   coreografiados entre sí por porcentaje del ciclo.
  */
 
-const CAJA = 'w-full rounded-xl border border-linea bg-lienzo'
-
-function Marco({ children }: { children: React.ReactNode }) {
+function Escena({ children, alto = 'auto' }: { children: React.ReactNode; alto?: string }) {
   return (
-    <svg viewBox="0 0 320 132" className={CAJA} role="presentation" aria-hidden="true">
+    <div
+      data-mock
+      aria-hidden="true"
+      className="pointer-events-none relative mx-auto w-full max-w-[300px] select-none"
+      style={{ height: alto }}
+    >
       {children}
-    </svg>
+    </div>
   )
 }
 
-/** Texto chico dentro del dibujo. Los mockups no usan la tipografía real. */
-function Etiqueta({ x, y, children, tenue = false }: { x: number; y: number; children: string; tenue?: boolean }) {
+/**
+ * El punto de "tap" que viaja y presiona. Las coordenadas van por variables
+ * porque cada escena tiene su propia geometría; el estado base es la posición
+ * FINAL, así que la viñeta estática lo muestra apoyado en el botón: "toca aquí".
+ */
+function Toque({ x0, y0, x1, y1 }: { x0: number; y0: number; x1: number; y1: number }) {
   return (
-    <text x={x} y={y} className={`text-[9px] ${tenue ? 'fill-acero' : 'fill-tinta'}`} style={{ fontSize: 9 }}>
-      {children}
-    </text>
+    <span
+      className="absolute left-0 top-0 z-20 size-5 rounded-full bg-azul/20 ring-2 ring-azul motion-safe:animate-mock-toque"
+      style={
+        {
+          '--mock-x0': `${x0}px`,
+          '--mock-y0': `${y0}px`,
+          '--mock-x1': `${x1}px`,
+          '--mock-y1': `${y1}px`,
+          transform: `translate(${x1}px, ${y1}px)`,
+        } as React.CSSProperties
+      }
+    />
   )
 }
 
-/** Llena un campo y toca un botón. Sirve a los cinco pasos de Configuración. */
-export function MockFormulario({ campo, boton }: { campo: string; boton: string }) {
+/** El wordmark en miniatura: **Tap**Car, como en la barra real. */
+function MiniMarca({ tamano = 'text-[10px]' }: { tamano?: string }) {
   return (
-    <Marco>
-      <rect x="20" y="16" width="280" height="100" rx="8" className="fill-superficie stroke-linea" strokeWidth="1" />
-      <Etiqueta x={34} y={40} tenue>{campo}</Etiqueta>
-      <rect x="34" y="48" width="180" height="18" rx="4" className="fill-lienzo stroke-linea" strokeWidth="1" />
-      {/* El "texto" que se escribe: crece desde la izquierda. */}
-      <rect
-        x="40"
-        y="55"
-        width="120"
-        height="4"
-        rx="2"
-        className="origin-left fill-tinta motion-safe:animate-mock-escribir"
-        style={{ transformBox: 'fill-box' }}
-      />
-      <rect x="34" y="80" width="86" height="22" rx="6" className="fill-azul motion-safe:animate-mock-pulso" />
-      <text x="77" y="94" textAnchor="middle" className="fill-white" style={{ fontSize: 9 }}>{boton}</text>
-    </Marco>
+    <span className={`${tamano} font-semibold tracking-tight`}>
+      <span className="text-azul">Tap</span>
+      <span className="text-tinta">Car</span>
+    </span>
   )
 }
 
-/** Un panel que aparece sobre el dashboard: el modal de alta de vehículo. */
+/** Llena el campo y guarda: los cinco pasos de Configuración. */
+export function MockFormulario({ campo, boton, ejemplo }: { campo: string; boton: string; ejemplo: string }) {
+  return (
+    <Escena>
+      <div className="rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
+        <p className="text-[11px] font-medium text-acero">{campo}</p>
+        <div className="mt-1.5 flex h-9 items-center rounded-lg border border-linea bg-superficie px-2.5">
+          <span className="inline-block overflow-hidden whitespace-nowrap text-[11px] text-tinta motion-safe:animate-mock-tipeo">
+            {ejemplo}
+          </span>
+          <span className="ml-0.5 h-3.5 w-px shrink-0 bg-tinta motion-safe:animate-mock-caret" />
+        </div>
+        <span className="mt-3 inline-block rounded-lg bg-azul px-3.5 py-2 text-[11px] font-semibold text-white motion-safe:animate-mock-presion">
+          {boton}
+        </span>
+      </div>
+      <Toque x0={200} y0={44} x1={40} y1={92} />
+    </Escena>
+  )
+}
+
+/** El modal de alta de vehículo apareciendo sobre el dashboard. */
 export function MockModal() {
   return (
-    <Marco>
-      {/* La página de fondo, atenuada como cuando hay un modal encima. */}
-      <rect x="14" y="12" width="292" height="108" rx="8" className="fill-superficie stroke-linea" strokeWidth="1" />
-      <rect x="26" y="24" width="70" height="6" rx="3" className="fill-linea" />
-      <rect x="230" y="22" width="64" height="18" rx="6" className="fill-azul" />
-      <text x="262" y="35" textAnchor="middle" className="fill-white" style={{ fontSize: 8 }}>+ Nuevo</text>
-      <rect x="26" y="48" width="268" height="20" rx="6" className="fill-lienzo" />
-      {/* El modal. */}
-      <g className="origin-center motion-safe:animate-mock-entrar" style={{ transformBox: 'view-box' }}>
-        <rect x="66" y="40" width="188" height="76" rx="8" className="fill-superficie stroke-azul" strokeWidth="1.5" />
-        <Etiqueta x={80} y={58}>Nuevo vehículo</Etiqueta>
-        <rect x="80" y="66" width="70" height="14" rx="4" className="fill-lienzo stroke-linea" strokeWidth="1" />
-        <text x="86" y="76" className="fill-acero" style={{ fontSize: 7 }}>ABCD·12</text>
-        <rect x="156" y="66" width="84" height="14" rx="4" className="fill-lienzo stroke-linea" strokeWidth="1" />
-        <rect x="80" y="90" width="60" height="16" rx="5" className="fill-azul" />
-        <text x="110" y="101" textAnchor="middle" className="fill-white" style={{ fontSize: 8 }}>Guardar</text>
-      </g>
-    </Marco>
+    <Escena alto="164px">
+      {/* El dashboard de fondo, como se ve antes del clic. */}
+      <div className="absolute inset-0 rounded-2xl border border-linea bg-superficie p-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <MiniMarca />
+          <span className="rounded-lg bg-azul px-2.5 py-1.5 text-[9px] font-semibold text-white">
+            + Nuevo vehículo
+          </span>
+        </div>
+        <div className="mt-3 h-9 rounded-xl border border-linea bg-lienzo" />
+        <div className="mt-2 h-9 rounded-xl border border-linea bg-lienzo opacity-60" />
+      </div>
+
+      {/* El velo y el modal, como en NewVehicleModal. */}
+      <div className="absolute inset-0 rounded-2xl bg-tinta/30 motion-safe:animate-mock-velo" />
+      <div className="absolute inset-x-5 top-7 rounded-2xl border border-linea bg-superficie p-3 shadow-lg motion-safe:animate-mock-pop">
+        <p className="text-[11px] font-semibold text-tinta">Nuevo vehículo</p>
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
+          <div className="flex h-7 items-center rounded-lg border border-linea px-2 text-[10px] text-tinta">JKLM·34</div>
+          <div className="flex h-7 items-center rounded-lg border border-linea px-2 text-[10px] text-acero">Marca</div>
+        </div>
+        <div className="mt-2 flex gap-1.5">
+          <span className="rounded-lg bg-azul px-3 py-1.5 text-[10px] font-semibold text-white motion-safe:animate-mock-presion">
+            Guardar
+          </span>
+          <span className="rounded-lg border border-linea px-3 py-1.5 text-[10px] font-medium text-tinta">
+            Cancelar
+          </span>
+        </div>
+      </div>
+      <Toque x0={236} y0={8} x1={34} y1={118} />
+    </Escena>
   )
 }
 
-/** Varias fotos que se acumulan y se guardan como un solo PDF. */
+/** Varias fotos, sacadas una por una, que se guardan como un solo PDF. */
 export function MockSubida() {
   return (
-    <Marco>
-      <rect x="20" y="16" width="280" height="100" rx="8" className="fill-superficie stroke-linea" strokeWidth="1" />
-      <Etiqueta x={34} y={36} tenue>Páginas del documento</Etiqueta>
-      {/* Tres fotos que entran una tras otra: la cámara del celular devuelve
-          una sola por vez, así que la app las va acumulando. */}
-      {[0, 1, 2].map((i) => (
-        <g
-          key={i}
-          className="motion-safe:animate-mock-foto"
-          style={{ animationDelay: `${i * 0.45}s` }}
-        >
-          <rect
-            x={34 + i * 46}
-            y="46"
-            width="38"
-            height="48"
-            rx="4"
-            className="fill-lienzo stroke-linea"
-            strokeWidth="1"
-          />
-          <path
-            d={`M${40 + i * 46} 82 l8 -12 l7 9 l5 -6 l6 9 z`}
-            className="fill-acero/40"
-          />
-          <circle cx={62 + i * 46} cy="56" r="3" className="fill-acero/40" />
-        </g>
-      ))}
-      <path d="M182 70 h16" className="stroke-acero" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M194 66 l5 4 l-5 4" className="fill-none stroke-acero" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="210" y="46" width="38" height="48" rx="4" className="fill-superficie stroke-azul" strokeWidth="1.5" />
-      <text x="229" y="74" textAnchor="middle" className="fill-azul" style={{ fontSize: 9 }}>PDF</text>
-      <Etiqueta x={258} y={74} tenue>1 archivo</Etiqueta>
-    </Marco>
+    <Escena>
+      <div className="rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
+        <div className="flex items-baseline justify-between">
+          <p className="text-[11px] font-medium text-acero">Páginas del documento</p>
+          <p className="text-[9px] text-acero">3 de 10 páginas</p>
+        </div>
+        <div className="mt-2 flex items-center gap-1.5">
+          {[1, 2, 3].map((n, i) => (
+            <div
+              key={n}
+              className="relative h-14 w-11 shrink-0 overflow-hidden rounded-lg border border-linea bg-[#dce7f5] motion-safe:animate-mock-item"
+              style={{ animationDelay: `${i * 0.55}s` }}
+            >
+              {/* La foto: un documento sobre una mesa. */}
+              <div className="absolute inset-x-1.5 top-1.5 bottom-3 rounded-[3px] bg-white shadow-sm">
+                <div className="mx-1 mt-1 h-0.5 rounded bg-linea" />
+                <div className="mx-1 mt-0.5 h-0.5 w-3/4 rounded bg-linea" />
+                <div className="mx-1 mt-0.5 h-0.5 rounded bg-linea" />
+              </div>
+              <span className="absolute bottom-0.5 left-0.5 rounded bg-tinta/60 px-1 text-[7px] font-medium text-white">
+                {n}
+              </span>
+            </div>
+          ))}
+          <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-acero" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+          <div
+            className="flex h-14 w-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-azul bg-azul/5 motion-safe:animate-mock-item"
+            style={{ animationDelay: '1.8s' }}
+          >
+            <svg viewBox="0 0 24 24" className="size-4 text-azul" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+            </svg>
+            <span className="text-[8px] font-semibold text-azul">PDF</span>
+          </div>
+        </div>
+        <span className="mt-3 inline-block rounded-lg border border-linea px-3 py-1.5 text-[10px] font-medium text-tinta">
+          Agregar páginas
+        </span>
+      </div>
+    </Escena>
   )
 }
 
-/** El chip del llavero y el celular que se le acerca. */
+/** El chip del llavero y el celular que se le acerca hasta abrir la ficha. */
 export function MockChip() {
   return (
-    <Marco>
-      {/* Llavero: anilla + la ficha con el chip. */}
-      <circle cx="52" cy="46" r="9" className="fill-none stroke-acero" strokeWidth="2" />
-      <path d="M52 55 v8" className="stroke-acero" strokeWidth="2" />
-      <rect x="30" y="62" width="44" height="34" rx="6" className="fill-superficie stroke-tinta" strokeWidth="1.5" />
-      <text x="52" y="83" textAnchor="middle" className="fill-azul" style={{ fontSize: 8 }}>TapCar</text>
-      {/* Ondas NFC: salen cuando el celular ya está cerca. */}
-      <g className="origin-center motion-safe:animate-mock-onda" style={{ transformBox: 'fill-box' }}>
-        <path d="M84 62 a16 16 0 0 1 0 34" className="fill-none stroke-azul" strokeWidth="2" strokeLinecap="round" />
-        <path d="M92 56 a24 24 0 0 1 0 46" className="fill-none stroke-azul/60" strokeWidth="2" strokeLinecap="round" />
-      </g>
-      {/* Celular que se acerca. */}
-      <g className="motion-safe:animate-mock-acercar">
-        <rect x="132" y="26" width="72" height="88" rx="9" className="fill-superficie stroke-tinta" strokeWidth="1.5" />
-        <rect x="156" y="32" width="24" height="3" rx="1.5" className="fill-linea" />
-        <rect x="140" y="44" width="56" height="8" rx="3" className="fill-linea" />
-        <rect x="140" y="58" width="56" height="26" rx="4" className="fill-lienzo" />
-        <text x="168" y="74" textAnchor="middle" className="fill-acero" style={{ fontSize: 7 }}>Documentos</text>
-        <rect x="140" y="90" width="56" height="8" rx="3" className="fill-vigente/30" />
-      </g>
-      <Etiqueta x={218} y={72} tenue>Se abre la ficha</Etiqueta>
-    </Marco>
+    <Escena alto="150px">
+      <div className="absolute inset-0 flex items-center justify-center gap-4">
+        {/* El llavero: anilla + la placa TapCar. */}
+        <div className="flex flex-col items-center">
+          <span className="size-6 rounded-full border-[3px] border-acero/60" />
+          <span className="-mt-0.5 h-2.5 w-1 rounded-b bg-acero/60" />
+          <div className="w-[68px] rounded-xl bg-azul px-2 py-3 text-center shadow-md">
+            <span className="text-[10px] font-semibold tracking-tight text-white">TapCar</span>
+            <div className="mx-auto mt-1 flex w-fit items-end gap-[3px]">
+              <span className="h-1.5 w-0.5 rounded bg-white/80" />
+              <span className="h-2.5 w-0.5 rounded bg-white/80" />
+              <span className="h-3.5 w-0.5 rounded bg-white/80" />
+            </div>
+          </div>
+        </div>
+
+        {/* Las ondas NFC entre el chip y el celular. */}
+        <div className="flex items-center gap-1">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="rounded-full border-2 border-transparent border-r-azul motion-safe:animate-mock-ondas"
+              style={{ width: `${10 + i * 7}px`, height: `${16 + i * 10}px`, animationDelay: `${i * 0.25}s` }}
+            />
+          ))}
+        </div>
+
+        {/* El celular llegando, con la ficha pública ya abierta. */}
+        <div className="motion-safe:animate-mock-acercar">
+          <div className="h-[128px] w-[72px] rounded-[14px] border-2 border-tinta bg-superficie p-1 shadow-md">
+            <div className="mx-auto mb-0.5 h-0.5 w-6 rounded bg-linea" />
+            <div className="h-[110px] overflow-hidden rounded-[9px] bg-lienzo p-1.5">
+              <div className="text-center"><MiniMarca tamano="text-[8px]" /></div>
+              <p className="mt-0.5 text-center text-[9px] font-semibold text-tinta">JKLM·34</p>
+              {['SOAP', 'Permiso'].map((doc) => (
+                <div key={doc} className="mt-1 flex items-center justify-between rounded-md border border-linea bg-superficie px-1 py-0.5">
+                  <span className="text-[7px] text-tinta">{doc}</span>
+                  <span className="rounded-full bg-[#E7F6EC] px-1 text-[6px] font-semibold text-[#15803D]">Vigente</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Escena>
   )
 }
 
-/** Dashboard y Reportes: el estado de hoy contra el historial. */
+/** Dashboard y Reportes lado a lado: el hoy contra el historial. */
 export function MockPantallas() {
   return (
-    <Marco>
-      {/* Dashboard: el estado de ahora. */}
-      <g className="motion-safe:animate-mock-turno">
-        <rect x="18" y="16" width="136" height="100" rx="8" className="fill-superficie stroke-linea" strokeWidth="1" />
-        <Etiqueta x={30} y={34}>Dashboard</Etiqueta>
-        <Etiqueta x={30} y={46} tenue>¿Cómo está hoy?</Etiqueta>
-        {[0, 1, 2].map((i) => (
-          <g key={i}>
-            <rect x="30" y={56 + i * 18} width="88" height="12" rx="4" className="fill-lienzo" />
-            <circle
-              cx="128"
-              cy={62 + i * 18}
-              r="4"
-              className={i === 0 ? 'fill-vencido' : i === 1 ? 'fill-por-vencer' : 'fill-vigente'}
-            />
-          </g>
-        ))}
-      </g>
-      {/* Reportes: lo que ya pasó. */}
-      <g className="motion-safe:animate-mock-turno" style={{ animationDelay: '2s' }}>
-        <rect x="166" y="16" width="136" height="100" rx="8" className="fill-superficie stroke-linea" strokeWidth="1" />
-        <Etiqueta x={178} y={34}>Reportes</Etiqueta>
-        <Etiqueta x={178} y={46} tenue>¿Qué pasó?</Etiqueta>
-        {[0, 1, 2].map((i) => (
-          <g key={i}>
-            <rect x="178" y={56 + i * 18} width="42" height="12" rx="4" className="fill-lienzo" />
-            <rect x="226" y={56 + i * 18} width="30" height="12" rx="4" className="fill-lienzo" />
-            <rect x="262" y={56 + i * 18} width="28" height="12" rx="4" className="fill-lienzo" />
-          </g>
-        ))}
-      </g>
-    </Marco>
+    <Escena>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-2xl border border-linea bg-superficie p-2.5 shadow-sm motion-safe:animate-mock-alternar">
+          <p className="text-[10px] font-semibold text-tinta">Dashboard</p>
+          <p className="text-[8px] text-acero">¿Cómo está hoy?</p>
+          {(
+            [
+              ['bg-[#E7F6EC]', 'text-[#15803D]', 'Al día'],
+              ['bg-[#FDF1DC]', 'text-[#B45309]', 'Por vencer'],
+              ['bg-[#FCE7E7]', 'text-[#C81E1E]', 'Vencido'],
+            ] as const
+          ).map(([bg, color, label]) => (
+            <div key={label} className="mt-1.5 flex items-center gap-1.5 rounded-lg border border-linea p-1">
+              <span className="size-4 shrink-0 rounded-md bg-azul/10" />
+              <span className="h-1 min-w-0 flex-1 rounded bg-lienzo" />
+              <span className={`shrink-0 rounded-full px-1 py-px text-[6px] font-semibold ${bg} ${color}`}>{label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-2xl border border-linea bg-superficie p-2.5 shadow-sm motion-safe:animate-mock-alternar" style={{ animationDelay: '3s' }}>
+          <p className="text-[10px] font-semibold text-tinta">Reportes</p>
+          <p className="text-[8px] text-acero">¿Qué pasó?</p>
+          <div className="mt-1.5 grid grid-cols-3 gap-1">
+            {['Quién', 'Cuándo', 'Km'].map((h) => (
+              <span key={h} className="text-[6px] font-medium text-acero">{h}</span>
+            ))}
+            {Array.from({ length: 9 }, (_, i) => (
+              <span key={i} className="h-1.5 rounded bg-lienzo" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </Escena>
   )
 }

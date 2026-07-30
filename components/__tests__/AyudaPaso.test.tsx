@@ -7,10 +7,10 @@ import type { PasoId } from '@/lib/onboarding/pasos'
 const IDS = Object.keys(AYUDA) as PasoId[]
 
 describe('AyudaPaso', () => {
-  it('los nueve pasos renderizan sin explotar y con su mockup', () => {
+  it('los nueve pasos renderizan sin explotar y con su mini-escena', () => {
     for (const id of IDS) {
       const { unmount, container } = render(<AyudaPaso pasoId={id} />)
-      expect(container.querySelector('svg')).toBeTruthy()
+      expect(container.querySelector('[data-mock]')).toBeTruthy()
       unmount()
     }
   })
@@ -21,15 +21,18 @@ describe('AyudaPaso', () => {
     expect(items).toEqual(AYUDA.documentos.comoHacerlo)
   })
 
-  it('el mockup de formulario dibuja el campo y el botón del paso', () => {
+  it('la escena de formulario muestra el campo, el botón y el texto de ejemplo del paso', () => {
     render(<AyudaPaso pasoId="equipo" />)
     expect(screen.getByText(AYUDA.equipo.campo!)).toBeTruthy()
     expect(screen.getByText(AYUDA.equipo.boton!)).toBeTruthy()
+    expect(screen.getByText(AYUDA.equipo.ejemplo!)).toBeTruthy()
   })
 
-  it('el mockup es decorativo: lo que enseña ya está escrito al lado', () => {
+  it('la escena es decorativa y no clickeable: lo que enseña ya está escrito al lado', () => {
     const { container } = render(<AyudaPaso pasoId="chip" />)
-    expect(container.querySelector('svg')!.getAttribute('aria-hidden')).toBe('true')
+    const escena = container.querySelector('[data-mock]')!
+    expect(escena.getAttribute('aria-hidden')).toBe('true')
+    expect(escena.getAttribute('class')).toContain('pointer-events-none')
   })
 
   it('todo el movimiento va con motion-safe, para respetar prefers-reduced-motion', () => {

@@ -21,61 +21,89 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Mockups animados del onboarding. Se aplican con la variante `motion-safe:`,
-     así que con `prefers-reduced-motion` no corren y queda la ilustración fija.
-     Por eso cada keyframe TERMINA en el estado base del elemento: el mockup
-     estático tiene que leerse igual de bien que el animado. */
-  --animate-mock-escribir: mock-escribir 4s ease-in-out infinite;
-  --animate-mock-pulso: mock-pulso 4s ease-in-out infinite;
-  --animate-mock-entrar: mock-entrar 4s ease-in-out infinite;
-  --animate-mock-foto: mock-foto 4s ease-in-out infinite;
-  --animate-mock-acercar: mock-acercar 4s ease-in-out infinite;
-  --animate-mock-onda: mock-onda 4s ease-in-out infinite;
-  --animate-mock-turno: mock-turno 4s ease-in-out infinite;
+  /* Mini-escenas animadas del onboarding: recrean la UI real en miniatura.
+     Todo va con la variante `motion-safe:`, así que con `prefers-reduced-motion`
+     no corre nada. Por eso cada keyframe TERMINA en el estado base del elemento
+     (o el estado base ES el final): la escena estática se lee igual de bien.
+     Ciclo común de 5s para que las piezas de una escena queden coreografiadas. */
+  --animate-mock-tipeo: mock-tipeo 5s ease-out infinite;
+  --animate-mock-caret: mock-caret 1s steps(1) infinite;
+  --animate-mock-toque: mock-toque 5s ease-in-out infinite;
+  --animate-mock-presion: mock-presion 5s ease-in-out infinite;
+  --animate-mock-velo: mock-velo 5s ease-in-out infinite;
+  --animate-mock-pop: mock-pop 5s ease-in-out infinite;
+  --animate-mock-item: mock-item 5s ease-out infinite;
+  --animate-mock-acercar: mock-acercar 5s ease-in-out infinite;
+  --animate-mock-ondas: mock-ondas 2.2s ease-in-out infinite;
+  --animate-mock-alternar: mock-alternar 6s ease-in-out infinite;
 }
 
-/* El texto "escribiéndose" dentro de un campo: crece de izquierda a derecha. */
-@keyframes mock-escribir {
-  0%, 8% { transform: scaleX(0); }
-  40%, 100% { transform: scaleX(1); }
+/* El texto que se escribe en un campo. El elemento no declara max-width base,
+   así que estático (reduced-motion) se ve el texto completo. */
+@keyframes mock-tipeo {
+  0%, 12% { max-width: 0; }
+  48%, 100% { max-width: 100%; }
 }
 
-/* El botón que recibe el clic después de que el campo se llenó. */
-@keyframes mock-pulso {
-  0%, 50% { opacity: 1; }
-  62% { opacity: 0.55; }
-  74%, 100% { opacity: 1; }
+/* El cursor de texto parpadeando al final de lo escrito. */
+@keyframes mock-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
 }
 
-/* Un panel que aparece sobre la pantalla (el modal de alta de vehículo). */
-@keyframes mock-entrar {
-  0%, 15% { opacity: 0; transform: translateY(8px) scale(0.96); }
-  45%, 100% { opacity: 1; transform: translateY(0) scale(1); }
+/* El punto de "tap" que viaja del campo al botón y lo presiona. Las posiciones
+   vienen por variables (--mock-x0/y0 → --mock-x1/y1) porque cada escena tiene
+   su propia geometría. El estado base del elemento es la posición FINAL, así
+   que estático queda apoyado sobre el botón: "toca aquí". */
+@keyframes mock-toque {
+  0%, 30% { opacity: 0; transform: translate(var(--mock-x0), var(--mock-y0)) scale(1); }
+  40% { opacity: 1; transform: translate(var(--mock-x0), var(--mock-y0)) scale(1); }
+  62% { opacity: 1; transform: translate(var(--mock-x1), var(--mock-y1)) scale(1); }
+  70% { transform: translate(var(--mock-x1), var(--mock-y1)) scale(0.7); }
+  78%, 100% { opacity: 1; transform: translate(var(--mock-x1), var(--mock-y1)) scale(1); }
 }
 
-/* Cada foto que se suma a la lista de páginas del documento. */
-@keyframes mock-foto {
-  0%, 10% { opacity: 0; transform: translateY(6px); }
-  35%, 100% { opacity: 1; transform: translateY(0); }
+/* El botón que recibe la presión, sincronizado con el toque (70%). */
+@keyframes mock-presion {
+  0%, 68% { transform: scale(1); }
+  72% { transform: scale(0.94); }
+  78%, 100% { transform: scale(1); }
 }
 
-/* El celular acercándose al chip del llavero. */
+/* El fondo que se atenúa cuando aparece el modal encima. */
+@keyframes mock-velo {
+  0%, 30% { opacity: 0; }
+  45%, 100% { opacity: 1; }
+}
+
+/* El modal de alta que aparece sobre el dashboard. */
+@keyframes mock-pop {
+  0%, 32% { opacity: 0; transform: translateY(10px) scale(0.95); }
+  48%, 100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Cada página/fila que se suma a una lista (los delays escalonan). */
+@keyframes mock-item {
+  0%, 10% { opacity: 0; transform: translateY(8px) scale(0.9); }
+  30%, 100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* El celular que se acerca al chip del llavero. */
 @keyframes mock-acercar {
-  0%, 12% { transform: translateX(26px); }
-  50%, 100% { transform: translateX(0); }
+  0%, 15% { transform: translateX(34px); opacity: 0.6; }
+  55%, 100% { transform: translateX(0); opacity: 1; }
 }
 
-/* Las ondas NFC que salen del chip cuando el celular ya está cerca. */
-@keyframes mock-onda {
-  0%, 45% { opacity: 0; transform: scale(0.5); }
-  70% { opacity: 0.9; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.35); }
+/* Las ondas NFC entre el chip y el celular. Base = visibles. */
+@keyframes mock-ondas {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
 }
 
-/* La alternancia de foco entre las dos pantallas (Dashboard y Reportes). */
-@keyframes mock-turno {
-  0%, 40% { opacity: 1; }
-  55%, 90% { opacity: 0.25; }
+/* El foco que alterna entre las dos pantallas (Dashboard ↔ Reportes). */
+@keyframes mock-alternar {
+  0%, 42% { opacity: 1; }
+  52%, 90% { opacity: 0.35; }
   100% { opacity: 1; }
 }
 

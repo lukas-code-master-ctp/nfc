@@ -37,7 +37,7 @@ describe('contenido', () => {
     }
   })
 
-  it('el mockup de formulario siempre trae qué campo y qué botón dibujar', () => {
+  it('el mockup de formulario siempre trae qué campo, qué botón y qué texto escribir', () => {
     const conFormulario = TODOS.filter((p) => ayudaDe(p.id).mock === 'formulario')
     // Si esto queda en cero, el mockup reutilizable dejó de usarse y algo se rompió.
     expect(conFormulario.length).toBeGreaterThan(0)
@@ -45,15 +45,18 @@ describe('contenido', () => {
       const a = ayudaDe(p.id)
       expect(a.campo && a.campo.trim().length).toBeTruthy()
       expect(a.boton && a.boton.trim().length).toBeTruthy()
+      // Sin ejemplo, la escena escribe un texto vacío: un campo que "tipea" nada.
+      expect(a.ejemplo && a.ejemplo.trim().length).toBeTruthy()
     }
   })
 
-  it('los mockups que no son formulario no traen campo ni botón: no los dibujan', () => {
+  it('los mockups que no son formulario no traen campo, botón ni ejemplo: no los dibujan', () => {
     for (const p of TODOS) {
       const a = ayudaDe(p.id)
       if (a.mock === 'formulario') continue
       expect(a.campo).toBeUndefined()
       expect(a.boton).toBeUndefined()
+      expect(a.ejemplo).toBeUndefined()
     }
   })
 
