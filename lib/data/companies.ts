@@ -49,16 +49,24 @@ export async function saveCompany(
   await adminDb.collection(COL).doc(companyId).set(data, { merge: true })
 }
 
+/** Qué hizo `ensureProvisioned`. Lo consume `POST /api/session` para decidir
+ *  si corresponde el correo de bienvenida. */
+export type ResultadoProvision = 'ya_estaba' | 'invitado' | 'creada'
+
 /**
  * Provisiona al usuario en su primer login: crea su empresa (o reutiliza una
  * ya existente a su nombre) y su doc en `users/{uid}` con companyId + role.
  * Idempotente: si el usuario ya tiene companyId, no hace nada (usuario
  * migrado o ya provisionado en un login anterior).
+ *
+ * Devuelve cuál de los tres caminos tomó en vez de `void`: el correo de
+ * bienvenida se manda desde la ruta y no desde acá, para que la capa de datos
+ * no sepa de correos y para que ambos lados se puedan probar por separado.
  */
-export async function ensureProvisioned(uid: string, email: string): Promise<void> {
+export async function ensureProvisioned(uid: string, email: string): Promise<ResultadoProvision> {
   const userRef = adminDb.collection('users').doc(uid)
   const userDoc = await userRef.get()
-  if (userDoc.exists && userDoc.data()?.companyId) return
+  if (userDoc.exists && userDoc.data()?.companyId) return 'ya_estaba'
 
   // ¿Fue invitado? Unirlo a esa empresa con su rol en vez de crear una propia.
   const invite = email ? await findPendingInvitationByEmail(email) : null
@@ -70,7 +78,9 @@ export async function ensureProvisioned(uid: string, email: string): Promise<voi
     }
     await userRef.set(patch, { merge: true })
     await markInvitationAccepted(invite.id, uid)
-    return
+    // Sin bienvenida: ya recibió el correo de invitación, y los pasos que
+    // enumera la bienvenida son de quien administra su propia flota.
+    return 'invitado'
   }
 
   let companyId: string
@@ -87,6 +97,9 @@ export async function ensureProvisioned(uid: string, email: string): Promise<voi
     patch.createdAt = new Date().toISOString()
   }
   await userRef.set(patch, { merge: true })
+  // Empresa reutilizada (`!existing.empty`) también cuenta como cuenta nueva:
+  // el usuario no tenía `users/{uid}` con companyId, así que es su primer login.
+  return 'creada'
 }
 
 /**

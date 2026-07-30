@@ -37,7 +37,7 @@ beforeEach(() => {
 describe('ensureProvisioned', () => {
   it('no hace nada si el usuario ya tiene companyId', async () => {
     userGet.mockResolvedValue({ exists: true, data: () => ({ companyId: 'c1' }) })
-    await ensureProvisioned('u1', 'a@b.cl')
+    expect(await ensureProvisioned('u1', 'a@b.cl')).toBe('ya_estaba')
     expect(userSet).not.toHaveBeenCalled()
     expect(findPending).not.toHaveBeenCalled()
   })
@@ -45,7 +45,7 @@ describe('ensureProvisioned', () => {
   it('une al usuario a la empresa de la invitación pendiente', async () => {
     userGet.mockResolvedValue({ exists: false, data: () => undefined })
     findPending.mockResolvedValue({ id: 'i1', companyId: 'cX', role: 'editor' })
-    await ensureProvisioned('u2', 'nuevo@b.cl')
+    expect(await ensureProvisioned('u2', 'nuevo@b.cl')).toBe('invitado')
     expect(userSet).toHaveBeenCalledWith(
       expect.objectContaining({ companyId: 'cX', role: 'editor', email: 'nuevo@b.cl' }),
       { merge: true },
@@ -59,12 +59,26 @@ describe('ensureProvisioned', () => {
     findPending.mockResolvedValue(null)
     companyWhereGet.mockResolvedValue({ empty: true, docs: [] })
     companyAdd.mockResolvedValue({ id: 'cNueva' })
-    await ensureProvisioned('u3', 'solo@b.cl')
+    expect(await ensureProvisioned('u3', 'solo@b.cl')).toBe('creada')
     expect(companyAdd).toHaveBeenCalled()
     expect(userSet).toHaveBeenCalledWith(
       expect.objectContaining({ companyId: 'cNueva', role: 'admin' }),
       { merge: true },
     )
     expect(markAccepted).not.toHaveBeenCalled()
+  })
+
+  it('reutiliza una empresa ya creada a su nombre y sigue siendo cuenta nueva', async () => {
+    // Sin users/{uid} con companyId es su primer login, aunque la empresa ya
+    // exista: corresponde bienvenida igual.
+    userGet.mockResolvedValue({ exists: false, data: () => undefined })
+    findPending.mockResolvedValue(null)
+    companyWhereGet.mockResolvedValue({ empty: false, docs: [{ id: 'cVieja' }] })
+    expect(await ensureProvisioned('u4', 'otro@b.cl')).toBe('creada')
+    expect(companyAdd).not.toHaveBeenCalled()
+    expect(userSet).toHaveBeenCalledWith(
+      expect.objectContaining({ companyId: 'cVieja', role: 'admin' }),
+      { merge: true },
+    )
   })
 })

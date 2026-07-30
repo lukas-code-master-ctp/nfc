@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { after } from 'next/server'
 import { SESSION_COOKIE } from '@/lib/auth/session'
 import { verifyIdToken } from '@/lib/firebase/admin'
 import { ensureProvisioned } from '@/lib/data/companies'
+import { sendBienvenidaEmail } from '@/lib/email/resend'
+
+// El `after()` de la bienvenida corre después de responder, pero sigue contando
+// contra el límite de ejecución: por eso el tope va explícito, como en las rutas
+// de tomar/entregar.
+export const maxDuration = 30
 
 export async function POST(req: NextRequest) {
   const { idToken } = await req.json()
@@ -11,8 +18,23 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'invalid token' }, { status: 401 })
   }
+  const email = decoded.email ?? ''
   // Provisiona al usuario (empresa + rol) si es su primer login.
-  await ensureProvisioned(decoded.uid, decoded.email ?? '')
+  const provision = await ensureProvisioned(decoded.uid, email)
+
+  // Bienvenida solo cuando la cuenta se acaba de crear. Va en `after()` para no
+  // sumarle la latencia de Resend al primer login —el peor momento para ir
+  // lento— y es best-effort: un correo caído no puede impedir entrar.
+  if (provision === 'creada' && email) {
+    after(async () => {
+      try {
+        await sendBienvenidaEmail(email)
+      } catch (e) {
+        console.error('correo de bienvenida', e)
+      }
+    })
+  }
+
   const res = NextResponse.json({ ok: true })
   res.cookies.set(SESSION_COOKIE, idToken, {
     httpOnly: true,

@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { reminderSubject, reminderHtml } from '@/lib/email/reminderEmail'
 import { invitationSubject, invitationHtml } from '@/lib/email/invitationEmail'
+import { bienvenidaSubject, bienvenidaHtml } from '@/lib/email/bienvenidaEmail'
 import { billingRequestSubject, billingRequestHtml } from '@/lib/email/billingEmail'
 import { danoSubject, danoHtml } from '@/lib/email/danoEmail'
 import { incidenciaSubject, incidenciaHtml } from '@/lib/email/incidenciaEmail'
@@ -17,6 +18,15 @@ let _resend: Resend | undefined
 function getResend() {
   _resend ??= new Resend(process.env.RESEND_API_KEY)
   return _resend
+}
+
+export async function sendBienvenidaEmail(to: string): Promise<void> {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM!,
+    to,
+    subject: bienvenidaSubject(),
+    html: bienvenidaHtml(),
+  })
 }
 
 export async function sendReminderEmail(
