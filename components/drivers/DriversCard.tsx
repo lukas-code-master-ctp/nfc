@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { parseImportacion } from '@/lib/drivers/importar'
+import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
 
 interface Driver { id: string; nombre: string; rut: string | null; activo: boolean; pin: string | null }
 
@@ -25,6 +26,7 @@ function OjoIcon({ tachado }: { tachado: boolean }) {
 }
 
 export default function DriversCard() {
+  const avisarPaso = useAvisoPaso()
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [loading, setLoading] = useState(true)
   const [nombre, setNombre] = useState('')
@@ -56,7 +58,11 @@ export default function DriversCard() {
       body: JSON.stringify({ nombre, rut: rut || undefined, pin }),
     })
     setBusy(false)
-    if (res.ok) { setNombre(''); setRut(''); setPin(''); load() }
+    if (res.ok) {
+      // Primer conductor del padrón: ahí se completa el paso.
+      if (drivers.length === 0) avisarPaso('conductores')
+      setNombre(''); setRut(''); setPin(''); load()
+    }
     else setError((await res.json().catch(() => ({}))).error ?? 'No se pudo agregar.')
   }
 

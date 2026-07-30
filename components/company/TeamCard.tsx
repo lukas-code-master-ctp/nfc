@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
 
 type Role = 'admin' | 'editor' | 'viewer'
 const ROLE_LABELS: Record<Role, string> = { admin: 'Administrador', editor: 'Editor', viewer: 'Visor' }
@@ -14,6 +15,7 @@ function diasRestantes(expiresAt: string): number {
 }
 
 export default function TeamCard({ currentUid }: { currentUid: string }) {
+  const avisarPaso = useAvisoPaso()
   const [members, setMembers] = useState<Member[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,6 +49,9 @@ export default function TeamCard({ currentUid }: { currentUid: string }) {
     })
     setBusy(false)
     if (res.ok) {
+      // El paso se cumple con una invitación pendiente, sin esperar a que la
+      // acepten (ver `pasosDe`): por eso se avisa acá y no al aceptarla.
+      if (invitations.length === 0 && members.length < 2) avisarPaso('equipo')
       const data = await res.json()
       setLastLink(data.acceptUrl)
       setEmail('')

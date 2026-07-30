@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CompanyData } from '@/lib/types'
+import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
 
 const FIELDS: { key: keyof CompanyData; label: string; placeholder: string }[] = [
   { key: 'razonSocial', label: 'Razón social', placeholder: 'Transportes Ejemplo SpA' },
@@ -13,6 +14,7 @@ const FIELDS: { key: keyof CompanyData; label: string; placeholder: string }[] =
 
 export default function CompanyCard({ initial }: { initial: CompanyData }) {
   const router = useRouter()
+  const avisarPaso = useAvisoPaso()
   const [company, setCompany] = useState<CompanyData>(initial)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -30,6 +32,9 @@ export default function CompanyCard({ initial }: { initial: CompanyData }) {
     })
     setSaving(false)
     if (res.ok) {
+      // La razón social es la señal del paso (ver `pasosDe`): al llenarla por
+      // primera vez, el paso queda completo.
+      if (!initial.razonSocial.trim() && company.razonSocial.trim()) avisarPaso('empresa')
       setSaved(true)
       router.refresh()
       setTimeout(() => setSaved(false), 2500)

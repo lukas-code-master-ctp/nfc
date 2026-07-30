@@ -2,8 +2,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Categoria } from '@/lib/types'
+import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
 
 export default function CategoriasCard({ initial }: { initial: Categoria[] }) {
+  const avisarPaso = useAvisoPaso()
   const router = useRouter()
   const [cats, setCats] = useState<Categoria[]>(initial)
   const [nueva, setNueva] = useState('')
@@ -34,7 +36,12 @@ export default function CategoriasCard({ initial }: { initial: Categoria[] }) {
       body: JSON.stringify({ categorias: cats.map((c) => ({ id: c.id, nombre: c.nombre.trim() })) }),
     })
     setSaving(false)
-    if (res.ok) { setSaved(true); router.refresh(); setTimeout(() => setSaved(false), 2500) }
+    if (res.ok) {
+      // El paso se completa al pasar de cero categorías a alguna; editarlas
+      // después no vuelve a avisar.
+      if (initial.length === 0 && cats.length > 0) avisarPaso('categorias')
+      setSaved(true); router.refresh(); setTimeout(() => setSaved(false), 2500)
+    }
     else setError('No se pudo guardar.')
   }
 

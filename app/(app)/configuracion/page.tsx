@@ -11,6 +11,8 @@ import PautaMantencionCard from '@/components/company/PautaMantencionCard'
 import TeamCard from '@/components/company/TeamCard'
 import DriversCard from '@/components/drivers/DriversCard'
 import RecuperarGuia from '@/components/onboarding/RecuperarGuia'
+import AvisosOnboarding from '@/components/onboarding/AvisosOnboarding'
+import { debeMostrarTarjeta } from '@/lib/onboarding/pasos'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,9 +22,15 @@ export default async function ConfiguracionPage() {
 
   const company = await getCompany(m.companyId)
   const esAdmin = can(m.role, 'billing:manage')
+  // Cinco de los nueve pasos del onboarding se completan en esta página, y el
+  // progreso solo se deriva en el render del dashboard: sin este aviso, guardar
+  // acá no daba ninguna señal de haber avanzado. Se apaga con el onboarding
+  // terminado u oculto, igual que la tarjeta.
+  const onboardingActivo = debeMostrarTarjeta(company?.onboarding, esAdmin)
   const puedeGestionarConductores = can(m.role, 'driver:manage')
 
   return (
+    <AvisosOnboarding activo={onboardingActivo}>
     <main className="mx-auto max-w-2xl px-4 py-8">
       <BackLink />
       <h1 className="mb-4 mt-5 text-2xl font-bold tracking-tight text-tinta">Configuración</h1>
@@ -85,5 +93,6 @@ export default async function ConfiguracionPage() {
         />
       )}
     </main>
+    </AvisosOnboarding>
   )
 }

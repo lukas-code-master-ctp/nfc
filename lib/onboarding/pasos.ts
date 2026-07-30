@@ -24,6 +24,25 @@ export function esPasoInformativo(id: string): boolean {
 }
 
 /**
+ * El título de cada paso, en un solo lugar.
+ *
+ * Lo consumen `pasosDe` (el checklist) y el toast que avisa al completar un
+ * paso desde otra página: si estuvieran duplicados, el aviso podría nombrar el
+ * paso de una forma y la lista de otra. Hay un test que fija que coincidan.
+ */
+export const TITULOS: Record<PasoId, string> = {
+  vehiculo: 'Agrega tu primer vehículo',
+  documentos: 'Sube sus documentos',
+  chip: 'Vincula el chip NFC',
+  empresa: 'Completa los datos de tu empresa',
+  categorias: 'Crea tus categorías',
+  mantencion: 'Define la pauta de mantención',
+  equipo: 'Suma a tu equipo',
+  conductores: 'Registra a tus conductores',
+  reportes: 'Dashboard y Reportes: en qué se diferencian',
+}
+
+/**
  * Todo lo que hace falta para saber qué pasos están listos. Van inyectadas
  * (y no consultadas acá) para que esta lógica se pruebe sin Firebase.
  */
@@ -69,7 +88,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
   const comunes: Paso[] = [
     {
       id: 'vehiculo',
-      titulo: 'Agrega tu primer vehículo',
+      titulo: TITULOS.vehiculo,
       detalle: 'Con la patente, la marca y el modelo basta para partir.',
       // Respaldo si el paso se renderiza fuera del dashboard: ahí TarjetaProgreso
       // ignora este href y abre el modal de alta directamente.
@@ -79,7 +98,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     },
     {
       id: 'documentos',
-      titulo: 'Sube sus documentos',
+      titulo: TITULOS.documentos,
       detalle: 'Permiso de circulación, revisión técnica y SOAP. Te avisamos por correo antes de que venzan.',
       href: ficha('documentos'),
       listo: s.documentos > 0,
@@ -87,7 +106,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     },
     {
       id: 'chip',
-      titulo: 'Vincula el chip NFC',
+      titulo: TITULOS.chip,
       detalle: 'Va en el llavero del auto: al acercarle un celular se abre la ficha del vehículo con sus documentos.',
       href: ficha('ajustes'),
       listo: visto('chip'),
@@ -101,7 +120,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     ...comunes,
     {
       id: 'empresa',
-      titulo: 'Completa los datos de tu empresa',
+      titulo: TITULOS.empresa,
       detalle: 'Razón social, RUT y giro. Los usamos para la facturación.',
       href: '/configuracion',
       listo: s.razonSocial.trim().length > 0,
@@ -109,7 +128,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     },
     {
       id: 'categorias',
-      titulo: 'Crea tus categorías',
+      titulo: TITULOS.categorias,
       detalle: 'Agrupa la flota como la piensas tú: camionetas, arriendo, reparto.',
       href: '/configuracion#categorias',
       listo: s.categorias > 0,
@@ -117,7 +136,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     },
     {
       id: 'mantencion',
-      titulo: 'Define la pauta de mantención',
+      titulo: TITULOS.mantencion,
       detalle: 'Cada cuántos kilómetros o meses toca mantención. En esa misma página ajustas el aviso de uso prolongado.',
       href: '/configuracion#mantencion',
       listo: s.pautaConfigurada,
@@ -125,7 +144,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     },
     {
       id: 'equipo',
-      titulo: 'Suma a tu equipo',
+      titulo: TITULOS.equipo,
       detalle: 'Invita por correo con rol de Administrador, Editor o Visor. Hasta 5 miembros.',
       href: '/configuracion#equipo',
       listo: s.miembros >= 2 || s.invitacionesPendientes > 0,
@@ -133,7 +152,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     },
     {
       id: 'conductores',
-      titulo: 'Registra a tus conductores',
+      titulo: TITULOS.conductores,
       detalle: 'No necesitan cuenta: entran con un PIN de 4 dígitos para tomar y entregar vehículos.',
       href: '/configuracion#conductores',
       listo: s.conductores > 0,
@@ -141,7 +160,7 @@ export function pasosDe(tipoCuenta: TipoCuenta, s: Senales): Paso[] {
     },
     {
       id: 'reportes',
-      titulo: 'Dashboard y Reportes: en qué se diferencian',
+      titulo: TITULOS.reportes,
       detalle: 'El Dashboard es el estado de hoy: qué vence, qué está en uso, qué tiene daño. Reportes es el historial: quién usó cada vehículo y con qué resultado.',
       href: '/reportes',
       listo: visto('reportes'),

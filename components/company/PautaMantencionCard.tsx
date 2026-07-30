@@ -2,8 +2,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { PautaMantencion } from '@/lib/types'
+import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
 
 export default function PautaMantencionCard({ initial }: { initial: PautaMantencion }) {
+  const avisarPaso = useAvisoPaso()
   const router = useRouter()
   const [cadaKm, setCadaKm] = useState<string>(initial.cadaKm != null ? String(initial.cadaKm) : '')
   const [cadaMeses, setCadaMeses] = useState<string>(initial.cadaMeses != null ? String(initial.cadaMeses) : '')
@@ -24,7 +26,12 @@ export default function PautaMantencionCard({ initial }: { initial: PautaMantenc
       body: JSON.stringify({ pautaMantencion: pauta }),
     })
     setSaving(false)
-    if (res.ok) { setSaved(true); router.refresh(); setTimeout(() => setSaved(false), 2500) }
+    if (res.ok) {
+      const teniaPauta = (initial.cadaKm ?? 0) > 0 || (initial.cadaMeses ?? 0) > 0
+      const tienePauta = Number(cadaKm) > 0 || Number(cadaMeses) > 0
+      if (!teniaPauta && tienePauta) avisarPaso('mantencion')
+      setSaved(true); router.refresh(); setTimeout(() => setSaved(false), 2500)
+    }
     else setError('No se pudo guardar.')
   }
 
