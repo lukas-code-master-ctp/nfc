@@ -10,9 +10,17 @@ export const TABS_FICHA: readonly TabFicha[] = ['documentos', 'vehiculo', 'bitac
  * hash `mantencion` (desde la card del dashboard) abre la pestaña Vehículo y
  * pide scroll al panel de Mantención. Cualquier hash vacío o
  * desconocido cae en Documentos.
+ *
+ * **Se queda con el ÚLTIMO segmento del fragmento**, no con todo: Next deja el
+ * fragmento acumulado al navegar a una ruta que ya estaba en su caché. Medido
+ * en el navegador: yendo a `#ajustes` desde el dashboard, después de haber
+ * visitado `#documentos`, la URL queda en `#documentos#ajustes` y el componente
+ * se remonta con ese valor. Parseando el fragmento entero no calzaba con
+ * ninguna pestaña y caía en Documentos — el paso "Vincula el chip NFC" abría la
+ * sección equivocada.
  */
 export function tabDesdeHash(hash: string): { tab: TabFicha; scrollA: string | null } {
-  const limpio = hash.replace(/^#/, '')
+  const limpio = hash.split('#').filter(Boolean).pop() ?? ''
   if ((TABS_FICHA as readonly string[]).includes(limpio)) {
     return { tab: limpio as TabFicha, scrollA: null }
   }
