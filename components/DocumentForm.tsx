@@ -5,10 +5,20 @@ import { DOCUMENT_TYPE_LABELS, tipoTieneVencimiento, type DocumentType } from '@
 import { textoProgreso, type Pagina, type Progreso } from '@/lib/documentos/paginas'
 import { subirPaginas, ErrorPagina } from '@/lib/documentos/subir'
 import SelectorPaginas from '@/components/documento/SelectorPaginas'
+import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
 
 const TYPES = Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]
 
-export default function DocumentForm({ vehicleId }: { vehicleId: string }) {
+export default function DocumentForm({
+  vehicleId,
+  sinDocumentos = false,
+}: {
+  vehicleId: string
+  /** El vehículo no tiene ningún documento todavía: el próximo completa el paso
+   *  "Sube sus documentos" del onboarding. */
+  sinDocumentos?: boolean
+}) {
+  const avisarPaso = useAvisoPaso()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [tipo, setTipo] = useState<DocumentType>('permiso_circulacion')
@@ -38,6 +48,8 @@ export default function DocumentForm({ vehicleId }: { vehicleId: string }) {
         }),
       })
       if (!create.ok) throw new Error('create')
+      // Primer documento del vehículo: ahí se completa el paso del onboarding.
+      if (sinDocumentos) avisarPaso('documentos')
       setOpen(false)
       setPaginas([]); setFecha(''); setNombre('')
       router.refresh()

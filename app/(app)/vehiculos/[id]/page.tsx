@@ -24,6 +24,8 @@ import DanoActivoPanel from '@/components/vehicle/DanoActivoPanel'
 import ConsumoBencinaPanel from '@/components/vehicle/ConsumoBencinaPanel'
 import VehicleTabs from '@/components/vehicle/VehicleTabs'
 import TransferirVehiculoPanel from '@/components/vehicle/TransferirVehiculoPanel'
+import AvisosOnboarding from '@/components/onboarding/AvisosOnboarding'
+import { debeMostrarTarjeta } from '@/lib/onboarding/pasos'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +42,11 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
 
   const company = await getCompany(m.companyId)
   const categorias = company?.categorias ?? []
+  // El paso "Sube sus documentos" se completa acá, y el progreso solo se deriva
+  // en el render del dashboard: sin este aviso, subir el primer documento no
+  // daba ninguna señal de haber avanzado. No cuesta consultas: `company` y los
+  // documentos ya estaban cargados para el resto de la ficha.
+  const onboardingActivo = debeMostrarTarjeta(company?.onboarding, can(m.role, 'billing:manage'))
 
   const now = new Date()
   const docs = await listDocuments(vehicle.id)
@@ -91,6 +98,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   const publicUrl = `${base}/v/${vehicle.publicToken}`
 
   return (
+    <AvisosOnboarding activo={onboardingActivo}>
     <main className="mx-auto max-w-2xl space-y-6 px-4 py-8">
       <BackLink />
 
@@ -133,7 +141,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         documentos={
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-tinta">Documentos</h2>
-            {canEditDocs && <DocumentForm vehicleId={vehicle.id} />}
+            {canEditDocs && <DocumentForm vehicleId={vehicle.id} sinDocumentos={docs.length === 0} />}
             <DocumentList documents={items} vehicleId={vehicle.id} canEdit={canEditDocs} />
           </section>
         }
@@ -197,5 +205,6 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         }
       />
     </main>
+    </AvisosOnboarding>
   )
 }

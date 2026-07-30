@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { Pagina } from '@/lib/documentos/paginas'
 
 const push = vi.fn()
@@ -13,6 +13,8 @@ vi.mock('@/lib/documentos/subir', async (importOriginal) => ({
 }))
 
 import DocumentForm from '@/components/DocumentForm'
+import AvisosOnboarding from '@/components/onboarding/AvisosOnboarding'
+import { TITULOS } from '@/lib/onboarding/pasos'
 import { ErrorPagina } from '@/lib/documentos/subir'
 
 beforeAll(() => {
@@ -44,6 +46,46 @@ function elegir(archivos: File[]) {
 function abrirFormulario() {
   fireEvent.click(screen.getByRole('button', { name: /agregar documento/i }))
 }
+
+describe('aviso del paso "Sube sus documentos"', () => {
+  const subirYGuardar = async () => {
+    abrirFormulario()
+    elegir([foto('a.jpg')])
+    subirPaginas.mockResolvedValue({ filePath: 'vehicles/v1/doc.jpg' })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(refresh).toHaveBeenCalled())
+  }
+
+  it('avisa al subir el primero del vehículo', async () => {
+    render(
+      <AvisosOnboarding activo>
+        <DocumentForm vehicleId="v1" sinDocumentos />
+      </AvisosOnboarding>,
+    )
+    await subirYGuardar()
+    expect(screen.getByRole('status').textContent).toContain(TITULOS.documentos)
+  })
+
+  it('NO avisa si el vehículo ya tenía documentos: el paso estaba completo', async () => {
+    render(
+      <AvisosOnboarding activo>
+        <DocumentForm vehicleId="v1" sinDocumentos={false} />
+      </AvisosOnboarding>,
+    )
+    await subirYGuardar()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('NO avisa con el onboarding terminado u oculto', async () => {
+    render(
+      <AvisosOnboarding activo={false}>
+        <DocumentForm vehicleId="v1" sinDocumentos />
+      </AvisosOnboarding>,
+    )
+    await subirYGuardar()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+})
 
 describe('DocumentForm', () => {
   it('al cancelar con páginas agregadas, reabrir no deja miniaturas ni contador fantasma (regresión)', () => {
