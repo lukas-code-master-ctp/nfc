@@ -1,3 +1,6 @@
+'use client'
+import { useEffect, useRef, useState } from 'react'
+
 /**
  * Mini-escenas animadas del onboarding: la UI real de TapCar en miniatura,
  * mostrando el gesto que el paso pide.
@@ -20,15 +23,57 @@
  *   coreografiados entre sí por porcentaje del ciclo.
  */
 
+/**
+ * Ancho del lienzo de diseño. Las cinco escenas (y las coordenadas medidas del
+ * punto de tap) están calibradas a este ancho; en paneles más angostos —dentro
+ * de la tarjeta, en un celular, quedan ~180-220px— la escena NO se reacomoda:
+ * se ESCALA completa con transform. Así nada se corta y la calibración vale a
+ * cualquier ancho, porque todo se achica junto.
+ */
+const ANCHO_BASE = 250
+
 function Escena({ children, alto = 'auto' }: { children: React.ReactNode; alto?: string }) {
+  const marco = useRef<HTMLDivElement>(null)
+  const lienzo = useRef<HTMLDivElement>(null)
+  const [medidas, setMedidas] = useState({ escala: 1, altoLienzo: 0 })
+
+  useEffect(() => {
+    const medir = () => {
+      const anchoMarco = marco.current?.clientWidth ?? ANCHO_BASE
+      const altoLienzo = lienzo.current?.offsetHeight ?? 0
+      setMedidas({ escala: Math.min(1, anchoMarco / ANCHO_BASE), altoLienzo })
+    }
+    // La PRIMERA medición va síncrona y no por el observer: los callbacks de
+    // ResizeObserver solo se entregan cuando la pestaña composita frames, así
+    // que en una pestaña oculta (o antes del primer frame) no llegan nunca.
+    // Leer clientWidth funciona siempre. El observer queda solo para cambios
+    // posteriores, como rotar el celular. (jsdom no lo tiene: en tests la
+    // escena queda a escala 1 con la medición síncrona.)
+    medir()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(medir)
+    // El ancho del marco fija la escala; el alto del lienzo fija cuánto ocupa
+    // el marco (un transform no participa del layout, hay que reservarlo).
+    if (marco.current) ro.observe(marco.current)
+    if (lienzo.current) ro.observe(lienzo.current)
+    return () => ro.disconnect()
+  }, [])
+
   return (
     <div
+      ref={marco}
       data-mock
       aria-hidden="true"
-      className="pointer-events-none relative mx-auto w-full max-w-[300px] select-none"
-      style={{ height: alto }}
+      className="pointer-events-none relative mx-auto w-full max-w-[250px] select-none overflow-hidden"
+      style={medidas.altoLienzo ? { height: medidas.altoLienzo * medidas.escala } : undefined}
     >
-      {children}
+      <div
+        ref={lienzo}
+        className="origin-top-left"
+        style={{ width: ANCHO_BASE, height: alto, transform: `scale(${medidas.escala})` }}
+      >
+        {children}
+      </div>
     </div>
   )
 }
