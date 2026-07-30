@@ -34,13 +34,25 @@ function googleErrorMessage(err: unknown): string {
   return 'No se pudo iniciar sesión con Google.'
 }
 
+/** Falla al crear la sesión, con el status para poder diagnosticarla. */
+export class ErrorSesion extends Error {
+  constructor(readonly status: number) {
+    super(`No se pudo crear la sesión (${status})`)
+  }
+}
+
 async function establishSession(user: User) {
   const idToken = await user.getIdToken()
-  await fetch('/api/session', {
+  const res = await fetch('/api/session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken }),
   })
+  // Sin este chequeo, un fallo del servidor pasaba desapercibido: se navegaba
+  // igual al dashboard, el proxy rebotaba al login por falta de cookie y
+  // `loading` quedaba encendido para siempre. Resultado: la pantalla pegada,
+  // sin ningún mensaje. Ahora falla ruidoso y el usuario ve qué pasó.
+  if (!res.ok) throw new ErrorSesion(res.status)
 }
 
 export default function LoginForm({ destino }: { destino?: string }) {
@@ -68,7 +80,7 @@ export default function LoginForm({ destino }: { destino?: string }) {
       const { user } = await signInWithPopup(auth, new GoogleAuthProvider())
       await afterAuth(user)
     } catch (err) {
-      setError(googleErrorMessage(err))
+      setError(err instanceof ErrorSesion ? err.message : googleErrorMessage(err))
       setLoading(false)
     }
   }
@@ -82,8 +94,14 @@ export default function LoginForm({ destino }: { destino?: string }) {
         ? await createUserWithEmailAndPassword(auth, email, password)
         : await signInWithEmailAndPassword(auth, email, password)
       await afterAuth(cred.user)
-    } catch {
-      setError(isRegister ? 'No se pudo crear la cuenta.' : 'Credenciales inválidas.')
+    } catch (err) {
+      // Autenticó bien pero la sesión no se creó: decirle "credenciales
+      // inválidas" lo mandaría a revisar su contraseña, que está correcta.
+      setError(
+        err instanceof ErrorSesion
+          ? err.message
+          : isRegister ? 'No se pudo crear la cuenta.' : 'Credenciales inválidas.',
+      )
       setLoading(false)
     }
   }

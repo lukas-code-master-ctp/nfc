@@ -26,13 +26,21 @@ export async function POST(req: NextRequest) {
   // sumarle la latencia de Resend al primer login —el peor momento para ir
   // lento— y es best-effort: un correo caído no puede impedir entrar.
   if (provision === 'creada' && email) {
-    after(async () => {
-      try {
-        await sendBienvenidaEmail(email)
-      } catch (e) {
-        console.error('correo de bienvenida', e)
-      }
-    })
+    // El try envuelve también la llamada a `after()`, no solo su callback: si
+    // `after()` mismo lanzara, la sesión se caería con un 500 y el usuario
+    // quedaría sin poder entrar — por un correo de cortesía. Nada de este
+    // bloque puede impedir iniciar sesión.
+    try {
+      after(async () => {
+        try {
+          await sendBienvenidaEmail(email)
+        } catch (e) {
+          console.error('correo de bienvenida', e)
+        }
+      })
+    } catch (e) {
+      console.error('programar correo de bienvenida', e)
+    }
   }
 
   const res = NextResponse.json({ ok: true })
