@@ -67,9 +67,11 @@ describe('contraída y desplegada', () => {
 })
 
 describe('ayuda por paso', () => {
-  it('un paso pendiente ofrece ver cómo hacerlo', () => {
+  it('viene desplegada de entrada, sin tener que tocar nada', async () => {
     render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" />)
-    expect(screen.getByRole('button', { name: 'Ver cómo hacerlo: Título documentos' })).toBeTruthy()
+    // Primera línea del cómo hacerlo real del paso `documentos`.
+    await waitFor(() => expect(screen.getByText(/Abre la ficha del vehículo/)).toBeTruthy())
+    expect(screen.getByRole('button', { name: 'Ocultar cómo hacerlo: Título documentos' })).toBeTruthy()
   })
 
   it('un paso ya listo no la ofrece: no hay nada que enseñar', () => {
@@ -78,21 +80,21 @@ describe('ayuda por paso', () => {
     expect(screen.queryByRole('button', { name: /cómo hacerlo: Título vehiculo/ })).toBeNull()
   })
 
-  it('al abrirla aparece el cómo hacerlo del paso, y se puede cerrar', async () => {
+  it('se puede cerrar y volver a abrir', async () => {
     render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" />)
-    fireEvent.click(screen.getByRole('button', { name: 'Ver cómo hacerlo: Título documentos' }))
-    // Primera línea del cómo hacerlo real del paso `documentos`.
     await waitFor(() => expect(screen.getByText(/Abre la ficha del vehículo/)).toBeTruthy())
     fireEvent.click(screen.getByRole('button', { name: 'Ocultar cómo hacerlo: Título documentos' }))
     expect(screen.queryByText(/Abre la ficha del vehículo/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Ver cómo hacerlo: Título documentos' }))
+    await waitFor(() => expect(screen.getByText(/Abre la ficha del vehículo/)).toBeTruthy())
   })
 
-  it('cada paso abre la suya sin cerrar la del otro', async () => {
+  it('cerrar la de un paso no cierra la del otro', async () => {
     render(<TarjetaProgreso pasos={PASOS} tipoCuenta="personal" />)
     desplegar()
-    fireEvent.click(screen.getByRole('button', { name: 'Ver cómo hacerlo: Título documentos' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Ver cómo hacerlo: Título chip' }))
-    await waitFor(() => expect(screen.getByText(/Abre la ficha del vehículo/)).toBeTruthy())
+    await waitFor(() => expect(screen.getByText(/viene en el llavero del auto/)).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar cómo hacerlo: Título documentos' }))
+    expect(screen.queryByText(/Abre la ficha del vehículo/)).toBeNull()
     expect(screen.getByText(/viene en el llavero del auto/)).toBeTruthy()
   })
 })

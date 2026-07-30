@@ -6,9 +6,10 @@ import dynamic from 'next/dynamic'
 import { primerPendiente, type Paso } from '@/lib/onboarding/pasos'
 import type { TipoCuenta } from '@/lib/types'
 
-// Dinámico a propósito: los cinco mockups animados y sus textos no entran al
-// bundle del dashboard hasta que alguien abre un paso, y nunca para quien ya
-// terminó el onboarding.
+// Dinámico a propósito: los cinco mockups animados y sus textos viven en su
+// propio chunk, fuera del bundle del dashboard. Como la ayuda arranca abierta,
+// ese chunk se pide al renderizar la tarjeta —no antes— y nunca para quien ya
+// terminó el onboarding, que no la ve.
 const AyudaPaso = dynamic(() => import('@/components/onboarding/AyudaPaso'))
 
 function CheckIcon({ className }: { className?: string }) {
@@ -50,11 +51,14 @@ export default function TarjetaProgreso({
   // Contraída por defecto: con nueve pasos la lista completa empuja la flota
   // fuera de la pantalla, y el dashboard es para ver la flota.
   const [abierta, setAbierta] = useState(false)
-  // Qué pasos tienen su ayuda desplegada. Independientes entre sí: cerrar uno
-  // al abrir otro sorprende más de lo que ordena.
-  const [conAyuda, setConAyuda] = useState<string[]>([])
+  // La ayuda arranca DESPLEGADA: es lo que enseña el paso, y esconderla detrás
+  // de un clic extra hacía que casi nadie la viera. Por eso el estado guarda
+  // los pasos que el usuario CERRÓ, no los que abrió. Independientes entre sí:
+  // cerrar uno al abrir otro sorprende más de lo que ordena.
+  const [ayudaCerrada, setAyudaCerrada] = useState<string[]>([])
+  const ayudaAbierta = (id: string) => !ayudaCerrada.includes(id)
   const alternarAyuda = (id: string) =>
-    setConAyuda((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
+    setAyudaCerrada((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
   const hechos = pasos.filter((p) => p.listo).length
   const pendiente = primerPendiente(pasos)
   // Sin pendientes no hay nada que contraer (render transitorio antes de que
@@ -154,17 +158,17 @@ export default function TarjetaProgreso({
                     <button
                       type="button"
                       onClick={() => alternarAyuda(p.id)}
-                      aria-expanded={conAyuda.includes(p.id)}
+                      aria-expanded={ayudaAbierta(p.id)}
                       className="-mt-0.5 shrink-0 cursor-pointer rounded p-0.5 text-acero hover:bg-lienzo"
                     >
                       <span className="sr-only">
-                        {conAyuda.includes(p.id) ? `Ocultar cómo hacerlo: ${p.titulo}` : `Ver cómo hacerlo: ${p.titulo}`}
+                        {ayudaAbierta(p.id) ? `Ocultar cómo hacerlo: ${p.titulo}` : `Ver cómo hacerlo: ${p.titulo}`}
                       </span>
-                      <ChevronIcon className={`size-4 transition-transform ${conAyuda.includes(p.id) ? 'rotate-180' : ''}`} />
+                      <ChevronIcon className={`size-4 transition-transform ${ayudaAbierta(p.id) ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
                   <p className="mt-0.5 text-sm text-acero">{p.detalle}</p>
-                  {conAyuda.includes(p.id) && <AyudaPaso pasoId={p.id} />}
+                  {ayudaAbierta(p.id) && <AyudaPaso pasoId={p.id} />}
                   {p.informativo && (
                     <button
                       type="button"
