@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "TapCar — Tu flota a un Tap",
   description: "Opera tu flota completa con un toque: documentos al día, quién usa cada vehículo y el estado de toda tu flota. Acerca el teléfono al chip NFC y listo.",
+  // El nombre del acceso directo en la pantalla de inicio del iPhone. Sin esto,
+  // iOS propone el `title` completo y lo trunca a un puñado de caracteres.
+  // (El ícono lo aporta `app/apple-icon.png`; ver scripts/generar-apple-icon.mjs.)
+  appleWebApp: { title: "TapCar", capable: false },
 };
 
 export default function RootLayout({
