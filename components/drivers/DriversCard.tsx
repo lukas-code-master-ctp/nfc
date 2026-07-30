@@ -127,12 +127,17 @@ export default function DriversCard() {
           <ul className="mt-4 space-y-2">
             {drivers.map((d) => (
               <li key={d.id} className="rounded-lg border border-linea px-3 py-2.5">
-                <div className="flex items-center justify-between gap-3">
+                {/* Apila en móvil: el nombre, el PIN y las cuatro acciones no
+                    caben en un renglón de 375px, y sin apilar los textos se
+                    montaban unos sobre otros. `min-w-0` + `shrink-0` para que
+                    el nombre largo se recorte en vez de empujar las acciones. */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-tinta">{d.nombre} {!d.activo && <span className="text-xs text-acero">(inactivo)</span>}</p>
-                    {d.rut && <span className="text-xs text-acero">{d.rut}</span>}
+                    {/* `block truncate`: un RUT de dígitos puros no tiene dónde cortar, y como <span> sin recorte sangraba sobre las acciones (medido: 43px). */}
+                    {d.rut && <span className="block truncate text-xs text-acero">{d.rut}</span>}
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm sm:shrink-0 sm:gap-2">
                     <span className="flex items-center gap-1 font-mono text-sm text-tinta">
                       {d.pin ? (pinVisibleDe === d.id ? d.pin : '••••') : <span title="PIN asignado antes de este cambio; actualízalo para verlo" className="text-acero">—</span>}
                       {d.pin && (

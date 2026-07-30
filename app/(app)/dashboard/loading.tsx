@@ -1,14 +1,25 @@
 import { Bloque, Linea } from '@/components/skeleton/Skeleton'
 
+/**
+ * Réplica de `VehicleCard`. Copia su estructura responsive, no solo su aspecto:
+ * en móvil la tarjeta real APILA el bloque de texto sobre la fila de badges
+ * (`flex-col … sm:flex-row`), así que una fantasma en una sola fila mide 78px
+ * contra los 108px de la real — 30px por tarjeta, 180px de salto con seis.
+ * Alturas medidas en el navegador: texto 24px + 20px, badges 24px, gap 6px.
+ */
 function TarjetaFantasma() {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
       <Bloque className="size-11 shrink-0" />
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <Linea className="w-40" />
-        <Linea className="w-24" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="min-w-0">
+          {/* Los dos <p> reales: base (24px) y text-sm (20px). */}
+          <div className="flex h-6 items-center"><Linea className="w-40" /></div>
+          <div className="flex h-5 items-center"><Linea className="w-24" /></div>
+        </div>
+        {/* La fila de badges: 24px de alto, a la izquierda en móvil como la real. */}
+        <Bloque className="h-6 w-24 shrink-0 rounded-full sm:w-20" />
       </div>
-      <Bloque className="h-6 w-20 shrink-0 rounded-full" />
     </div>
   )
 }
