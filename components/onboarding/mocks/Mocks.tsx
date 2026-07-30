@@ -230,19 +230,38 @@ export function MockChip() {
       {/* overflow-hidden: el celular parte 34px a la derecha (mock-acercar) y
           sin el recorte asoma fuera del panel mientras se desliza (medido). */}
       <div className="absolute inset-0 flex items-center justify-center gap-4 overflow-hidden">
-        {/* El llavero: anilla + la placa TapCar. */}
-        <div className="flex flex-col items-center">
-          <span className="size-6 rounded-full border-[3px] border-acero/60" />
-          <span className="-mt-0.5 h-2.5 w-1 rounded-b bg-acero/60" />
-          <div className="w-[68px] rounded-xl bg-azul px-2 py-3 text-center shadow-md">
-            <span className="text-[10px] font-semibold tracking-tight text-white">TapCar</span>
-            <div className="mx-auto mt-1 flex w-fit items-end gap-[3px]">
-              <span className="h-1.5 w-0.5 rounded bg-white/80" />
-              <span className="h-2.5 w-0.5 rounded bg-white/80" />
-              <span className="h-3.5 w-0.5 rounded bg-white/80" />
-            </div>
-          </div>
-        </div>
+        {/* El tag NFC real: llavero con forma de gota, argolla, dos ranuras y
+            la etiqueta circular con el auto + ondas (dibujado desde la foto
+            del producto; el auto es el mismo trazado de VehicleCard). */}
+        <svg viewBox="0 0 64 88" className="h-[88px] w-16 shrink-0" aria-hidden="true">
+          {/* Argolla, pasando por el ojal. */}
+          <circle cx="23" cy="10" r="8.5" className="fill-none stroke-acero/70" strokeWidth="2.5" />
+          {/* Cuerpo en gota. */}
+          <path
+            d="M32 4 C44 7 56 22 56 44 A24 24 0 1 1 8 44 C8 22 20 7 32 4 Z"
+            className="fill-azul-press"
+          />
+          {/* Ojal por donde pasa la argolla. */}
+          <circle cx="32" cy="15" r="4.5" className="fill-lienzo" />
+          {/* Las dos ranuras de los hombros. */}
+          <ellipse cx="18" cy="29" rx="6.5" ry="2.4" transform="rotate(-33 18 29)" className="fill-tinta/30" />
+          <ellipse cx="46" cy="29" rx="6.5" ry="2.4" transform="rotate(33 46 29)" className="fill-tinta/30" />
+          {/* La etiqueta circular. */}
+          <circle cx="32" cy="47" r="17.5" className="fill-azul" />
+          {/* El auto de la marca (mismo trazado que VehicleCard), en blanco. */}
+          <g transform="translate(23.5 33) scale(0.72)" className="fill-none stroke-white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+            <circle cx="7" cy="17" r="2" />
+            <path d="M9 17h6" />
+            <circle cx="17" cy="17" r="2" />
+          </g>
+          {/* Las ondas NFC saliendo del techo, dentro de la etiqueta. */}
+          <path d="M37.5 36.5 a3.5 3.5 0 0 1 3 3.2" className="fill-none stroke-white" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M38.8 33.6 a6.3 6.3 0 0 1 5.4 5.8" className="fill-none stroke-white/70" strokeWidth="1.5" strokeLinecap="round" />
+          <text x="32" y="57" textAnchor="middle" className="fill-white" style={{ fontSize: 6.5, fontWeight: 600, letterSpacing: '-0.02em' }}>
+            TapCar
+          </text>
+        </svg>
 
         {/* Las ondas NFC entre el chip y el celular. */}
         <div className="flex items-center gap-1">
