@@ -81,7 +81,10 @@ export function MockFormulario({ campo, boton, ejemplo }: { campo: string; boton
           {boton}
         </span>
       </div>
-      <Toque x0={200} y0={44} x1={40} y1={92} />
+      {/* Coordenadas MEDIDAS en el navegador (getBoundingClientRect), no
+          estimadas. Ancladas a la izquierda porque el ancho de la escena varía
+          con el panel (250-300px) y los botones viven a la izquierda. */}
+      <Toque x0={90} y0={48} x1={38} y1={94} />
     </Escena>
   )
 }
@@ -119,7 +122,9 @@ export function MockModal() {
           </span>
         </div>
       </div>
-      <Toque x0={236} y0={8} x1={34} y1={118} />
+      {/* x0 apunta a "+ Nuevo vehículo", que va anclado a la derecha: 205 deja
+          el punto dentro del botón tanto a 250 como a 300px de ancho (medido). */}
+      <Toque x0={205} y0={16} x1={57} y1={114} />
     </Escena>
   )
 }
@@ -177,7 +182,9 @@ export function MockSubida() {
 export function MockChip() {
   return (
     <Escena alto="150px">
-      <div className="absolute inset-0 flex items-center justify-center gap-4">
+      {/* overflow-hidden: el celular parte 34px a la derecha (mock-acercar) y
+          sin el recorte asoma fuera del panel mientras se desliza (medido). */}
+      <div className="absolute inset-0 flex items-center justify-center gap-4 overflow-hidden">
         {/* El llavero: anilla + la placa TapCar. */}
         <div className="flex flex-col items-center">
           <span className="size-6 rounded-full border-[3px] border-acero/60" />
@@ -210,10 +217,12 @@ export function MockChip() {
             <div className="h-[110px] overflow-hidden rounded-[9px] bg-lienzo p-1.5">
               <div className="text-center"><MiniMarca tamano="text-[8px]" /></div>
               <p className="mt-0.5 text-center text-[9px] font-semibold text-tinta">JKLM·34</p>
+              {/* La pantalla mide ~52px útiles: tamaños medidos para que la
+                  pill "Vigente" no quede cortada por el overflow-hidden. */}
               {['SOAP', 'Permiso'].map((doc) => (
-                <div key={doc} className="mt-1 flex items-center justify-between rounded-md border border-linea bg-superficie px-1 py-0.5">
-                  <span className="text-[7px] text-tinta">{doc}</span>
-                  <span className="rounded-full bg-[#E7F6EC] px-1 text-[6px] font-semibold text-[#15803D]">Vigente</span>
+                <div key={doc} className="mt-1 flex items-center justify-between gap-0.5 rounded-md border border-linea bg-superficie px-1 py-0.5">
+                  <span className="min-w-0 truncate text-[6px] text-tinta">{doc}</span>
+                  <span className="shrink-0 rounded-full bg-[#E7F6EC] px-0.5 text-[5px] font-semibold leading-[9px] text-[#15803D]">Vigente</span>
                 </div>
               ))}
             </div>
