@@ -4,6 +4,7 @@ import { can } from '@/lib/auth/roles'
 import { listVehicles, createVehicle } from '@/lib/data/vehicles'
 import { getCompany } from '@/lib/data/companies'
 import { maxVehiculosDe } from '@/lib/plan'
+import { normalizarMarca } from '@/lib/vehicles/marcas'
 
 export async function GET() {
   const m = await getMembership()
@@ -34,7 +35,9 @@ export async function POST(req: NextRequest) {
 
   const vehicle = await createVehicle(m.companyId, m.uid, {
     patente,
-    marca,
+    // En el servidor y no en el cliente: el combobox solo sugiere, y así queda
+    // cubierto también quien cree un vehículo por otra vía.
+    marca: normalizarMarca(marca),
     modelo,
     anio: Number(anio) || 0,
     color: color ?? '',
