@@ -41,3 +41,18 @@ export const adminBucket = lazy<Bucket>(() => getStorage(adminApp()).bucket())
 export async function verifyIdToken(token: string) {
   return getAuth(adminApp()).verifyIdToken(token)
 }
+
+/** Acuña la cookie de sesión. Requiere un ID token vigente; lanza si no lo es. */
+export async function createSessionCookie(idToken: string, expiresIn: number) {
+  return getAuth(adminApp()).createSessionCookie(idToken, { expiresIn })
+}
+
+/**
+ * Verifica la cookie de sesión. **Sin `checkRevoked`** a propósito: esa opción
+ * hace una llamada de red a Firebase en cada verificación, o sea en cada carga
+ * de página. La revocación se comprueba contra Firestore en `getMembership()`,
+ * que ya lee ese documento y por lo tanto no cuesta consultas extra.
+ */
+export async function verifySessionCookie(cookie: string) {
+  return getAuth(adminApp()).verifySessionCookie(cookie)
+}

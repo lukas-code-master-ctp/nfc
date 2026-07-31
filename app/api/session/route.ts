@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { after } from 'next/server'
-import { SESSION_COOKIE } from '@/lib/auth/session'
-import { verifyIdToken } from '@/lib/firebase/admin'
+import { SESSION_COOKIE, SESSION_MAX_AGE_MS } from '@/lib/auth/constants'
+import { verifyIdToken, createSessionCookie } from '@/lib/firebase/admin'
 import { ensureProvisioned } from '@/lib/data/companies'
 import { sendBienvenidaEmail } from '@/lib/email/resend'
 
@@ -43,13 +43,24 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  let sessionCookie: string
+  try {
+    sessionCookie = await createSessionCookie(idToken, SESSION_MAX_AGE_MS)
+  } catch (e) {
+    // Falla ruidosa: `LoginForm` distingue `ErrorSesion` por el status y lo
+    // muestra. Enmascararlo dejaría al usuario en una pantalla colgada sin
+    // ningún diagnóstico, que es el bug que ya se arregló una vez.
+    console.error('createSessionCookie', e)
+    return NextResponse.json({ error: 'session cookie' }, { status: 500 })
+  }
+
   const res = NextResponse.json({ ok: true })
-  res.cookies.set(SESSION_COOKIE, idToken, {
+  res.cookies.set(SESSION_COOKIE, sessionCookie, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60, // 1h (token de Firebase expira en 1h)
+    maxAge: SESSION_MAX_AGE_MS / 1000, // el maxAge de una cookie va en segundos
   })
   return res
 }

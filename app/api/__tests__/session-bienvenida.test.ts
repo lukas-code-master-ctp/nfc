@@ -4,6 +4,7 @@ import { SESSION_COOKIE } from '@/lib/auth/constants'
 
 const mocks = vi.hoisted(() => ({
   verifyIdToken: vi.fn(),
+  createSessionCookie: vi.fn(),
   ensureProvisioned: vi.fn(),
   sendBienvenidaEmail: vi.fn(),
   // `after` de next/server: se ejecuta el callback al toque para poder afirmar
@@ -15,7 +16,10 @@ vi.mock('next/server', async (original) => ({
   ...(await original<typeof import('next/server')>()),
   after: mocks.after,
 }))
-vi.mock('@/lib/firebase/admin', () => ({ verifyIdToken: mocks.verifyIdToken }))
+vi.mock('@/lib/firebase/admin', () => ({
+  verifyIdToken: mocks.verifyIdToken,
+  createSessionCookie: mocks.createSessionCookie,
+}))
 vi.mock('@/lib/data/companies', () => ({ ensureProvisioned: mocks.ensureProvisioned }))
 vi.mock('@/lib/email/resend', () => ({ sendBienvenidaEmail: mocks.sendBienvenidaEmail }))
 
@@ -28,6 +32,7 @@ beforeEach(() => {
   mocks.after.mockImplementation((cb: () => unknown) => { void cb() })
   mocks.sendBienvenidaEmail.mockResolvedValue(undefined)
   mocks.verifyIdToken.mockResolvedValue({ uid: 'u1', email: 'ana@flota.cl' })
+  mocks.createSessionCookie.mockResolvedValue('cookie-de-sesion')
 })
 
 describe('a quién le llega la bienvenida', () => {
@@ -79,7 +84,7 @@ describe('no puede romper el login', () => {
     mocks.sendBienvenidaEmail.mockRejectedValue(new Error('resend caído'))
     const res = await POST(req({ idToken: 'tok' }))
     expect(res.status).toBe(200)
-    expect(res.cookies.get(SESSION_COOKIE)?.value).toBe('tok')
+    expect(res.cookies.get(SESSION_COOKIE)?.value).toBe('cookie-de-sesion')
     err.mockRestore()
   })
 })
