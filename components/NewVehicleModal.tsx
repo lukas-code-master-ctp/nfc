@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import MarcaInput from '@/components/vehicle/MarcaInput'
 
 const EMPTY = { patente: '', marca: '', modelo: '', anio: '', color: '' }
 
@@ -77,13 +78,23 @@ export default function NewVehicleModal({ open, onClose }: { open: boolean; onCl
                 {LABELS[f]}
                 {f === 'color' && <span className="font-normal text-acero/70"> (opcional)</span>}
               </label>
-              <input
-                className={inputCls}
-                placeholder={LABELS[f]}
-                value={form[f]}
-                onChange={(e) => setForm({ ...form, [f]: e.target.value })}
-                required={f !== 'color'}
-              />
+              {f === 'marca' ? (
+                <MarcaInput
+                  className={inputCls}
+                  placeholder={LABELS[f]}
+                  required
+                  value={form.marca}
+                  onChange={(marca) => setForm({ ...form, marca })}
+                />
+              ) : (
+                <input
+                  className={inputCls}
+                  placeholder={LABELS[f]}
+                  value={form[f]}
+                  onChange={(e) => setForm({ ...form, [f]: e.target.value })}
+                  required={f !== 'color'}
+                />
+              )}
             </div>
           ))}
           {error && (
