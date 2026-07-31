@@ -4,6 +4,7 @@ import { getProfile } from '@/lib/data/profile'
 import BackLink from '@/components/BackLink'
 import AccountCard from '@/components/profile/AccountCard'
 import SecurityCard from '@/components/profile/SecurityCard'
+import CerrarSesionesCard from '@/components/profile/CerrarSesionesCard'
 import DangerCard from '@/components/profile/DangerCard'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +20,7 @@ export default async function PerfilPage() {
       <h1 className="text-2xl font-bold tracking-tight text-tinta">Perfil</h1>
       <AccountCard email={profile.email} initialName={profile.displayName} />
       <SecurityCard />
+      <CerrarSesionesCard />
       <DangerCard />
     </main>
   )

@@ -40,6 +40,11 @@ export async function saveProfile(
   await ref.set(data, { merge: true })
 }
 
+/** Corta todas las sesiones abiertas del usuario. Ver `lib/auth/revocacion.ts`. */
+export async function revocarSesiones(uid: string, corteIso: string): Promise<void> {
+  await adminDb.collection(COL).doc(uid).set({ sesionesValidasDesde: corteIso }, { merge: true })
+}
+
 export async function deleteProfile(uid: string): Promise<void> {
   await adminDb.collection(COL).doc(uid).delete()
 }

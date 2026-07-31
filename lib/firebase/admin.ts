@@ -56,3 +56,12 @@ export async function createSessionCookie(idToken: string, expiresIn: number) {
 export async function verifySessionCookie(cookie: string) {
   return getAuth(adminApp()).verifySessionCookie(cookie)
 }
+
+/**
+ * Invalida los refresh tokens del usuario. El cliente del dispositivo perdido
+ * pierde la capacidad de emitir ID tokens nuevos, así que se auto-expulsa en
+ * cuanto necesite refrescar (≤ 1 h).
+ */
+export async function revokeRefreshTokens(uid: string): Promise<void> {
+  await getAuth(adminApp()).revokeRefreshTokens(uid)
+}
