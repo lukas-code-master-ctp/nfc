@@ -59,7 +59,11 @@ function marcarIntentoAutoEntrada() {
   }
 }
 
-function limpiarIntentoAutoEntrada() {
+// Exportada para que `LoginForm` la use tras un login exitoso — ver el
+// comentario en `afterAuth` de `components/LoginForm.tsx` sobre por qué ahí y
+// no acá. No dupliques este `try/catch` ni el nombre de la clave en otro
+// archivo: es la única función que la borra.
+export function limpiarIntentoAutoEntrada() {
   try {
     sessionStorage.removeItem(CLAVE_INTENTO_AUTO_ENTRADA)
   } catch {
@@ -102,14 +106,20 @@ export default function SesionViva({
   const esPrimeraInvocacion = useRef(true)
   const sesionYaEstabaViva = useRef(false)
 
-  // Este es el componente SIN `autoEntrar` (el que vive en el layout de
-  // `(app)`). Si se está renderizando es porque el usuario efectivamente
-  // entró a la app — el intento de auto-entrada (si lo hubo) funcionó — así
-  // que se rehabilita la auto-entrada para la próxima vez que llegue a
-  // `/login` en esta pestaña.
-  useEffect(() => {
-    if (!autoEntrar) limpiarIntentoAutoEntrada()
-  }, [autoEntrar])
+  // OJO: acá NO se limpia `CLAVE_INTENTO_AUTO_ENTRADA`, aunque este sea el
+  // componente SIN `autoEntrar` (el que vive en el layout de `(app)`). Se
+  // intentó así y era el bug: el layout de `(app)` MONTA e HIDRATA durante el
+  // rebote de un usuario sin membresía (`removeMember` borra `users/{uid}`
+  // pero deja vivo el usuario de Firebase Auth), antes de que el `redirect()`
+  // del servidor lo saque. Ese montaje borraba la marca justo cuando hacía
+  // falta, y el bucle de la sección de arriba se reabría en cada vuelta:
+  // login marca → el layout monta y borra → `getMembership()` da null →
+  // `redirect('/login')` → remonta, refs reiniciados, marca ausente → se
+  // repite. Infinito. La marca solo se limpia donde la membresía está
+  // PROBADA: en `afterAuth` de `components/LoginForm.tsx`, después de que
+  // `establishSession` respondió ok (ese POST pasó por `ensureProvisioned`,
+  // así que `users/{uid}` existe con certeza). Ver `limpiarIntentoAutoEntrada`
+  // más arriba, exportada para ese uso.
 
   useEffect(
     () =>

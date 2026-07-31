@@ -19,6 +19,7 @@ vi.mock('firebase/auth', () => ({
 }))
 
 const LoginForm = (await import('@/components/LoginForm')).default
+const { CLAVE_INTENTO_AUTO_ENTRADA } = await import('@/components/auth/SesionViva')
 
 const usuario = { getIdToken: () => Promise.resolve('tok') }
 
@@ -80,5 +81,18 @@ describe('cuando /api/session responde ok', () => {
     render(<LoginForm destino="/transferencias/abc" />)
     fireEvent.click(google())
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/transferencias/abc'))
+  })
+
+  // C1: acá la membresía queda PROBADA (`establishSession` pasó por
+  // `ensureProvisioned`, así que `users/{uid}` existe con certeza). Es el
+  // único lugar que limpia la marca de auto-entrada — el layout de `(app)`
+  // no puede, porque monta durante el rebote de un usuario sin membresía y
+  // borrarla ahí reabre el bucle. Ver `SesionViva.tsx`.
+  it('limpia la marca de auto-entrada tras un login exitoso', async () => {
+    sessionStorage.setItem(CLAVE_INTENTO_AUTO_ENTRADA, '1')
+    render(<LoginForm />)
+    fireEvent.click(google())
+    await waitFor(() => expect(mocks.push).toHaveBeenCalled())
+    expect(sessionStorage.getItem(CLAVE_INTENTO_AUTO_ENTRADA)).toBeNull()
   })
 })

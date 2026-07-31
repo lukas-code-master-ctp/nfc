@@ -146,13 +146,19 @@ describe('el corte del bucle sobrevive a un remontaje (sessionStorage)', () => {
     expect(mocks.replace).not.toHaveBeenCalled()
   })
 
-  // El componente sin `autoEntrar` es el que vive en el layout de `(app)`:
-  // si se está montando es porque el usuario efectivamente entró, así que el
-  // intento anterior (si lo hubo) queda rehabilitado para la próxima vez.
-  it('al montar sin autoEntrar, borra la clave del intento', () => {
+  // Este es el test que cierra la clase entera de bug (C1): el corte del
+  // bucle ya estaba probado, lo que nadie probaba era que otra cosa no lo
+  // borrara. El componente SIN `autoEntrar` vive en el layout de `(app)`, y
+  // ese layout MONTA e HIDRATA durante el rebote de un usuario sin membresía
+  // (`removeMember` borra `users/{uid}` pero deja vivo el usuario de Firebase
+  // Auth) — antes de que el `redirect()` del servidor lo saque. Si este
+  // montaje borrara la marca, el bucle login→dashboard→login se reabriría en
+  // cada vuelta. La marca solo se limpia desde `LoginForm`, con la membresía
+  // probada.
+  it('al montar sin autoEntrar, NO borra la clave del intento', () => {
     sessionStorage.setItem(CLAVE_INTENTO_AUTO_ENTRADA, '1')
     render(<SesionViva />)
-    expect(sessionStorage.getItem(CLAVE_INTENTO_AUTO_ENTRADA)).toBeNull()
+    expect(sessionStorage.getItem(CLAVE_INTENTO_AUTO_ENTRADA)).toBe('1')
   })
 
   // Degradación segura: si el navegador particiona o bloquea sessionStorage

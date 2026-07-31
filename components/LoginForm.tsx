@@ -11,6 +11,7 @@ import {
 import { auth } from '@/lib/firebase/client'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingDots from '@/components/LoadingDots'
+import { limpiarIntentoAutoEntrada } from '@/components/auth/SesionViva'
 
 function codeOf(err: unknown): string {
   return typeof err === 'object' && err && 'code' in err ? String((err as { code: unknown }).code) : ''
@@ -67,6 +68,14 @@ export default function LoginForm({ destino }: { destino?: string }) {
 
   async function afterAuth(user: User) {
     await establishSession(user)
+    // Recién acá la membresía está PROBADA: `establishSession` pasó por
+    // `ensureProvisioned`, así que `users/{uid}` existe con certeza. Es el
+    // único lugar donde se limpia la marca de auto-entrada — el layout de
+    // `(app)` NO puede hacerlo (monta e hidrata durante el rebote de un
+    // usuario sin membresía, antes del `redirect()`, y borrarla ahí reabría
+    // el bucle login→dashboard→login en cada vuelta). Ver el comentario junto
+    // a `limpiarIntentoAutoEntrada` en `SesionViva.tsx`.
+    limpiarIntentoAutoEntrada()
     // `destino` viene del enlace de una transferencia: sin esto, quien se
     // registra desde el correo cae al dashboard y pierde el enlace.
     router.push(destino ?? '/dashboard')
