@@ -2,6 +2,7 @@ import LoginForm from '@/components/LoginForm'
 import InvitationBanner from '@/components/InvitationBanner'
 import TransferenciaBanner from '@/components/transferencias/TransferenciaBanner'
 import { TapCarIsotipo, TapCarWordmark } from '@/components/brand/Logo'
+import SesionViva from '@/components/auth/SesionViva'
 
 export default async function LoginPage({
   searchParams,
@@ -12,6 +13,7 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-lienzo p-4">
+      <SesionViva autoEntrar />
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <TapCarIsotipo className="mx-auto mb-2 size-14" />
