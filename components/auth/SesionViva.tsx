@@ -19,9 +19,19 @@ import { auth } from '@/lib/firebase/client'
  * hacia adelante.
  *
  * `autoEntrar` se usa solo en `/login`: si llegas ahí con una sesión de Firebase
- * viva, te acuña la cookie y entras sin escribir nada.
+ * que YA estaba viva, te acuña la cookie y entras sin escribir nada.
+ *
+ * `destino` es a dónde navegar al auto-entrar (por defecto `/dashboard`); lo
+ * pasa `/login` con la misma ruta que ya usa `LoginForm` (ej. una transferencia
+ * pendiente), para no perder el destino cuando la auto-entrada gana la carrera.
  */
-export default function SesionViva({ autoEntrar = false }: { autoEntrar?: boolean }) {
+export default function SesionViva({
+  autoEntrar = false,
+  destino,
+}: {
+  autoEntrar?: boolean
+  destino?: string
+}) {
   const router = useRouter()
   // Un solo intento de auto-entrada por carga. Sin esto, una sesión revocada
   // entra en bucle: renovamos la cookie, el dashboard rebota al login, y el
@@ -30,9 +40,33 @@ export default function SesionViva({ autoEntrar = false }: { autoEntrar?: boolea
   // no hipotético.
   const yaEntro = useRef(false)
 
+  // `onIdTokenChanged` dispara una PRIMERA vez al montar con el estado actual
+  // (con usuario si la sesión de Firebase ya estaba viva; `null` si no hay
+  // nadie), y de nuevo cada vez que el token cambia (login, logout, refresh
+  // horario). Auto-entrar solo tiene sentido para el primer caso: alguien que
+  // llega a `/login` con una sesión que YA existía. Si la primera invocación
+  // es `null` y una posterior trae usuario, es un login recién hecho a mano en
+  // `LoginForm` — que ya navega por su cuenta después de `establishSession`
+  // (que además provisiona la cuenta en Firestore). Si acá navegáramos
+  // igual iríamos por delante de esa ruta: en una cuenta recién creada,
+  // llegaríamos al dashboard antes de que exista `users/{uid}`, `getMembership`
+  // devolvería null y el dashboard rebotaría a `/login` — donde este
+  // componente se remonta y vuelve a disparar. Y de paso perderíamos `destino`,
+  // porque esta carrera no lo conoce del todo (lo pasa `/login`, pero el punto
+  // es que la navegación le corresponde a `LoginForm`, no a esta). Por eso solo
+  // marcamos "corresponde auto-entrar" en la PRIMERA invocación, y solo si esa
+  // trajo usuario. NO simplificar a "si autoEntrar, navega": reintroduce la
+  // carrera con `LoginForm`.
+  const esPrimeraInvocacion = useRef(true)
+  const sesionYaEstabaViva = useRef(false)
+
   useEffect(
     () =>
       onIdTokenChanged(auth, async (user) => {
+        const primera = esPrimeraInvocacion.current
+        esPrimeraInvocacion.current = false
+        if (primera && user) sesionYaEstabaViva.current = true
+
         if (!user) {
           // Sin usuario de Firebase (cerró sesión, o le revocaron el refresh
           // token): el servidor no debe conservar una cookie viva.
@@ -47,9 +81,9 @@ export default function SesionViva({ autoEntrar = false }: { autoEntrar?: boolea
             body: JSON.stringify({ idToken }),
           })
           if (!res.ok) return
-          if (autoEntrar && !yaEntro.current) {
+          if (autoEntrar && sesionYaEstabaViva.current && !yaEntro.current) {
             yaEntro.current = true
-            router.replace('/dashboard')
+            router.replace(destino ?? '/dashboard')
           }
         } catch {
           // Best-effort: una renovación fallida no puede sacar al usuario ni
@@ -57,7 +91,7 @@ export default function SesionViva({ autoEntrar = false }: { autoEntrar?: boolea
           // la próxima carga.
         }
       }),
-    [autoEntrar, router],
+    [autoEntrar, destino, router],
   )
 
   return null

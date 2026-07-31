@@ -75,6 +75,46 @@ describe('auto-entrada en el login', () => {
     await waitFor(() => expect(fetch).toHaveBeenCalled())
     expect(mocks.replace).not.toHaveBeenCalled()
   })
+
+  it('navega a `destino` en vez de a /dashboard cuando se lo pasan', async () => {
+    render(<SesionViva autoEntrar destino="/transferencias/abc123" />)
+    emitir(usuario)
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/transferencias/abc123'))
+  })
+})
+
+describe('primera invocación vs. login recién hecho', () => {
+  // `onIdTokenChanged` dispara al montar con el estado actual. Si ese primer
+  // disparo YA trae usuario, es una sesión que estaba viva antes de llegar a
+  // `/login`: corresponde auto-entrar.
+  it('si la PRIMERA invocación trae usuario, navega', async () => {
+    render(<SesionViva autoEntrar />)
+    emitir(usuario)
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/dashboard'))
+  })
+
+  // Si el primer disparo es `null`, no había sesión viva al llegar. Un login
+  // hecho a mano en `LoginForm` dispara un evento posterior con usuario, pero
+  // NO debe navegar acá: `LoginForm` ya navega por su cuenta después de
+  // `establishSession` (que además provisiona la cuenta en Firestore). Si acá
+  // también navegáramos, en una cuenta recién creada llegaríamos al dashboard
+  // antes de que exista `users/{uid}` y se armaría el bucle con el rebote a
+  // `/login`.
+  it('si la primera invocación es null y la segunda trae usuario, renueva pero NO navega', async () => {
+    render(<SesionViva autoEntrar />)
+    emitir(null)
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith('/api/session', expect.objectContaining({ method: 'DELETE' })),
+    )
+    emitir(usuario)
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/session/renovar',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    )
+    expect(mocks.replace).not.toHaveBeenCalled()
+  })
 })
 
 describe('sin usuario de Firebase', () => {

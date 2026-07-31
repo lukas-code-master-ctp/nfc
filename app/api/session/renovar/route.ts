@@ -20,17 +20,30 @@ export async function POST(req: NextRequest) {
   const { idToken } = await req.json()
   try {
     await verifyIdToken(idToken)
-    const cookie = await createSessionCookie(idToken, SESSION_MAX_AGE_MS)
-    const res = NextResponse.json({ ok: true })
-    res.cookies.set(SESSION_COOKIE, cookie, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: SESSION_MAX_AGE_MS / 1000,
-    })
-    return res
   } catch {
     return NextResponse.json({ error: 'invalid token' }, { status: 401 })
   }
+
+  let cookie: string
+  try {
+    cookie = await createSessionCookie(idToken, SESSION_MAX_AGE_MS)
+  } catch (e) {
+    // Falla ruidosa, igual que en `/api/session`: un token válido que no logra
+    // acuñar cookie es un problema de infraestructura (ej. credenciales
+    // rotadas), no un token inválido. Enmascararlo como 401 haría ver "todos
+    // con token inválido" sin ningún rastro en los logs — justo el caso que
+    // este endpoint corre en cada apertura de la app, para todos los usuarios.
+    console.error('createSessionCookie', e)
+    return NextResponse.json({ error: 'session cookie' }, { status: 500 })
+  }
+
+  const res = NextResponse.json({ ok: true })
+  res.cookies.set(SESSION_COOKIE, cookie, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_MAX_AGE_MS / 1000,
+  })
+  return res
 }

@@ -40,6 +40,19 @@ describe('renovar', () => {
     expect(res.status).toBe(401)
     expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined()
   })
+
+  // Un token válido que no logra acuñar cookie (ej. credenciales rotadas) es
+  // un problema de infraestructura, no un token inválido: no debe verse igual
+  // que un 401, o una falla real queda invisible en los logs.
+  it('una falla de createSessionCookie da 500, no 401', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.createSessionCookie.mockRejectedValue(new Error('credenciales rotadas'))
+    const res = await POST(req({ idToken: 'tok' }))
+    expect(res.status).toBe(500)
+    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined()
+    expect(err).toHaveBeenCalled()
+    err.mockRestore()
+  })
 })
 
 describe('lo que NO debe hacer', () => {

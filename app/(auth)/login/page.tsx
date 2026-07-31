@@ -10,10 +10,11 @@ export default async function LoginPage({
   searchParams: Promise<{ invite?: string; transferencia?: string }>
 }) {
   const { invite, transferencia } = await searchParams
+  const destino = transferencia ? `/transferencias/${transferencia}` : undefined
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-lienzo p-4">
-      <SesionViva autoEntrar />
+      <SesionViva autoEntrar destino={destino} />
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <TapCarIsotipo className="mx-auto mb-2 size-14" />
@@ -23,7 +24,7 @@ export default async function LoginPage({
         {invite && <InvitationBanner token={invite} />}
         {transferencia && <TransferenciaBanner token={transferencia} />}
         <div className="rounded-2xl border border-linea bg-superficie p-6 shadow-sm">
-          <LoginForm destino={transferencia ? `/transferencias/${transferencia}` : undefined} />
+          <LoginForm destino={destino} />
         </div>
       </div>
     </main>
