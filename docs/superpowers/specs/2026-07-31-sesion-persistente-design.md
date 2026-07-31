@@ -139,9 +139,9 @@ Tres superficies usan `getCurrentUser()` directo y no ven la revocación al inst
 |---|---|
 | `app/(app)/layout.tsx` | La barra de navegación |
 | `/perfil` | Su propio nombre |
-| `/admin` | Además exige `isAdminEmail` |
+| `/admin` | La página en sí (lista de empresas); exige además `isAdminEmail` |
 
-Ningún vehículo, documento ni dato de empresa: todo eso pasa por `getMembership()`. Cerrarlo del todo exigiría una lectura de Firestore en cada navegación, para siempre. Se acepta el residuo.
+Son solo de lectura. Los dos mutadores que colgaban de `getCurrentUser()` —`PATCH /api/profile` y, más grave, `PATCH`/`DELETE /api/admin/companies/[id]`— ya pasan por `getMembership()`. Este último no es un residuo menor: sin el cambio, un admin de plataforma que pierde el teléfono y cierra sesión en todos los dispositivos dejaba ese teléfono pudiendo cambiar `plan.maxVehiculos` o borrar una empresa completa por `deleteCompanyCascade` —irreversible— mientras la cookie siguiera viva. Cerrar del todo el residuo que queda (las tres superficies de la tabla) exigiría una lectura de Firestore en cada navegación, para siempre; como ninguna muta nada, se acepta.
 
 ### UI
 
