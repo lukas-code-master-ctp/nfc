@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import {
-  mensajeErrorNfc,
-  esChipConDatos,
+  resolverFalloNfc,
+  nombreErrorNfc,
   MENSAJE_TIMEOUT,
   type MensajeNfc,
   type EstadoPermiso,
@@ -26,6 +26,9 @@ export default function GrabarChip({ url, patente }: { url: string; patente: str
   const [soportado, setSoportado] = useState(false)
   const [estado, setEstado] = useState<Estado>('idle')
   const [error, setError] = useState<MensajeNfc | null>(null)
+  // Este flujo solo existe en un celular Android que no tenemos a mano: sin una
+  // pista en pantalla, un reporte de usuario llega como una foto sin diagnóstico.
+  const [diagnostico, setDiagnostico] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   // Cancelar y timeout abortan con el mismo controller y ambos lanzan AbortError:
   // el motivo se lleva acá, no en el name de la excepción.
@@ -37,6 +40,7 @@ export default function GrabarChip({ url, patente }: { url: string; patente: str
 
   async function grabar(overwrite: boolean) {
     setError(null)
+    setDiagnostico(null)
     setEstado('esperando')
     const ctrl = new AbortController()
     abortRef.current = ctrl
@@ -60,12 +64,15 @@ export default function GrabarChip({ url, patente }: { url: string; patente: str
         setEstado('error')
         return
       }
-      if (!overwrite && esChipConDatos(err, await estadoPermisoNfc())) {
+      const permiso = await estadoPermisoNfc()
+      const fallo = resolverFalloNfc(err, permiso, overwrite)
+      if (fallo.confirmar) {
         setEstado('confirmar')
         return
       }
       console.error('nfc_write', err)
-      setError(mensajeErrorNfc(err))
+      setError(fallo.mensaje)
+      setDiagnostico(`${nombreErrorNfc(err)} · permiso: ${permiso}`)
       setEstado('error')
     } finally {
       clearTimeout(timer)
@@ -174,17 +181,30 @@ export default function GrabarChip({ url, patente }: { url: string; patente: str
               <p className="text-lg font-semibold text-tinta">{error.titulo}</p>
               <p className="text-sm text-acero">{error.detalle}</p>
               <div className="flex flex-col items-center gap-3">
+                {/* Sin `reintentable` el botón no se ofrece: reintentar con el
+                    permiso bloqueado da siempre el mismo error. */}
+                {error.reintentable && (
+                  <button
+                    type="button"
+                    onClick={() => grabar(false)}
+                    className="rounded-lg bg-azul px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press"
+                  >
+                    Reintentar
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => grabar(false)}
-                  className="rounded-lg bg-azul px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press"
+                  onClick={() => setEstado('idle')}
+                  className={
+                    error.reintentable
+                      ? 'text-sm font-medium text-acero hover:underline'
+                      : 'rounded-lg bg-azul px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press'
+                  }
                 >
-                  Reintentar
-                </button>
-                <button type="button" onClick={() => setEstado('idle')} className="text-sm font-medium text-acero hover:underline">
                   Cerrar
                 </button>
               </div>
+              {diagnostico && <p className="text-xs text-acero/70">{diagnostico}</p>}
             </>
           )}
         </div>

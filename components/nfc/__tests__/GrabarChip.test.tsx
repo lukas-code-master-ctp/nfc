@@ -67,15 +67,39 @@ describe('GrabarChip', () => {
     expect(write).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ overwrite: true }))
   })
 
-  it('con el permiso denegado muestra el error de permiso, no la confirmación', async () => {
+  it('con el permiso sin responder muestra el error de permiso, no la confirmación', async () => {
     conSoporteNfc()
     conPermiso('prompt')
     write.mockRejectedValueOnce(errorCon('NotAllowedError'))
     pintar()
     fireEvent.click(await screen.findByRole('button', { name: /grabar chip/i }))
 
-    await waitFor(() => expect(screen.getByText('Falta el permiso de NFC')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Falta aceptar el permiso de NFC')).toBeDefined())
     expect(screen.queryByRole('button', { name: /sobrescribir/i })).toBeNull()
+    // Reintentar sí sirve acá: el navegador vuelve a preguntar.
+    expect(screen.getByRole('button', { name: /reintentar/i })).toBeDefined()
+  })
+
+  it('con el permiso bloqueado no ofrece reintentar: sería un callejón sin salida', async () => {
+    conSoporteNfc()
+    conPermiso('denied')
+    write.mockRejectedValueOnce(errorCon('NotAllowedError'))
+    pintar()
+    fireEvent.click(await screen.findByRole('button', { name: /grabar chip/i }))
+
+    await waitFor(() => expect(screen.getByText('El NFC está bloqueado para este sitio')).toBeDefined())
+    expect(screen.queryByRole('button', { name: /reintentar/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /cerrar/i })).toBeDefined()
+  })
+
+  it('muestra el código del error y el permiso, para poder diagnosticar un reporte', async () => {
+    conSoporteNfc()
+    conPermiso('denied')
+    write.mockRejectedValueOnce(errorCon('NotAllowedError'))
+    pintar()
+    fireEvent.click(await screen.findByRole('button', { name: /grabar chip/i }))
+
+    await waitFor(() => expect(screen.getByText('NotAllowedError · permiso: denied')).toBeDefined())
   })
 
   it('traduce un error del navegador a su mensaje', async () => {
