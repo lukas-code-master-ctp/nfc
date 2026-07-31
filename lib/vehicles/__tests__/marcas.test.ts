@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { MARCAS, sugerirMarcas, normalizarMarca } from '@/lib/vehicles/marcas'
 
@@ -82,5 +83,22 @@ describe('normalizarMarca', () => {
   it('una cadena vacía sigue vacía', () => {
     expect(normalizarMarca('')).toBe('')
     expect(normalizarMarca('   ')).toBe('')
+  })
+})
+
+/**
+ * Los scripts son `.mjs` y no pueden importar el TypeScript de `lib/`, así que
+ * `scripts/normalizar-marcas.mjs` DUPLICA esta lista. El proyecto ya pisó esta
+ * trampa: el comparador de orden de `backfill-resumen.mjs` se desvió del de la
+ * app. Si las listas se separan, el script normaliza a valores que la app no
+ * reconoce y nadie se entera.
+ */
+describe('el script no puede desviarse de la librería', () => {
+  it('su lista de marcas es idéntica, en el mismo orden', () => {
+    const fuente = readFileSync('scripts/normalizar-marcas.mjs', 'utf8')
+    const bloque = fuente.match(/const MARCAS = \[([\s\S]*?)\n\]/)
+    expect(bloque, 'no se encontró `const MARCAS = [...]` en el script').toBeTruthy()
+    const delScript = [...bloque![1].matchAll(/'([^']+)'/g)].map((m) => m[1])
+    expect(delScript).toEqual([...MARCAS])
   })
 })
