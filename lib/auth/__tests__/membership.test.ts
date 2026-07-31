@@ -41,6 +41,18 @@ describe('camino normal', () => {
     mocks.get.mockResolvedValue({ exists: false })
     expect(await getMembership()).toBeNull()
   })
+
+  // Guard de autorización: un perfil a medias (sin companyId o sin role) no otorga acceso.
+  // Estos dos tests verifican que ese guard no se rompa.
+  it('null sin companyId (guard de autorización)', async () => {
+    mocks.get.mockResolvedValue(docCon({ role: 'admin' }))
+    expect(await getMembership()).toBeNull()
+  })
+
+  it('null sin role (guard de autorización)', async () => {
+    mocks.get.mockResolvedValue(docCon({ companyId: 'c1' }))
+    expect(await getMembership()).toBeNull()
+  })
 })
 
 describe('sesión revocada', () => {
