@@ -380,10 +380,12 @@ beforeEach(() => {
 })
 
 describe('sugerencias', () => {
-  it('al escribir aparecen las marcas que calzan', () => {
+  it('al escribir aparecen las marcas que calzan, en el orden de la librería', () => {
     render(<Campo />)
     escribir('sub')
-    expect(opciones().map((o) => o.textContent)).toEqual(['Subaru'])
+    // Subaru primero porque EMPIEZA con "sub"; Mitsubishi después porque solo
+    // lo contiene (Mit-sub-ishi).
+    expect(opciones().map((o) => o.textContent)).toEqual(['Subaru', 'Mitsubishi'])
   })
 
   it('sin escribir nada no hay lista', () => {
