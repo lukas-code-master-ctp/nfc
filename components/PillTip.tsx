@@ -1,59 +1,32 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import Popover from '@/components/Popover'
 
-// Pill clickeable con popover. Click para abrir/cerrar; se cierra con click
-// fuera o con Escape (mismo patrón que InfoTip, pero el disparador es una pill).
+// Pill clickeable con popover. El comportamiento (abrir/cerrar, click fuera,
+// Escape) vive en `Popover`, compartido con `InfoTip`; acá solo van los tonos.
 const TONOS = {
   azul: 'bg-azul/10 text-azul',
   rojo: 'bg-[#FCE7E7] text-[#C81E1E]',
+  ambar: 'bg-[#FDF1DC] text-[#B45309]',
 } as const
 
 export default function PillTip({
   label,
   tono,
+  alineacion,
   children,
 }: {
   label: string
   tono: keyof typeof TONOS
+  alineacion?: 'derecha' | 'izquierda'
   children: React.ReactNode
 }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLSpanElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('mousedown', onClick)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onClick)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
   return (
-    <span ref={ref} className="relative inline-flex align-middle">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className={`rounded-full px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 ${TONOS[tono]}`}
-      >
-        {label}
-      </button>
-      {open && (
-        <div
-          role="tooltip"
-          className="absolute right-0 top-6 z-30 w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-linea bg-superficie p-3 text-left text-sm text-tinta shadow-lg"
-        >
-          {children}
-        </div>
-      )}
-    </span>
+    <Popover
+      etiqueta={label}
+      alineacion={alineacion}
+      claseBoton={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul ${TONOS[tono]}`}
+    >
+      {children}
+    </Popover>
   )
 }

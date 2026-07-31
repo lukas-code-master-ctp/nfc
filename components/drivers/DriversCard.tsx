@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { parseImportacion } from '@/lib/drivers/importar'
 import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
+import InfoTip from '@/components/InfoTip'
 
 interface Driver { id: string; nombre: string; rut: string | null; activo: boolean; pin: string | null }
 
@@ -145,7 +146,19 @@ export default function DriversCard() {
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm sm:shrink-0 sm:gap-2">
                     <span className="flex items-center gap-1 font-mono text-sm text-tinta">
-                      {d.pin ? (pinVisibleDe === d.id ? d.pin : '••••') : <span title="PIN asignado antes de este cambio; actualízalo para verlo" className="text-acero">—</span>}
+                      {/* El «por qué» del guion vivía en un `title`: en un celular
+                          no hay hover, así que ahí quedaba un guion sin explicación. */}
+                      {d.pin ? (pinVisibleDe === d.id ? d.pin : '••••') : (
+                        <span className="flex items-center gap-1 text-acero">
+                          —
+                          <InfoTip label="Por qué no se ve este PIN">
+                            <p className="text-sm text-tinta">
+                              Este PIN se asignó antes de que los PIN fueran recuperables, así que no lo tenemos guardado.
+                              Usa «Actualizar PIN» para fijar uno nuevo y poder verlo acá.
+                            </p>
+                          </InfoTip>
+                        </span>
+                      )}
                       {d.pin && (
                         <button
                           type="button"
