@@ -48,3 +48,30 @@ describe('sin sesión', () => {
     expect(mocks.revocarSesiones).not.toHaveBeenCalled()
   })
 })
+
+// I3: sin el try/catch, un fallo a mitad de camino dejaba los refresh tokens
+// revocados pero el corte de Firestore sin escribir, respondía 500 sin
+// ningún rastro en los logs, y el usuario veía "no se pudo" cuando en
+// realidad SÍ pasó algo (medio arreglo, silencioso). El orden (tokens
+// primero) no cambia: sigue siendo el lado seguro si algo falla.
+describe('cuando algo falla a mitad de camino', () => {
+  it('revokeRefreshTokens lanza: responde 500 y loguea, sin llegar a Firestore', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.revokeRefreshTokens.mockRejectedValue(new Error('firebase caído'))
+    const res = await POST()
+    expect(res.status).toBe(500)
+    expect(mocks.revocarSesiones).not.toHaveBeenCalled()
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it('revocarSesiones lanza tras revocar los tokens: responde 500 y loguea', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.revocarSesiones.mockRejectedValue(new Error('firestore caído'))
+    const res = await POST()
+    expect(res.status).toBe(500)
+    expect(mocks.revokeRefreshTokens).toHaveBeenCalledWith('u1')
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
+  })
+})
