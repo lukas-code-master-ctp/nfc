@@ -214,6 +214,9 @@ export interface UserProfile {
   /** Si el miembro recibe las notificaciones por email (vencimientos + alertas de flota).
    *  Ausente = default: lo recibe solo el dueño de la empresa. */
   recibeAlertas?: boolean
+  /** Corte de revocación: las sesiones iniciadas antes de este instante no valen.
+   *  Ausente = ninguna revocación, que es el caso normal. Ver lib/auth/revocacion.ts. */
+  sesionesValidasDesde?: string
 }
 
 export interface VehicleDocument {

@@ -17,6 +17,7 @@ export async function getProfile(uid: string, email: string): Promise<UserProfil
     companyId: d.companyId ?? '',
     role: d.role ?? 'viewer',
     createdAt: d.createdAt ?? null,
+    sesionesValidasDesde: d.sesionesValidasDesde ?? undefined,
   }
 }
 
