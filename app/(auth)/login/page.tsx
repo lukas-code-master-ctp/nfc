@@ -14,7 +14,12 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-lienzo p-4">
-      <SesionViva autoEntrar destino={destino} />
+      {/* Con `?invite=<token>` no se auto-entra: una invitación exige
+          autenticarse como un correo específico, y si el navegador ya tiene
+          viva la sesión de Firebase de OTRA cuenta, la auto-entrada mandaría
+          a esa cuenta al dashboard antes de que el usuario alcance a leer el
+          `InvitationBanner` o a iniciar sesión con el correo invitado. */}
+      <SesionViva autoEntrar={!invite} destino={destino} />
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <TapCarIsotipo className="mx-auto mb-2 size-14" />
