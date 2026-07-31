@@ -17,7 +17,16 @@ export default function NewVehicleModal({ open, onClose }: { open: boolean; onCl
   useEffect(() => {
     if (!open) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Escape') return
+      // MarcaInput captura el Escape con preventDefault() cuando su lista de
+      // sugerencias está desplegada, para cerrarla sin cerrar este modal (y
+      // sin botar patente/modelo/año/color ya escritos). No basta con que
+      // MarcaInput haga stopPropagation(): React hidrata delegando eventos
+      // sobre `document`, el mismo nodo donde este listener nativo escucha,
+      // así que ambos son "hermanos" y stopPropagation() no lo detendría.
+      // defaultPrevented sí viaja entre hermanos, por eso se revisa acá.
+      if (e.defaultPrevented) return
+      onClose()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)

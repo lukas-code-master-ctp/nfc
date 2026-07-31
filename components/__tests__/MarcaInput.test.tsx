@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { useState } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import MarcaInput from '@/components/vehicle/MarcaInput'
@@ -13,9 +13,12 @@ const campo = () => screen.getByPlaceholderText('Marca') as HTMLInputElement
 const escribir = (texto: string) => fireEvent.change(campo(), { target: { value: texto } })
 const opciones = () => screen.queryAllByRole('option')
 
-beforeEach(() => {
-  vi.restoreAllMocks()
-})
+/** Dispara un keydown "real" (cancelable) para poder inspeccionar `defaultPrevented`. */
+function presionarEscape(): KeyboardEvent {
+  const evento = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+  fireEvent(campo(), evento)
+  return evento
+}
 
 describe('sugerencias', () => {
   it('al escribir aparecen las marcas que calzan, en el orden de la librería', () => {
@@ -81,6 +84,30 @@ describe('elegir con el teclado', () => {
     fireEvent.keyDown(campo(), { key: 'Escape' })
     expect(opciones()).toHaveLength(0)
     expect(campo().value).toBe('sub')
+  })
+
+  // MarcaInput vive dentro de NewVehicleModal, que también escucha Escape (en
+  // `document`) para cerrarse por completo. Con la lista desplegada, Escape
+  // debe marcar el evento como `defaultPrevented` para que NewVehicleModal
+  // sepa que ese Escape "ya fue usado" y no debe cerrar el modal encima,
+  // botando patente/modelo/año/color. stopPropagation() NO sirve para esto en
+  // producción (ver el comentario en MarcaInput.tsx) — por eso el contrato es
+  // defaultPrevented, y este test lo fija directamente sobre el evento nativo.
+  it('con la lista desplegada, Escape marca el evento como defaultPrevented', () => {
+    render(<Campo />)
+    escribir('sub')
+    const evento = presionarEscape()
+    expect(evento.defaultPrevented).toBe(true)
+    expect(opciones()).toHaveLength(0)
+  })
+
+  // Con la lista cerrada no hay nada que MarcaInput deba "absorber": el
+  // Escape tiene que seguir su curso normal para que NewVehicleModal pueda
+  // cerrarse con él.
+  it('con la lista cerrada, Escape NO marca el evento como defaultPrevented', () => {
+    render(<Campo />)
+    const evento = presionarEscape()
+    expect(evento.defaultPrevented).toBe(false)
   })
 })
 

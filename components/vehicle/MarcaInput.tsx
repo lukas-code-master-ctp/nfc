@@ -59,7 +59,23 @@ export default function MarcaInput({
 
   function alPresionar(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Escape') {
-      setAbierto(false)
+      // Solo capturamos el Escape cuando hay lista visible: así se puede
+      // cerrarla sin perder lo escrito. Con la lista cerrada NO se llama
+      // preventDefault(), y el Escape sigue su curso normal — es lo que deja
+      // que NewVehicleModal lo reciba y cierre el modal completo.
+      //
+      // preventDefault() y no stopPropagation(): en el App Router, React
+      // hidrata delegando sus eventos sobre `document`, el mismo nodo donde
+      // NewVehicleModal agrega su propio listener nativo (document.addEventListener).
+      // Los dos listeners son "hermanos" en el mismo nodo, y stopPropagation()
+      // no detiene a un hermano — solo evita seguir subiendo a ancestros, que
+      // acá no hay. defaultPrevented sí es visible entre hermanos, por eso
+      // NewVehicleModal revisa `e.defaultPrevented` en vez de confiar en que
+      // el evento no le llegue.
+      if (desplegada) {
+        e.preventDefault()
+        setAbierto(false)
+      }
       return
     }
     if (!desplegada) return
@@ -85,7 +101,7 @@ export default function MarcaInput({
       <input
         role="combobox"
         aria-expanded={desplegada}
-        aria-controls={idLista}
+        aria-controls={desplegada ? idLista : undefined}
         aria-autocomplete="list"
         aria-activedescendant={desplegada ? idOpcion(resaltada) : undefined}
         autoComplete="off"

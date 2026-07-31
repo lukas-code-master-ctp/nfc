@@ -51,12 +51,24 @@ describe('sugerirMarcas', () => {
     expect(sugerirMarcas('zzzz')).toEqual([])
   })
 
+  // Con "a" hay 39 candidatos (marcas que contienen la letra "a"): el tope
+  // real es 8. `toBeLessThanOrEqual(8)` pasaría igual con un límite de 3 o con
+  // el filtro roto — `toBe(8)` es la aserción que de verdad lo fija.
   it('corta en 8 por defecto: una lista más larga tapa el formulario en un celular', () => {
-    expect(sugerirMarcas('a').length).toBeLessThanOrEqual(8)
+    expect(sugerirMarcas('a')).toHaveLength(8)
   })
 
   it('respeta un tope explícito', () => {
     expect(sugerirMarcas('a', 3)).toHaveLength(3)
+  })
+
+  // "MERCEDES BENZ" (con espacio, como lo escribe casi todo Chile) tiene que
+  // seguir sugiriendo Mercedes-Benz (con guion), y no perderla a mitad de
+  // camino al seguir tipeando.
+  it('ignora la puntuación: "mercedes b" sigue sugiriendo Mercedes-Benz', () => {
+    expect(sugerirMarcas('mercedes')).toContain('Mercedes-Benz')
+    expect(sugerirMarcas('mercedes b')).toContain('Mercedes-Benz')
+    expect(sugerirMarcas('mercedes benz')).toContain('Mercedes-Benz')
   })
 })
 
@@ -84,6 +96,24 @@ describe('normalizarMarca', () => {
     expect(normalizarMarca('')).toBe('')
     expect(normalizarMarca('   ')).toBe('')
   })
+
+  // La escritura más común de Mercedes-Benz en Chile lleva espacio, no guion.
+  // La clave de comparación deja solo caracteres alfanuméricos (además de lo
+  // que ya hace `normalizarBusqueda`), así que la puntuación deja de importar
+  // para reconocer una marca conocida — sin que eso cambie `normalizarBusqueda`,
+  // que sigue intacta para el buscador del dashboard.
+  it('ignora la puntuación al reconocer una marca conocida', () => {
+    expect(normalizarMarca('MERCEDES BENZ')).toBe('Mercedes-Benz')
+    expect(normalizarMarca('mercedes benz')).toBe('Mercedes-Benz')
+    expect(normalizarMarca('ssang yong')).toBe('SsangYong')
+  })
+
+  // Una marca desconocida conserva su escritura tal cual (la lista sigue
+  // abierta): quitar la puntuación de la CLAVE de comparación no significa
+  // quitársela al VALOR que se guarda.
+  it('una marca desconocida con puntuación conserva su escritura, no se le quita', () => {
+    expect(normalizarMarca('J.M.C.')).toBe('J.M.C.')
+  })
 })
 
 /**
@@ -100,5 +130,50 @@ describe('el script no puede desviarse de la librería', () => {
     expect(bloque, 'no se encontró `const MARCAS = [...]` en el script').toBeTruthy()
     const delScript = [...bloque![1].matchAll(/'([^']+)'/g)].map((m) => m[1])
     expect(delScript).toEqual([...MARCAS])
+  })
+
+  /**
+   * La guarda anterior fija la LISTA, pero `normalizarMarca` del script tiene
+   * su propia lógica (una copia, no un import — los scripts son .mjs y no
+   * pueden importar TypeScript). Con la clave alfanumérica del Important 3,
+   * esa lógica dejó de ser un one-liner: si alguien la ajusta en un lado y no
+   * en el otro, el script normaliza distinto que la app sin que ningún test
+   * lo note. Por eso esta guarda compara COMPORTAMIENTO, no texto fuente: se
+   * extrae el cuerpo real de la función del script y se ejecuta (con
+   * `new Function`, sandboxeada, sin tocar el archivo), y se compara su
+   * resultado con `normalizarMarca` de la librería sobre un set de entradas
+   * que incluye las 69 marcas y variantes sucias.
+   */
+  it('normaliza exactamente igual que la librería (comparando comportamiento, no texto)', () => {
+    const fuente = readFileSync('scripts/normalizar-marcas.mjs', 'utf8')
+    const bloque = fuente.match(/const normalizarBusqueda[\s\S]*?\n}\n\nconst projectId/)
+    expect(bloque, 'no se encontró el bloque de normalización en el script').toBeTruthy()
+    const codigo = bloque![0].replace(/\n\nconst projectId$/, '')
+    // Extrae y ejecuta la función real del script (sandboxeada) para comparar
+    // comportamiento, no texto fuente.
+    const fabrica = new Function('MARCAS', `${codigo}\nreturn normalizarMarca`) as (
+      marcas: readonly string[],
+    ) => (raw: string) => string
+    const normalizarMarcaDelScript = fabrica(MARCAS)
+
+    const entradas = [
+      ...MARCAS,
+      ...MARCAS.map((m) => m.toLowerCase()),
+      ...MARCAS.map((m) => `   ${m}   `),
+      ...MARCAS.map((m) => m.replace(/-/g, ' ')), // guion → espacio (Mercedes-Benz → Mercedes Benz)
+      'MERCEDES BENZ',
+      'mercedes benz',
+      'ssang yong',
+      'citroen',
+      'skoda',
+      '  JMC ',
+      'jmc',
+      'Marca Rara SpA',
+      '',
+      '   ',
+    ]
+    for (const raw of entradas) {
+      expect(normalizarMarcaDelScript(raw), `entrada: "${raw}"`).toBe(normalizarMarca(raw))
+    }
   })
 })

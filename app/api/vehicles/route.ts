@@ -18,7 +18,16 @@ export async function POST(req: NextRequest) {
   if (!can(m.role, 'vehicle:write')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const body = await req.json()
   const { patente, marca, modelo, anio, color } = body
-  if (!patente || !marca || !modelo) {
+  if (typeof marca !== 'string') {
+    return NextResponse.json({ error: 'faltan campos' }, { status: 400 })
+  }
+  // Normalizar ANTES de validar: una marca de puros espacios ("   ") pasa un
+  // guard de "no vacío" porque técnicamente no es una cadena vacía, pero
+  // normalizarMarca la deja en '' — y como `marca` no se puede editar después
+  // de crear el vehículo (no está en la whitelist del PATCH), guardarla en
+  // blanco sería un error permanente para ese vehículo.
+  const marcaNormalizada = normalizarMarca(marca)
+  if (!patente || !marcaNormalizada || !modelo) {
     return NextResponse.json({ error: 'faltan campos' }, { status: 400 })
   }
 
@@ -35,9 +44,10 @@ export async function POST(req: NextRequest) {
 
   const vehicle = await createVehicle(m.companyId, m.uid, {
     patente,
-    // En el servidor y no en el cliente: el combobox solo sugiere, y así queda
-    // cubierto también quien cree un vehículo por otra vía.
-    marca: normalizarMarca(marca),
+    // Ya normalizada arriba (antes de validar). En el servidor y no en el
+    // cliente: el combobox solo sugiere, y así queda cubierto también quien
+    // cree un vehículo por otra vía.
+    marca: marcaNormalizada,
     modelo,
     anio: Number(anio) || 0,
     color: color ?? '',

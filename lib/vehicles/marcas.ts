@@ -31,6 +31,26 @@ export const MARCAS: readonly string[] = [
 const LIMITE_SUGERENCIAS = 8
 
 /**
+ * Clave de comparación para reconocer una marca de la librería, PROPIA de este
+ * archivo — no la confundas con `normalizarBusqueda`, que sigue intacta para
+ * el buscador del dashboard (comparten módulo, pero no comparten regla).
+ *
+ * Además de lo que ya hace `normalizarBusqueda` (minúsculas, sin acentos,
+ * espacios colapsados), deja **solo caracteres alfanuméricos**: sin eso,
+ * "MERCEDES BENZ" (con espacio, como lo escribe casi todo Chile) no calza con
+ * la clave de "Mercedes-Benz" (con guion) y se guarda tal cual en vez de
+ * canonizarse. El mismo motivo explica por qué escribiendo "mercedes b" la
+ * sugerencia desaparecía: sin quitar la puntuación, ese texto no es prefijo ni
+ * subcadena de "mercedes-benz".
+ *
+ * Ya se verificó que las 69 marcas de `MARCAS` siguen teniendo claves únicas
+ * al quitar lo no alfanumérico (sin colisiones); ver el test correspondiente.
+ */
+function claveMarca(s: string): string {
+  return normalizarBusqueda(s).replace(/[^a-z0-9]/g, '')
+}
+
+/**
  * Marcas que calzan con lo que el usuario lleva escrito.
  *
  * Primero las que **empiezan** con el texto y después las que lo contienen en
@@ -41,12 +61,12 @@ const LIMITE_SUGERENCIAS = 8
  * alfabéticas no ayuda a nadie.
  */
 export function sugerirMarcas(query: string, limite: number = LIMITE_SUGERENCIAS): string[] {
-  const q = normalizarBusqueda(query)
+  const q = claveMarca(query)
   if (!q) return []
   const empiezan: string[] = []
   const contienen: string[] = []
   for (const marca of MARCAS) {
-    const n = normalizarBusqueda(marca)
+    const n = claveMarca(marca)
     if (n.startsWith(q)) empiezan.push(marca)
     else if (n.includes(q)) contienen.push(marca)
   }
@@ -62,6 +82,6 @@ export function sugerirMarcas(query: string, limite: number = LIMITE_SUGERENCIAS
 export function normalizarMarca(raw: string): string {
   const limpio = raw.replace(/\s+/g, ' ').trim()
   if (!limpio) return ''
-  const n = normalizarBusqueda(limpio)
-  return MARCAS.find((m) => normalizarBusqueda(m) === n) ?? limpio
+  const n = claveMarca(limpio)
+  return MARCAS.find((m) => claveMarca(m) === n) ?? limpio
 }

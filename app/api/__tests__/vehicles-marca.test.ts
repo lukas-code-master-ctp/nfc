@@ -46,6 +46,26 @@ describe('la marca se normaliza en el servidor', () => {
   })
 })
 
+// `marca` no se puede editar después de crear el vehículo (no está en la
+// whitelist del PATCH de /api/vehicles/[id]): un valor equivocado guardado acá
+// es permanente para ese vehículo, así que estos dos casos importan tanto
+// como los que sí normalizan bien.
+describe('una marca que normaliza a vacío no crea el vehículo', () => {
+  it('rechaza una marca de solo espacios con 400, sin llamar a createVehicle', async () => {
+    const res = await POST(alta('   '))
+    expect(res.status).toBe(400)
+    expect(mocks.createVehicle).not.toHaveBeenCalled()
+  })
+})
+
+describe('una marca que no es texto no tumba el endpoint', () => {
+  it('responde 400 en vez de lanzar (normalizarMarca(123) rompería con .replace is not a function)', async () => {
+    const res = await POST(req({ patente: 'ABCD12', marca: 123, modelo: 'Swift', anio: '2024' }))
+    expect(res.status).toBe(400)
+    expect(mocks.createVehicle).not.toHaveBeenCalled()
+  })
+})
+
 describe('lo que no cambia', () => {
   it('sigue exigiendo los campos obligatorios', async () => {
     const res = await POST(req({ patente: 'ABCD12', modelo: 'Swift' }))
