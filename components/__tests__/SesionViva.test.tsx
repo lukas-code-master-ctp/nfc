@@ -10,15 +10,31 @@ vi.mock('firebase/auth', () => ({ onIdTokenChanged: mocks.onIdTokenChanged }))
 vi.mock('@/lib/firebase/client', () => ({ auth: {} }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace }) }))
 
-import SesionViva from '@/components/auth/SesionViva'
+import SesionViva, { CLAVE_INTENTO_AUTO_ENTRADA } from '@/components/auth/SesionViva'
 
 /** Captura el callback que registra el componente, para dispararlo a mano. */
 let emitir: (u: unknown) => void
 
 const usuario = { getIdToken: () => Promise.resolve('tok') }
 
+/** `sessionStorage` real de jsdom, con `getItem`/`setItem`/`removeItem` sobre un Map. */
+function crearSessionStorageMock() {
+  const store = new Map<string, string>()
+  return {
+    getItem: (clave: string) => (store.has(clave) ? store.get(clave)! : null),
+    setItem: (clave: string, valor: string) => {
+      store.set(clave, valor)
+    },
+    removeItem: (clave: string) => {
+      store.delete(clave)
+    },
+    clear: () => store.clear(),
+  }
+}
+
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true } as Response)))
+  vi.stubGlobal('sessionStorage', crearSessionStorageMock())
   mocks.replace.mockReset()
   mocks.onIdTokenChanged.mockReset()
   mocks.onIdTokenChanged.mockImplementation((_auth: unknown, cb: (u: unknown) => void) => {
@@ -48,12 +64,6 @@ describe('con usuario de Firebase', () => {
 })
 
 describe('auto-entrada en el login', () => {
-  it('entra al dashboard después de renovar', async () => {
-    render(<SesionViva autoEntrar />)
-    emitir(usuario)
-    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/dashboard'))
-  })
-
   // El test del bucle: sin este corte, una sesión revocada renueva la cookie,
   // el dashboard rebota al login, y el componente vuelve a renovar. Para
   // siempre. El ID token cacheado sigue siendo válido hasta una hora después de
@@ -114,6 +124,52 @@ describe('primera invocación vs. login recién hecho', () => {
       ),
     )
     expect(mocks.replace).not.toHaveBeenCalled()
+  })
+})
+
+describe('el corte del bucle sobrevive a un remontaje (sessionStorage)', () => {
+  // El caso real: sesión de Firebase viva sin `users/{uid}` (el POST de
+  // provisión falló por red). Cualquier visita a `/login` remonta
+  // `SesionViva`, que reinicia sus refs — sin la marca en `sessionStorage` el
+  // componente auto-entraría de nuevo y el bucle login→dashboard→login no
+  // tendría fin.
+  it('si el intento ya quedó registrado, la primera invocación con usuario renueva la cookie pero no navega', async () => {
+    sessionStorage.setItem(CLAVE_INTENTO_AUTO_ENTRADA, '1')
+    render(<SesionViva autoEntrar />)
+    emitir(usuario)
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/session/renovar',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    )
+    expect(mocks.replace).not.toHaveBeenCalled()
+  })
+
+  // El componente sin `autoEntrar` es el que vive en el layout de `(app)`:
+  // si se está montando es porque el usuario efectivamente entró, así que el
+  // intento anterior (si lo hubo) queda rehabilitado para la próxima vez.
+  it('al montar sin autoEntrar, borra la clave del intento', () => {
+    sessionStorage.setItem(CLAVE_INTENTO_AUTO_ENTRADA, '1')
+    render(<SesionViva />)
+    expect(sessionStorage.getItem(CLAVE_INTENTO_AUTO_ENTRADA)).toBeNull()
+  })
+
+  // Degradación segura: si el navegador particiona o bloquea sessionStorage
+  // (Safari privado, incógnito, webviews) y lanza al leerlo, es preferible
+  // el comportamiento de hoy (con riesgo de bucle) a dejar al usuario sin
+  // forma de entrar nunca.
+  it('si sessionStorage lanza al leerla, la auto-entrada igual ocurre (degradación segura)', async () => {
+    vi.stubGlobal('sessionStorage', {
+      getItem: () => {
+        throw new Error('sessionStorage bloqueado')
+      },
+      setItem: () => {},
+      removeItem: () => {},
+    })
+    render(<SesionViva autoEntrar />)
+    emitir(usuario)
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/dashboard'))
   })
 })
 

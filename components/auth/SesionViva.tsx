@@ -25,6 +25,48 @@ import { auth } from '@/lib/firebase/client'
  * pasa `/login` con la misma ruta que ya usa `LoginForm` (ej. una transferencia
  * pendiente), para no perder el destino cuando la auto-entrada gana la carrera.
  */
+// Clave de `sessionStorage` que registra un intento de auto-entrada ya hecho
+// en esta pestaña. Exportada solo para que el test pueda leerla/escribirla
+// con el mismo nombre — no es parte de la API del componente.
+export const CLAVE_INTENTO_AUTO_ENTRADA = 'tapcar:intento-auto-entrada'
+
+// El corte de bucle con `useRef` (más abajo) protege DENTRO de un mismo
+// montaje, pero el bucle real remonta el componente (login → dashboard →
+// `getMembership()` da null → `redirect('/login')` → se vuelve a montar
+// `SesionViva`), y un ref se reinicia en cada montaje: la protección
+// desaparece justo cuando hace falta. `sessionStorage` sí sobrevive al
+// remontaje dentro de la misma pestaña, así que es lo que de verdad corta el
+// bucle entre cargas. NO se puede reemplazar por el `useRef`: no es
+// redundante, es la única de las dos protecciones que sobrevive al
+// remontaje. Envuelto en try/catch porque algunos navegadores (Safari en
+// privado, incógnito, webviews dentro de otras apps) particionan o bloquean
+// el storage y lanzan al tocarlo — ahí se degrada a permitir la auto-entrada,
+// porque es preferible el riesgo de bucle de hoy a dejar al usuario sin
+// forma de entrar.
+function intentoAutoEntradaBloqueado(): boolean {
+  try {
+    return sessionStorage.getItem(CLAVE_INTENTO_AUTO_ENTRADA) === '1'
+  } catch {
+    return false
+  }
+}
+
+function marcarIntentoAutoEntrada() {
+  try {
+    sessionStorage.setItem(CLAVE_INTENTO_AUTO_ENTRADA, '1')
+  } catch {
+    // Best-effort — ver `intentoAutoEntradaBloqueado`.
+  }
+}
+
+function limpiarIntentoAutoEntrada() {
+  try {
+    sessionStorage.removeItem(CLAVE_INTENTO_AUTO_ENTRADA)
+  } catch {
+    // Best-effort — ver `intentoAutoEntradaBloqueado`.
+  }
+}
+
 export default function SesionViva({
   autoEntrar = false,
   destino,
@@ -60,6 +102,15 @@ export default function SesionViva({
   const esPrimeraInvocacion = useRef(true)
   const sesionYaEstabaViva = useRef(false)
 
+  // Este es el componente SIN `autoEntrar` (el que vive en el layout de
+  // `(app)`). Si se está renderizando es porque el usuario efectivamente
+  // entró a la app — el intento de auto-entrada (si lo hubo) funcionó — así
+  // que se rehabilita la auto-entrada para la próxima vez que llegue a
+  // `/login` en esta pestaña.
+  useEffect(() => {
+    if (!autoEntrar) limpiarIntentoAutoEntrada()
+  }, [autoEntrar])
+
   useEffect(
     () =>
       onIdTokenChanged(auth, async (user) => {
@@ -83,7 +134,12 @@ export default function SesionViva({
           if (!res.ok) return
           if (autoEntrar && sesionYaEstabaViva.current && !yaEntro.current) {
             yaEntro.current = true
-            router.replace(destino ?? '/dashboard')
+            // Ver `intentoAutoEntradaBloqueado`: esto es lo que corta el
+            // bucle entre remontajes, no el `yaEntro` de arriba.
+            if (!intentoAutoEntradaBloqueado()) {
+              marcarIntentoAutoEntrada()
+              router.replace(destino ?? '/dashboard')
+            }
           }
         } catch {
           // Best-effort: una renovación fallida no puede sacar al usuario ni
