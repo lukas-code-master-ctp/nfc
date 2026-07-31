@@ -73,8 +73,11 @@ describe('la lista', () => {
 })
 
 describe('sugerirMarcas', () => {
-  it('encuentra por el principio: el caso que motivó el feature', () => {
-    expect(sugerirMarcas('sub')).toEqual(['Subaru'])
+  // El caso que motivó el feature. "Mitsubishi" también contiene "sub", pero
+  // quien escribe "sub" busca Subaru: por eso el que EMPIEZA va primero, aunque
+  // Mitsubishi aparezca antes en la lista alfabética.
+  it('encuentra por el principio, y eso manda sobre el orden alfabético', () => {
+    expect(sugerirMarcas('sub')).toEqual(['Subaru', 'Mitsubishi'])
   })
 
   it('también encuentra en medio de la palabra', () => {
@@ -93,7 +96,7 @@ describe('sugerirMarcas', () => {
   })
 
   it('ignora mayúsculas y espacios alrededor', () => {
-    expect(sugerirMarcas('  SUB  ')).toEqual(['Subaru'])
+    expect(sugerirMarcas('  SUB  ')).toEqual(['Subaru', 'Mitsubishi'])
   })
 
   it('con la query vacía no sugiere nada: abrir el modal no debe llenarse de marcas', () => {
