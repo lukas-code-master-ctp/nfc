@@ -149,3 +149,11 @@ export async function sendTransferenciaAceptadaEmail(
     html: transferenciaAceptadaHtml(p),
   })
 }
+
+/** A quién le llegan las solicitudes de plan. `BILLING_EMAIL`, o el primer `ADMIN_EMAILS`. */
+export function billingNotifyEmail(): string | null {
+  const explicit = process.env.BILLING_EMAIL?.trim()
+  if (explicit) return explicit
+  const firstAdmin = (process.env.ADMIN_EMAILS ?? '').split(',')[0]?.trim()
+  return firstAdmin || null
+}

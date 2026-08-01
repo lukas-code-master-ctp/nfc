@@ -4,14 +4,7 @@ import { can } from '@/lib/auth/roles'
 import { getCompany } from '@/lib/data/companies'
 import { createBillingRequest } from '@/lib/data/billing'
 import { maxVehiculosDe } from '@/lib/plan'
-import { sendBillingRequestEmail } from '@/lib/email/resend'
-
-function billingNotifyEmail(): string | null {
-  const explicit = process.env.BILLING_EMAIL?.trim()
-  if (explicit) return explicit
-  const firstAdmin = (process.env.ADMIN_EMAILS ?? '').split(',')[0]?.trim()
-  return firstAdmin || null
-}
+import { sendBillingRequestEmail, billingNotifyEmail } from '@/lib/email/resend'
 
 export async function POST(req: NextRequest) {
   const m = await getMembership()
