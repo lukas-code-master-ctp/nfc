@@ -281,4 +281,4 @@ Idempotente por la comprobación de ausencia: correrlo dos veces no reinicia la 
 
 Un solo punto del código es el que cambia cuando llegue la pasarela: **el final de `POST /api/plan`**, donde hoy se registra el `billingRequest` y se estampa `gratisHasta`. Ahí es donde se redirige al checkout, y `gratisHasta` pasa a ser la fecha del primer cobro en vez del fin de la prueba — el campo no cambia de significado, solo de quién lo hace cumplir.
 
-Y para B: `gratisHasta` es el campo que reciben los meses gratis, y `promo.vehiculosIncluidos` es lo que `cargoDe` ya sabe descontar. B no necesita tocar ninguna de las dos funciones.
+Y para B: `gratisHasta` es el campo que va a recibir los meses gratis, y `cargoDe` es el lugar donde va el descuento por vehículos cubiertos por el código promocional. Pero B **sí** tendrá que ampliar la firma de `cargoDe` y el tipo `Cargo`, porque A los dejó sin esos campos a propósito: el plan de implementación recortó `vehiculosIncluidos`/`montoPleno` de `cargoDe` y el campo `promo` de `PlanData` (son del spec B, y sin código promocional `monto` y `montoPleno` serían siempre el mismo número).
