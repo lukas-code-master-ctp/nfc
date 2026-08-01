@@ -29,6 +29,24 @@ describe('sin página', () => {
   })
 })
 
+// M3+M5: el PDF se carga entero a memoria (`file.arrayBuffer()`) para leerlo,
+// algo que `subirPaginas` nunca hace. Un tope de tamaño evita el techo de
+// memoria nuevo en un celular modesto.
+describe('archivo demasiado grande', () => {
+  it('devuelve null sin intentar procesarlo, ni siquiera para una imagen', async () => {
+    const grande = { id: 'p1', file: new File([new Uint8Array(21 * 1024 * 1024)], 'doc', { type: 'image/jpeg' }) }
+    expect(await primeraImagen(grande)).toBeNull()
+    expect(mocks.comprimirImagen).not.toHaveBeenCalled()
+  })
+
+  it('un archivo justo bajo el tope sí se procesa', async () => {
+    mocks.comprimirImagen.mockResolvedValue(new Blob(['jpeg'], { type: 'image/jpeg' }))
+    const chico = { id: 'p1', file: new File([new Uint8Array(19 * 1024 * 1024)], 'doc', { type: 'image/jpeg' }) }
+    expect(await primeraImagen(chico)).not.toBeNull()
+    expect(mocks.comprimirImagen).toHaveBeenCalled()
+  })
+})
+
 describe('una foto', () => {
   it('la comprime y la devuelve como data URI', async () => {
     mocks.comprimirImagen.mockResolvedValue(new Blob(['jpeg'], { type: 'image/jpeg' }))

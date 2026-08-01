@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMembership } from '@/lib/auth/membership'
+import { can } from '@/lib/auth/roles'
 import { chatVision, isOpenRouterConfigured } from '@/lib/ai/openrouter'
 import { buildFechaPrompt, parseFechaVision } from '@/lib/ai/documentoVision'
 
@@ -20,6 +21,9 @@ export async function POST(req: NextRequest) {
   // Exige membresía porque cada llamada cuesta plata: no puede quedar abierto.
   const m = await getMembership()
   if (!m) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  // Mismo permiso que `POST /api/documents`: un Visor no puede crear documentos
+  // en absoluto, así que tampoco debería poder gastar llamadas al modelo.
+  if (!can(m.role, 'document:write')) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   // Leer el cuerpo en su propio try/catch: un JSON inválido es culpa de quien
   // llama (400), distinto del fallo del modelo (200 con `fecha: null`).

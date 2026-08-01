@@ -33,6 +33,23 @@ describe('quién puede llamarlo', () => {
     expect(res.status).toBe(401)
     expect(mocks.chatVision).not.toHaveBeenCalled()
   })
+
+  // I3: un Visor no puede crear documentos en absoluto (`POST /api/documents`
+  // lo rechaza con 403); tampoco debería poder gastar llamadas pagadas acá.
+  it('un Visor responde 403 y no llama al modelo', async () => {
+    mocks.getMembership.mockResolvedValue({ uid: 'u1', email: 'a@b.cl', companyId: 'c1', role: 'viewer' })
+    const res = await POST(req({ imagen: IMAGEN }))
+    expect(res.status).toBe(403)
+    expect(mocks.chatVision).not.toHaveBeenCalled()
+  })
+
+  it('un Editor sí puede llamarlo (mismo permiso que crear documentos)', async () => {
+    mocks.getMembership.mockResolvedValue({ uid: 'u1', email: 'a@b.cl', companyId: 'c1', role: 'editor' })
+    mocks.chatVision.mockResolvedValue('{"vence": "2027-04-03"}')
+    const res = await POST(req({ imagen: IMAGEN }))
+    expect(res.status).toBe(200)
+    expect(mocks.chatVision).toHaveBeenCalled()
+  })
 })
 
 describe('qué acepta', () => {

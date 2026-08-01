@@ -14,9 +14,9 @@ export function buildFechaPrompt(): string {
     'Busca la fecha HASTA LA CUAL el documento es válido. Suele aparecer como "válido hasta", "vence el", "hasta el" o "fecha de vencimiento".',
     'NO devuelvas la fecha de emisión, ni la de pago, ni la del trámite.',
     'OJO con el formato: en Chile las fechas se escriben DD-MM-AAAA. Por ejemplo "03-04-2027" es el 3 de abril de 2027, NO el 4 de marzo.',
-    'Responde SOLO con un JSON válido, sin texto adicional, con este formato exacto:',
-    '{"vence": "<AAAA-MM-DD, o null>"}',
-    'Convierte la fecha al formato AAAA-MM-DD. Si no puedes leerla con seguridad, usa null. No inventes.',
+    'Responde SOLO con un JSON válido, sin texto adicional, con uno de estos dos formatos exactos:',
+    '{"vence": "2027-04-03"} si puedes leer la fecha (formato AAAA-MM-DD, sin comillas alrededor de null).',
+    '{"vence": null} si no puedes leerla con seguridad. No inventes.',
   ].join('\n')
 }
 

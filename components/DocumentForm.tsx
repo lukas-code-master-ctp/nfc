@@ -31,15 +31,38 @@ export default function DocumentForm({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Se apaga en cuanto el usuario toca el campo: de ahí en adelante la fecha es
-  // suya, y seguir diciendo que la leyó una máquina sería mentir.
-  const [avisoApagado, setAvisoApagado] = useState(false)
+  // Se activa la primera vez que el usuario edita el campo a mano — aunque lo
+  // deje vacío a propósito (I2): de ahí en adelante el autorelleno queda
+  // apagado para siempre en este formulario, y el aviso también, porque seguir
+  // diciendo que la fecha la leyó una máquina sería mentir.
+  const [campoTocado, setCampoTocado] = useState(false)
+  // Procedencia del valor actual del campo: si lo puso la IA (y el usuario no
+  // lo tocó desde entonces) hay que descartarlo al empezar una lectura nueva
+  // (C1); si lo escribió el usuario, se conserva siempre. NO se puede derivar
+  // de `campoTocado` solo: un valor de la IA puede convivir con el campo "no
+  // tocado" (el usuario nunca lo editó a mano).
+  const [fechaEsDeLaIA, setFechaEsDeLaIA] = useState(false)
 
-  // La fecha leída se escribe SOLO si el campo sigue vacío: lo que el usuario
-  // escribió es suyo. El actualizador funcional evita leer un valor viejo.
-  const estadoLectura = useLecturaFecha(paginas[0], (fecha) =>
-    setFecha((actual) => actual || fecha),
-  )
+  const estadoLectura = useLecturaFecha(paginas[0], {
+    // Arranca una lectura nueva (cambió la página, o cambió a "sin página"): lo
+    // que haya en el campo se descarta SOLO si lo puso la IA — es la fecha del
+    // documento anterior, ya no corresponde. Lo que escribió el usuario queda
+    // intacto. OJO: no simplificar a `actual || fecha` en `alLeer` de más abajo
+    // ni borrar esto — es exactamente el bug que reintroduce el Critical.
+    alEmpezar: () => {
+      if (fechaEsDeLaIA) setFecha('')
+      setFechaEsDeLaIA(false)
+    },
+    // Solo aplica si el usuario no tocó el campo todavía (I2: ni siquiera si lo
+    // dejó vacío a propósito). Devuelve si aplicó, para que el aviso nunca
+    // afirme algo que no pasó (I1).
+    alLeer: (fecha) => {
+      if (campoTocado) return false
+      setFecha(fecha)
+      setFechaEsDeLaIA(true)
+      return true
+    },
+  })
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -62,7 +85,7 @@ export default function DocumentForm({
       // Primer documento del vehículo: ahí se completa el paso del onboarding.
       if (sinDocumentos) avisarPaso('documentos')
       setOpen(false)
-      setPaginas([]); setFecha(''); setNombre(''); setAvisoApagado(false)
+      setPaginas([]); setFecha(''); setNombre(''); setCampoTocado(false); setFechaEsDeLaIA(false)
       router.refresh()
     } catch (err) {
       if (err instanceof ErrorPagina) {
@@ -117,15 +140,19 @@ export default function DocumentForm({
             type="date"
             className={inputCls}
             value={fechaVencimiento}
-            // Tocar el campo apaga el aviso: de ahí en adelante la fecha es del
-            // usuario, y seguir diciendo que la leyó una máquina sería mentir.
-            onChange={(e) => { setFecha(e.target.value); setAvisoApagado(true) }}
+            aria-describedby="aviso-lectura-fecha"
+            // Tocar el campo apaga el aviso y el autorelleno para siempre (I2):
+            // de ahí en adelante la fecha es del usuario, y seguir diciendo que
+            // la leyó una máquina —o pisarla con una lectura tardía— sería mentir.
+            onChange={(e) => { setFecha(e.target.value); setCampoTocado(true); setFechaEsDeLaIA(false) }}
           />
-          {!avisoApagado && estadoLectura === 'leyendo' && (
-            <p className="text-xs text-acero">Leyendo la fecha del documento…</p>
+          {/* `aria-live` para que un lector de pantalla se entere de que el campo
+              lo llenó una máquina, no solo quien lo vea (M8). */}
+          {!campoTocado && estadoLectura === 'leyendo' && (
+            <p id="aviso-lectura-fecha" aria-live="polite" className="text-xs text-acero">Leyendo la fecha del documento…</p>
           )}
-          {!avisoApagado && estadoLectura === 'lista' && (
-            <p className="text-xs text-acero">Fecha leída del documento — revísala.</p>
+          {!campoTocado && estadoLectura === 'lista' && (
+            <p id="aviso-lectura-fecha" aria-live="polite" className="text-xs text-acero">Fecha leída del documento — revísala.</p>
           )}
         </div>
       )}
@@ -143,7 +170,14 @@ export default function DocumentForm({
           className="rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press disabled:opacity-50">
           {loading ? textoProgreso(progreso) : 'Guardar'}
         </button>
-        <button type="button" onClick={() => { setOpen(false); setPaginas([]); setPaginaConError(null); setError(null) }}
+        <button type="button" onClick={() => {
+          // Cancelar deja el formulario como recién abierto: `open` es solo un
+          // flag y NO desmonta nada, así que hay que limpiar la fecha y sus
+          // marcas de procedencia a mano — si no, reabrir conserva la fecha
+          // (y a veces sin ningún aviso que la explique).
+          setOpen(false); setPaginas([]); setPaginaConError(null); setError(null)
+          setFecha(''); setCampoTocado(false); setFechaEsDeLaIA(false)
+        }}
           className="rounded-lg border border-linea bg-superficie px-4 py-2.5 text-sm font-medium text-tinta transition-colors hover:bg-lienzo">
           Cancelar
         </button>
