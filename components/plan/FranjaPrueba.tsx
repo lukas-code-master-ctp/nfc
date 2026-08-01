@@ -20,6 +20,10 @@ export default function FranjaPrueba({
   if (estado === 'sin_prueba') return null
 
   const dias = diasRestantes ?? 0
+  // El destino ya distingue quién eligió plan y quién no (ver dashboard); la
+  // etiqueta tiene que decir lo mismo, o quien ya eligió lee "Elegir plan"
+  // sobre un botón que en realidad lo manda a ver el plan que ya tiene.
+  const etiqueta = destino === '/facturacion' ? 'Ver mi plan' : 'Elegir plan'
   const texto =
     estado === 'vencida'
       ? // Dice la verdad: la app NO se bloquea. Un aviso que amenaza con algo
@@ -39,7 +43,7 @@ export default function FranjaPrueba({
         href={destino}
         className="shrink-0 rounded-lg bg-azul px-3 py-2 text-center text-sm font-medium text-white hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
       >
-        Elegir plan
+        {etiqueta}
       </Link>
     </div>
   )

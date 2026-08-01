@@ -18,6 +18,21 @@ import BillingRequestForm from '@/components/billing/BillingRequestForm'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * `gratisHasta` es una fecha calendario `YYYY-MM-DD`, no un instante: pasarla
+ * directo a `new Date(...)` la interpreta como medianoche UTC, y en Chile
+ * (detrás de UTC) `toLocaleDateString` con esa zona horaria puede mostrar el
+ * día anterior. Arma la fecha por componentes en vez de parsear la cadena.
+ */
+function fechaCL(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('es-CL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 export default async function FacturacionPage() {
   const m = await getMembership()
   if (!m) redirect('/login')
@@ -67,14 +82,16 @@ export default async function FacturacionPage() {
               {formatCLP(cargo.porVehiculo)} / {cargo.unidad}
             </dd>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-acero">Periodicidad</dt>
-            <dd className="font-medium text-tinta">{periodicidad === 'anual' ? 'Anual' : 'Mensual'}</dd>
-          </div>
+          {company?.plan?.periodicidad && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-acero">Periodicidad</dt>
+              <dd className="font-medium text-tinta">{periodicidad === 'anual' ? 'Anual' : 'Mensual'}</dd>
+            </div>
+          )}
           {company?.plan?.gratisHasta && (
             <div className="flex justify-between gap-4">
               <dt className="text-acero">{prueba.estado === 'vencida' ? 'Prueba terminada el' : 'Sin cobro hasta'}</dt>
-              <dd className="font-medium text-tinta tabular-nums">{company.plan.gratisHasta}</dd>
+              <dd className="font-medium text-tinta">{fechaCL(company.plan.gratisHasta)}</dd>
             </div>
           )}
         </dl>

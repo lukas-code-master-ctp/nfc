@@ -32,8 +32,19 @@ describe('FranjaPrueba', () => {
   })
 
   it('el enlace apunta al destino que se le pasa', () => {
-    render(<FranjaPrueba estado="activa" diasRestantes={10} destino="/facturacion" />)
+    render(<FranjaPrueba estado="activa" diasRestantes={10} destino="/plan" />)
     const link = screen.getByRole('link', { name: 'Elegir plan' })
+    expect(link.getAttribute('href')).toBe('/plan')
+  })
+
+  it('destino /plan usa la etiqueta "Elegir plan" (todavía no eligió)', () => {
+    render(<FranjaPrueba estado="activa" diasRestantes={10} destino="/plan" />)
+    expect(screen.getByRole('link', { name: 'Elegir plan' })).toBeTruthy()
+  })
+
+  it('destino /facturacion usa la etiqueta "Ver mi plan" (ya eligió)', () => {
+    render(<FranjaPrueba estado="activa" diasRestantes={10} destino="/facturacion" />)
+    const link = screen.getByRole('link', { name: 'Ver mi plan' })
     expect(link.getAttribute('href')).toBe('/facturacion')
   })
 })

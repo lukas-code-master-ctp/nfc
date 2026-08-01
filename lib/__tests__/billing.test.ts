@@ -38,8 +38,11 @@ describe('ahorroAnual', () => {
     expect(ahorroAnual(10)).toBe(125520)
   })
 
-  it('es cero sin vehículos', () => {
-    expect(ahorroAnual(0)).toBe(0)
+  // El caso con 0 vehículos pasa con cualquier implementación que multiplique
+  // por `vehiculos` (0 × cualquier cosa = 0) y no prueba nada del cálculo. Un
+  // vehículo sí lo hace: verifica el valor exacto contra el precio publicado.
+  it('con 1 vehículo es la diferencia anual entre mensual y anual', () => {
+    expect(ahorroAnual(1)).toBe(12552)
   })
 })
 
