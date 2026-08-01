@@ -29,13 +29,22 @@ export async function createCompany(
   const ref = await adminDb.collection(COL).add({
     ownerUid,
     company: data.company,
-    plan: { maxVehiculos: Math.max(1, Math.floor(data.plan.maxVehiculos)) },
+    // `periodicidad: null` explícito (y no ausente) es el marcador de "cuenta
+    // nueva que todavía no eligió". Lo lee `debeElegirPlan` para mandarla a
+    // /plan. Las cuentas anteriores al selector tienen el campo ausente y por
+    // eso nunca se topan con esa pantalla.
+    plan: { maxVehiculos: Math.max(1, Math.floor(data.plan.maxVehiculos)), periodicidad: null },
     createdAt: new Date().toISOString(),
   })
   return ref.id
 }
 
 // Solo un Administrador de la empresa llama esto (validado en la capa /api).
+//
+// OJO: la rama de `plan` reconstruye el mapa desde cero y descarta cualquier
+// otro campo. Es deliberado y estrecho — su único llamador de `plan` es el
+// panel admin, que solo cambia el cupo. Para escribir periodicidad o la fecha
+// de la prueba usa `savePlan`, no esto.
 export async function saveCompany(
   companyId: string,
   patch: { company?: CompanyData; plan?: PlanData; avisoUsoHoras?: number; categorias?: Categoria[]; pautaMantencion?: PautaMantencion },
@@ -47,6 +56,25 @@ export async function saveCompany(
   if (patch.categorias !== undefined) data.categorias = patch.categorias
   if (patch.pautaMantencion !== undefined) data.pautaMantencion = patch.pautaMantencion
   await adminDb.collection(COL).doc(companyId).set(data, { merge: true })
+}
+
+/**
+ * Escribe campos sueltos del plan sin pisar los demás.
+ *
+ * Firestore hace merge recursivo de mapas anidados con `{ merge: true }`, así
+ * que escribir `{ plan: { periodicidad: 'anual' } }` conserva `maxVehiculos`
+ * y `gratisHasta`. Por lo mismo, el PATCH del panel admin sigue siendo seguro:
+ * cambiar el cupo no borra la periodicidad ni la fecha.
+ */
+export async function savePlan(companyId: string, patch: Partial<PlanData>): Promise<void> {
+  const plan: Record<string, unknown> = {}
+  if (patch.maxVehiculos !== undefined) plan.maxVehiculos = Math.max(1, Math.floor(patch.maxVehiculos))
+  // `!== undefined` y no truthy: `periodicidad: null` y `gratisHasta: null`
+  // son valores legítimos que hay que poder escribir.
+  if (patch.periodicidad !== undefined) plan.periodicidad = patch.periodicidad
+  if (patch.gratisHasta !== undefined) plan.gratisHasta = patch.gratisHasta
+  if (Object.keys(plan).length === 0) return
+  await adminDb.collection(COL).doc(companyId).set({ plan }, { merge: true })
 }
 
 /** Qué hizo `ensureProvisioned`. Lo consume `POST /api/session` para decidir
