@@ -50,7 +50,9 @@ export default function ElegirTipo() {
       setError('No se pudo guardar. Inténtalo de nuevo.')
       return
     }
-    router.push('/dashboard')
+    // Al plan y no al dashboard: rebotar por el dashboard solo para que el
+    // portero vuelva a mandarte acá es una carga de página regalada.
+    router.push('/plan')
     router.refresh()
   }
 

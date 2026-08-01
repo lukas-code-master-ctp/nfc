@@ -5,7 +5,7 @@ import { listVehicles } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
 import { getCompany } from '@/lib/data/companies'
 import { documentStatus } from '@/lib/documents/status'
-import { maxVehiculosDe } from '@/lib/plan'
+import { maxVehiculosDe, debeElegirPlan } from '@/lib/plan'
 import VehiclesBoard from '@/components/VehiclesBoard'
 import { listAlertas } from '@/lib/data/alertas'
 import { listPendientesPara, listPendientesDe } from '@/lib/data/transferencias'
@@ -44,6 +44,11 @@ export default async function DashboardPage() {
   // la empresa, así que acá sale gratis.
   const puedeConfigurar = can(m.role, 'billing:manage')
   if (debeElegirTipo(company?.onboarding, puedeConfigurar)) redirect('/bienvenida')
+
+  // Segunda puerta, misma razón que la primera: acá la empresa ya está leída.
+  // Solo aplica al Administrador y solo con `periodicidad === null` explícito,
+  // así que ninguna cuenta anterior al selector se topa con esta pantalla.
+  if (puedeConfigurar && debeElegirPlan(company?.plan)) redirect('/plan')
 
   const limit = maxVehiculosDe(company?.plan)
   const avisoUsoHoras = company?.avisoUsoHoras ?? DEFAULT_AVISO_USO_HORAS

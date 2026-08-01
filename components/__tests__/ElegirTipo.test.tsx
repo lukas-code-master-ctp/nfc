@@ -22,7 +22,7 @@ describe('ElegirTipo', () => {
     expect(screen.getByRole('button', { name: /Una flota de la empresa/ })).toBeTruthy()
   })
 
-  it('al elegir, guarda el tipo y entra al dashboard', async () => {
+  it('al elegir, guarda el tipo y entra al selector de plan', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true } as Response)))
     render(<ElegirTipo />)
     fireEvent.click(screen.getByRole('button', { name: /Un vehículo particular/ }))
@@ -32,7 +32,7 @@ describe('ElegirTipo', () => {
         body: JSON.stringify({ tipoCuenta: 'personal' }),
       }))
     })
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/plan'))
     expect(refresh).toHaveBeenCalled()
   })
 
