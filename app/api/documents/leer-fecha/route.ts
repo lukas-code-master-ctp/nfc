@@ -21,10 +21,27 @@ export async function POST(req: NextRequest) {
   const m = await getMembership()
   if (!m) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const { imagen } = await req.json()
-  // Data URI completo, no base64 suelto: `chatVision` lo pasa tal cual como
-  // `image_url.url`, y ahí OpenRouter necesita el prefijo para saber qué recibe.
-  if (typeof imagen !== 'string' || !imagen.startsWith(PREFIJO_DATA_URI)) {
+  // Leer el cuerpo en su propio try/catch: un JSON inválido es culpa de quien
+  // llama (400), distinto del fallo del modelo (200 con `fecha: null`).
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'cuerpo inválido' }, { status: 400 })
+  }
+
+  const { imagen } = body as Record<string, unknown>
+
+  // Data URI completo: `data:image/{tipo};base64,{contenido}`. No basta el
+  // prefijo porque `'data:image/'` a secas o sin el `;base64,` seguido de algo
+  // pasa a Viaje pagado al modelo, que lo rechaza — gastar plata en validación
+  // del cliente. `chatVision` lo pasa tal cual como `image_url.url` en OpenRouter.
+  if (
+    typeof imagen !== 'string' ||
+    !imagen.startsWith(PREFIJO_DATA_URI) ||
+    !imagen.includes(';base64,') ||
+    imagen.length <= imagen.indexOf(';base64,') + 8
+  ) {
     return NextResponse.json({ error: 'imagen inválida' }, { status: 400 })
   }
 

@@ -17,6 +17,7 @@ const { POST } = await import('@/app/api/documents/leer-fecha/route')
 
 const IMAGEN = 'data:image/jpeg;base64,/9j/4AAQSkZJRg=='
 const req = (body: unknown) => ({ json: () => Promise.resolve(body) }) as unknown as NextRequest
+const reqConJsonRoto = () => ({ json: () => Promise.reject(new SyntaxError('Unexpected end of JSON input')) }) as unknown as NextRequest
 
 beforeEach(() => {
   for (const m of Object.values(mocks)) m.mockReset()
@@ -35,11 +36,30 @@ describe('quién puede llamarlo', () => {
 })
 
 describe('qué acepta', () => {
+  it('rechaza un cuerpo JSON inválido sin llamar al modelo', async () => {
+    const res = await POST(reqConJsonRoto())
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'cuerpo inválido' })
+    expect(mocks.chatVision).not.toHaveBeenCalled()
+  })
+
   it('rechaza lo que no sea un data URI, sin llamar al modelo', async () => {
     for (const imagen of ['https://ejemplo.cl/foto.jpg', '', 123, undefined]) {
       const res = await POST(req({ imagen }))
       expect(res.status).toBe(400)
     }
+    expect(mocks.chatVision).not.toHaveBeenCalled()
+  })
+
+  it('rechaza data URI incompleto sin `;base64,`, sin llamar al modelo', async () => {
+    const res = await POST(req({ imagen: 'data:image/jpeg' }))
+    expect(res.status).toBe(400)
+    expect(mocks.chatVision).not.toHaveBeenCalled()
+  })
+
+  it('rechaza data URI con `;base64,` pero sin contenido, sin llamar al modelo', async () => {
+    const res = await POST(req({ imagen: 'data:image/jpeg;base64,' }))
+    expect(res.status).toBe(400)
     expect(mocks.chatVision).not.toHaveBeenCalled()
   })
 })
