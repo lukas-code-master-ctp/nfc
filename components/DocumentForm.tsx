@@ -6,6 +6,7 @@ import { textoProgreso, type Pagina, type Progreso } from '@/lib/documentos/pagi
 import { subirPaginas, ErrorPagina } from '@/lib/documentos/subir'
 import SelectorPaginas from '@/components/documento/SelectorPaginas'
 import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
+import { useLecturaFecha } from '@/components/documento/useLecturaFecha'
 
 const TYPES = Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]
 
@@ -30,6 +31,16 @@ export default function DocumentForm({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // Se apaga en cuanto el usuario toca el campo: de ahí en adelante la fecha es
+  // suya, y seguir diciendo que la leyó una máquina sería mentir.
+  const [avisoApagado, setAvisoApagado] = useState(false)
+
+  // La fecha leída se escribe SOLO si el campo sigue vacío: lo que el usuario
+  // escribió es suyo. El actualizador funcional evita leer un valor viejo.
+  const estadoLectura = useLecturaFecha(paginas[0], (fecha) =>
+    setFecha((actual) => actual || fecha),
+  )
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
@@ -51,7 +62,7 @@ export default function DocumentForm({
       // Primer documento del vehículo: ahí se completa el paso del onboarding.
       if (sinDocumentos) avisarPaso('documentos')
       setOpen(false)
-      setPaginas([]); setFecha(''); setNombre('')
+      setPaginas([]); setFecha(''); setNombre(''); setAvisoApagado(false)
       router.refresh()
     } catch (err) {
       if (err instanceof ErrorPagina) {
@@ -98,8 +109,24 @@ export default function DocumentForm({
       )}
       {tipoTieneVencimiento(tipo) && (
         <div className="space-y-1.5">
-          <label className={labelCls}>Fecha de vencimiento <span className="font-normal text-acero/70">(opcional)</span></label>
-          <input type="date" className={inputCls} value={fechaVencimiento} onChange={(e) => setFecha(e.target.value)} />
+          <label htmlFor="fechaVencimiento" className={labelCls}>
+            Fecha de vencimiento <span className="font-normal text-acero/70">(opcional)</span>
+          </label>
+          <input
+            id="fechaVencimiento"
+            type="date"
+            className={inputCls}
+            value={fechaVencimiento}
+            // Tocar el campo apaga el aviso: de ahí en adelante la fecha es del
+            // usuario, y seguir diciendo que la leyó una máquina sería mentir.
+            onChange={(e) => { setFecha(e.target.value); setAvisoApagado(true) }}
+          />
+          {!avisoApagado && estadoLectura === 'leyendo' && (
+            <p className="text-xs text-acero">Leyendo la fecha del documento…</p>
+          )}
+          {!avisoApagado && estadoLectura === 'lista' && (
+            <p className="text-xs text-acero">Fecha leída del documento — revísala.</p>
+          )}
         </div>
       )}
       <div className="space-y-1.5">
