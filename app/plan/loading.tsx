@@ -22,6 +22,9 @@ export default function Loading() {
           <Bloque className="h-11 w-full rounded-xl" />
           <Bloque className="h-44 w-full rounded-2xl" />
           <Bloque className="h-12 w-full rounded-xl" />
+          <div className="flex justify-center">
+            <Linea className="h-4 w-64" />
+          </div>
         </div>
       </div>
     </main>

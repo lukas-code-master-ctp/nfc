@@ -79,4 +79,25 @@ describe('SelectorPlan', () => {
     expect(boton).not.toBeDisabled()
     expect(push).not.toHaveBeenCalled()
   })
+
+  // /plan es un embudo obligatorio sin navegación: si el fetch rechaza (sin
+  // conexión, timeout, DNS) el try/catch tiene que liberar el botón o el usuario
+  // queda sin salida. Este es el caso que ningún test cubría.
+  it('si el fetch rechaza (sin conexión), el botón vuelve a habilitarse', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('sin conexión'))))
+    render(<SelectorPlan inicial={3} />)
+    const boton = screen.getByRole('button', { name: 'Continuar' })
+    fireEvent.click(boton)
+    await waitFor(() => expect(boton).not.toBeDisabled())
+    expect(screen.getByText(/No se pudo guardar/)).toBeTruthy()
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  // El clamp del campo de entrada: escribir un valor menor a 1 debe quedarse en 1.
+  it('escribir un valor negativo en el input lo clampa a 1', () => {
+    render(<SelectorPlan inicial={3} />)
+    const input = screen.getByLabelText(/Cuántos vehículos/) as HTMLInputElement
+    fireEvent.change(input, { target: { value: '-5' } })
+    expect(input.value).toBe('1')
+  })
 })
