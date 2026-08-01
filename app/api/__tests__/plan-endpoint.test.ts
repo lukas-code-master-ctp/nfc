@@ -132,13 +132,40 @@ describe('camino feliz', () => {
       maxVehiculos: 8,
       gratisHasta: '2026-08-31',
     })
-    expect(mocks.createBillingRequest).toHaveBeenCalled()
+    // Verifica que createBillingRequest se llamó con los argumentos correctos, incluyendo desiredVehicles.
+    expect(mocks.createBillingRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: 'u1',
+        email: 'a@b.cl',
+        companyId: 'c1',
+        desiredVehicles: 8,
+      })
+    )
+    // Verifica que sendBillingRequestEmail se llamó con el destinatario como primer argumento y desiredVehicles correcto.
+    expect(mocks.sendBillingRequestEmail).toHaveBeenCalledWith(
+      'billing@tapcar.cl',
+      expect.objectContaining({
+        desiredVehicles: 8,
+      })
+    )
   })
 })
 
 describe('correo best-effort', () => {
   it('si el correo lanza, la respuesta sigue siendo 200 y el plan quedó guardado', async () => {
     mocks.sendBillingRequestEmail.mockRejectedValue(new Error('resend caído'))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 5 }))
+  })
+
+  it('si after() mismo lanza, la respuesta sigue siendo 200 y el plan quedó guardado', async () => {
+    // Verifica que el try/catch alrededor de after() protege la respuesta cuando after() falla.
+    mocks.after.mockImplementation(() => {
+      throw new Error('after() falló')
+    })
 
     const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
 
