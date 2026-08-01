@@ -1,9 +1,11 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { getCompany } from '@/lib/data/companies'
 import { listVehicles } from '@/lib/data/vehicles'
 import { maxVehiculosDe } from '@/lib/plan'
+import { estadoPrueba } from '@/lib/plan/prueba'
 import {
   TAG_PRICE,
   FREE_TAG_THRESHOLD,
@@ -30,6 +32,8 @@ export default async function FacturacionPage() {
   const cargo = cargoDe({ vehiculos: cupo, periodicidad })
   const tagFree = tagIncluded(cupo)
   const esAdmin = can(m.role, 'billing:manage')
+  const prueba = estadoPrueba(company?.plan?.gratisHasta, new Date())
+  const yaEligio = Boolean(company?.plan?.periodicidad)
 
   return (
     <main className="mx-auto max-w-2xl space-y-5 px-4 py-8">
@@ -63,6 +67,16 @@ export default async function FacturacionPage() {
               {formatCLP(cargo.porVehiculo)} / {cargo.unidad}
             </dd>
           </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-acero">Periodicidad</dt>
+            <dd className="font-medium text-tinta">{periodicidad === 'anual' ? 'Anual' : 'Mensual'}</dd>
+          </div>
+          {company?.plan?.gratisHasta && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-acero">{prueba.estado === 'vencida' ? 'Prueba terminada el' : 'Sin cobro hasta'}</dt>
+              <dd className="font-medium text-tinta tabular-nums">{company.plan.gratisHasta}</dd>
+            </div>
+          )}
         </dl>
       </section>
 
@@ -88,6 +102,15 @@ export default async function FacturacionPage() {
             Estamos en marcha blanca: por ahora coordinamos el pago y la <strong className="text-tinta">factura
             electrónica</strong> contigo directamente. Envíanos tu solicitud y te contactamos.
           </p>
+
+          {!yaEligio && (
+            <Link
+              href="/plan"
+              className="block rounded-xl bg-azul px-4 py-3 text-center font-medium text-white hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
+            >
+              Elegir plan
+            </Link>
+          )}
 
           <BillingRequestForm currentCupo={cupo} periodicidad={periodicidad} />
         </>

@@ -19,6 +19,7 @@ import { after } from 'next/server'
 import { saveOnboarding } from '@/lib/data/companies'
 import { cargarSenales } from '@/lib/onboarding/cargar'
 import { debeElegirTipo, debeMostrarTarjeta, pasosDe, todosListos, type Paso } from '@/lib/onboarding/pasos'
+import { estadoPrueba } from '@/lib/plan/prueba'
 
 export const dynamic = 'force-dynamic'
 // El `after()` que estampa `completadoEn` corre después de responder, pero sigue
@@ -59,6 +60,12 @@ export default async function DashboardPage() {
   const conTransferencia = new Set(salientes.map((t) => t.vehicleId))
 
   const now = new Date()
+  // El destino depende de si la cuenta llegó a elegir plan alguna vez: una
+  // anterior al selector todavía no tiene qué revisar en Facturación.
+  const prueba = {
+    ...estadoPrueba(company?.plan?.gratisHasta, now),
+    destino: company?.plan?.periodicidad ? '/facturacion' : '/plan',
+  }
   // Las cargas del fallback: solo se ejecutan para los vehículos que todavía no
   // tienen resumen guardado (creados antes del feature o saltados por el backfill).
   const cargas = {
@@ -133,6 +140,7 @@ export default async function DashboardPage() {
       categorias={categorias}
       entrantes={entrantes.map((t) => ({ token: t.token, patente: t.patente, deCompanyNombre: t.deCompanyNombre }))}
       onboarding={pasos && onboarding?.tipoCuenta ? { pasos, tipoCuenta: onboarding.tipoCuenta } : null}
+      prueba={prueba}
     />
   )
 }

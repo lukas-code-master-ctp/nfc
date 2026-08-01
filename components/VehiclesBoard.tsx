@@ -13,6 +13,8 @@ import type { EstadoMantencion } from '@/lib/mantencion/status'
 import TarjetaProgreso from '@/components/onboarding/TarjetaProgreso'
 import Toast from '@/components/Toast'
 import type { Paso } from '@/lib/onboarding/pasos'
+import FranjaPrueba from '@/components/plan/FranjaPrueba'
+import type { EstadoPrueba } from '@/lib/plan/prueba'
 
 type Item = {
   vehicle: Vehicle
@@ -92,6 +94,7 @@ export default function VehiclesBoard({
   categorias,
   entrantes = [],
   onboarding = null,
+  prueba = null,
 }: {
   items: Item[]
   limit: number
@@ -99,6 +102,7 @@ export default function VehiclesBoard({
   categorias: Categoria[]
   entrantes?: { token: string; patente: string; deCompanyNombre: string }[]
   onboarding?: { pasos: Paso[]; tipoCuenta: TipoCuenta } | null
+  prueba?: { estado: EstadoPrueba; diasRestantes: number | null; destino: string } | null
 }) {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<Filter>('todos')
@@ -341,6 +345,14 @@ export default function VehiclesBoard({
           </button>
         )}
       </div>
+
+      {prueba && (
+        <FranjaPrueba
+          estado={prueba.estado}
+          diasRestantes={prueba.diasRestantes}
+          destino={prueba.destino}
+        />
+      )}
 
       {onboarding && (
         <TarjetaProgreso
