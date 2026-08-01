@@ -32,10 +32,11 @@ export async function POST(req: NextRequest) {
 
   const { imagen } = body as Record<string, unknown>
 
-  // Data URI completo: `data:image/{tipo};base64,{contenido}`. No basta el
-  // prefijo porque `'data:image/'` a secas o sin el `;base64,` seguido de algo
-  // pasa a Viaje pagado al modelo, que lo rechaza — gastar plata en validación
-  // del cliente. `chatVision` lo pasa tal cual como `image_url.url` en OpenRouter.
+  // Data URI completo: `data:image/{tipo};base64,{contenido}`. `chatVision` lo
+  // pasa tal cual como `image_url.url`, así que OpenRouter necesita el prefijo
+  // para saber qué recibe. No basta comprobar el prefijo: `'data:image/'` a
+  // secas, o con el `;base64,` sin nada detrás, llegaría a la llamada **pagada**
+  // solo para que el modelo lo rechace. Se descarta acá, gratis.
   if (
     typeof imagen !== 'string' ||
     !imagen.startsWith(PREFIJO_DATA_URI) ||
