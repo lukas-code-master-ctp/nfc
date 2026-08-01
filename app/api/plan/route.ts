@@ -3,6 +3,7 @@ import { after } from 'next/server'
 import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { getCompany, savePlan } from '@/lib/data/companies'
+import { listVehicles } from '@/lib/data/vehicles'
 import { createBillingRequest } from '@/lib/data/billing'
 import { sendBillingRequestEmail, billingNotifyEmail } from '@/lib/email/resend'
 import { MAX_VEHICULOS_SELF_SERVICE, cargoDe } from '@/lib/billing'
@@ -37,24 +38,55 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'cuerpo inválido' }, { status: 400 })
   }
-  const { periodicidad, maxVehiculos } = body as Record<string, unknown>
+  const { periodicidad, maxVehiculos, solicitados } = body as Record<string, unknown>
 
   if (typeof periodicidad !== 'string' || !PERIODICIDADES.includes(periodicidad as Periodicidad)) {
     return NextResponse.json({ error: 'periodicidad inválida' }, { status: 400 })
   }
-  const n = Number(maxVehiculos)
-  // El tope se comprueba acá y no solo en el formulario: el cliente no decide
-  // cuánto cupo se regala durante la prueba.
-  if (!Number.isFinite(n) || n < 1 || n > MAX_VEHICULOS_SELF_SERVICE) {
-    return NextResponse.json({ error: 'cantidad inválida' }, { status: 400 })
+
+  // `solicitados` es opcional: lo manda la pantalla cuando el usuario pidió
+  // más que el tope self-service (más de 30). Si es un número finito y
+  // razonable por encima del tope, la cuenta igual queda operativa con el
+  // tope mientras se coordina el resto — ver I2. Cualquier otro valor se
+  // ignora en vez de fallar la petición por él.
+  let solicitadosNum: number | null = null
+  if (solicitados !== undefined) {
+    const s = Number(solicitados)
+    if (Number.isFinite(s) && s > 0 && s <= 1_000_000) solicitadosNum = Math.floor(s)
   }
-  const vehiculos = Math.floor(n)
+  const excedeTope = solicitadosNum != null && solicitadosNum > MAX_VEHICULOS_SELF_SERVICE
+
+  let vehiculos: number
+  if (excedeTope) {
+    vehiculos = MAX_VEHICULOS_SELF_SERVICE
+  } else {
+    const n = Number(maxVehiculos)
+    // El tope se comprueba acá y no solo en el formulario: el cliente no decide
+    // cuánto cupo se regala durante la prueba.
+    if (!Number.isFinite(n) || n < 1 || n > MAX_VEHICULOS_SELF_SERVICE) {
+      return NextResponse.json({ error: 'cantidad inválida' }, { status: 400 })
+    }
+    vehiculos = Math.floor(n)
+  }
 
   // Este endpoint es el alta, no el cambio de plan. Sin esta comprobación
   // alguien reiniciaría su prueba llamándolo de nuevo.
   const company = await getCompany(m.companyId)
   if (company?.plan?.periodicidad) {
     return NextResponse.json({ error: 'plan_ya_elegido' }, { status: 409 })
+  }
+
+  // Red que evita dejar a la empresa por encima de su propio cupo: una cuenta
+  // anterior al selector (periodicidad ausente) puede entrar a /plan con más
+  // vehículos ya cargados que los que está por elegir acá. Sin esto, un envío
+  // que no cambie el número sembrado por el cliente reduciría el cupo bajo el
+  // uso real y dejaría a la empresa sin forma de arreglarlo ella sola (ver C1).
+  const vehiculosActuales = await listVehicles(m.companyId)
+  if (vehiculos < vehiculosActuales.length) {
+    return NextResponse.json(
+      { error: 'cupo_menor_al_uso', vehiculos: vehiculosActuales.length },
+      { status: 409 },
+    )
   }
 
   const gratisHasta = addDias(hoyEnChile(new Date()), DIAS_PRUEBA)
@@ -66,7 +98,9 @@ export async function POST(req: NextRequest) {
   try {
     const cargo = cargoDe({ vehiculos, periodicidad: periodicidad as Periodicidad })
     const razonSocial = company?.company.razonSocial ?? ''
-    const message = `Alta ${periodicidad}: ${cargo.monto} CLP / ${cargo.unidad} · prueba hasta ${gratisHasta}`
+    const message = excedeTope
+      ? `Alta ${periodicidad}: ${cargo.monto} CLP / ${cargo.unidad} · prueba hasta ${gratisHasta} · solicitó ${solicitadosNum} vehículos, se dejó en ${MAX_VEHICULOS_SELF_SERVICE} mientras se coordina el resto.`
+      : `Alta ${periodicidad}: ${cargo.monto} CLP / ${cargo.unidad} · prueba hasta ${gratisHasta}`
     after(async () => {
       try {
         await createBillingRequest({
@@ -74,8 +108,12 @@ export async function POST(req: NextRequest) {
           email: m.email,
           companyId: m.companyId,
           razonSocial,
-          // El cupo anterior al alta: siempre el default, porque esta ruta solo
-          // corre cuando la empresa todavía no había elegido plan.
+          // El cupo anterior al alta: en una cuenta nueva es el default de
+          // `getCompany` (nunca eligió plan todavía); en una cuenta anterior al
+          // selector (periodicidad ausente) es el cupo real que ya tenía un
+          // admin de plataforma o el uso acumulado — `company?.plan?.maxVehiculos`
+          // ya trae ese valor real, no el default, porque `getCompany` solo
+          // rellena con `DEFAULT_PLAN` lo que falta.
           currentCupo: company?.plan?.maxVehiculos ?? vehiculos,
           desiredVehicles: vehiculos,
           message,

@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   cargoDe,
@@ -32,7 +31,7 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
     setVehiculos(Math.min(99, Math.max(1, Math.floor(n) || 1)))
   }
 
-  async function continuar() {
+  async function enviar(body: Record<string, unknown>) {
     setGuardando(true)
     setError(null)
     // /plan es un embudo obligatorio sin navegación: si el fetch rechaza (sin
@@ -42,11 +41,28 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
       const res = await fetch('/api/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ periodicidad, maxVehiculos: vehiculos }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         setGuardando(false)
-        setError('No se pudo guardar. Inténtalo de nuevo.')
+        // El cuerpo puede no venir en JSON válido (o `res.json` puede no
+        // existir según el fallo); cualquier tropiezo leyéndolo cae al
+        // mensaje genérico en vez de dejar la pantalla sin respuesta.
+        let data: unknown = null
+        try {
+          data = await res.json()
+        } catch {
+          // sigue con data = null
+        }
+        const codigo = (data as { error?: string } | null)?.error
+        if (codigo === 'cupo_menor_al_uso') {
+          const n = (data as { vehiculos?: number }).vehiculos
+          setError(
+            `Ya tienes ${n} vehículo${n === 1 ? '' : 's'} cargado${n === 1 ? '' : 's'}: no puedes elegir menos que eso.`,
+          )
+        } else {
+          setError('No se pudo guardar. Inténtalo de nuevo.')
+        }
         return
       }
     } catch {
@@ -56,6 +72,18 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
     }
     router.push('/dashboard')
     router.refresh()
+  }
+
+  function continuar() {
+    return enviar({ periodicidad, maxVehiculos: vehiculos })
+  }
+
+  function solicitar() {
+    // Sobre el tope self-service el cupo real que se guarda es 30 (lo decide
+    // el servidor), pero igual se manda `vehiculos` como referencia y
+    // `solicitados` con lo que el usuario realmente escribió, para que quede
+    // registrado en la solicitud de facturación — ver I2.
+    return enviar({ periodicidad, maxVehiculos: vehiculos, solicitados: vehiculos })
   }
 
   const tarjeta = (valor: Periodicidad, titulo: string, detalle: string, pill?: string) => (
@@ -181,14 +209,17 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
         <div className="space-y-3 rounded-2xl border border-linea bg-azul/5 p-5">
           <p className="text-sm text-acero">
             Para flotas de más de {MAX_VEHICULOS_SELF_SERVICE} vehículos coordinamos el plan
-            contigo directamente.
+            contigo directamente. Mientras tanto dejamos tu cuenta operativa con{' '}
+            {MAX_VEHICULOS_SELF_SERVICE} vehículos, para que puedas empezar a cargar tu flota hoy.
           </p>
-          <Link
-            href="/facturacion"
-            className="block w-full rounded-xl bg-azul px-4 py-3 text-center font-medium text-white hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
+          <button
+            type="button"
+            onClick={solicitar}
+            disabled={guardando}
+            className="w-full rounded-xl bg-azul px-4 py-3 font-medium text-white hover:bg-azul-press disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
           >
-            Hablemos de tu flota
-          </Link>
+            {guardando ? 'Preparando tu cuenta…' : `Solicitar plan para ${vehiculos} vehículos`}
+          </button>
         </div>
       ) : (
         <button

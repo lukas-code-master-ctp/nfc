@@ -48,12 +48,12 @@ describe('SelectorPlan', () => {
     expect(screen.getByText(/Incluido \(pagas el envío\)/)).toBeTruthy()
   })
 
-  it('con 31 vehículos desaparece "Continuar" y aparece el enlace a Facturación', () => {
+  it('con 31 vehículos desaparece "Continuar" y aparece el botón de solicitud', () => {
     render(<SelectorPlan inicial={3} />)
     const input = screen.getByLabelText(/Cuántos vehículos/) as HTMLInputElement
     fireEvent.change(input, { target: { value: '31' } })
     expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Hablemos de tu flota' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Solicitar plan para 31 vehículos' })).toBeTruthy()
   })
 
   it('"Continuar" hace POST a /api/plan con { periodicidad, maxVehiculos }', async () => {
@@ -70,12 +70,44 @@ describe('SelectorPlan', () => {
     expect(refresh).toHaveBeenCalled()
   })
 
-  it('si el POST responde !ok, muestra el mensaje de error y el botón vuelve a estar habilitado', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false } as Response)))
+  it('sobre el tope, el botón de solicitud hace POST con solicitados y navega igual al dashboard', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true } as Response)))
+    render(<SelectorPlan inicial={3} />)
+    const input = screen.getByLabelText(/Cuántos vehículos/) as HTMLInputElement
+    fireEvent.change(input, { target: { value: '45' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Solicitar plan para 45 vehículos' }))
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith('/api/plan', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ periodicidad: 'mensual', maxVehiculos: 45, solicitados: 45 }),
+      }))
+    })
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
+    expect(refresh).toHaveBeenCalled()
+  })
+
+  it('si el POST responde !ok con un error genérico, muestra el mensaje genérico y el botón vuelve a estar habilitado', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
+      ok: false,
+      json: () => Promise.resolve({ error: 'cantidad inválida' }),
+    } as unknown as Response)))
     render(<SelectorPlan inicial={3} />)
     const boton = screen.getByRole('button', { name: 'Continuar' })
     fireEvent.click(boton)
     await waitFor(() => expect(screen.getByText(/No se pudo guardar/)).toBeTruthy())
+    expect(boton).not.toBeDisabled()
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('si el POST responde 409 cupo_menor_al_uso, muestra cuántos vehículos ya tiene', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
+      ok: false,
+      json: () => Promise.resolve({ error: 'cupo_menor_al_uso', vehiculos: 10 }),
+    } as unknown as Response)))
+    render(<SelectorPlan inicial={3} />)
+    const boton = screen.getByRole('button', { name: 'Continuar' })
+    fireEvent.click(boton)
+    await waitFor(() => expect(screen.getByText(/Ya tienes 10 vehículos cargados/)).toBeTruthy())
     expect(boton).not.toBeDisabled()
     expect(push).not.toHaveBeenCalled()
   })
