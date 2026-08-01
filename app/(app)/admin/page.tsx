@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/session'
 import { isAdminEmail } from '@/lib/auth/admin'
 import { listAllCompanies } from '@/lib/data/admin'
-import { PRICE_PER_VEHICLE, monthlyTotal, formatCLP } from '@/lib/billing'
+import { PRICE_PER_VEHICLE, cargoDe, formatCLP } from '@/lib/billing'
 import BackLink from '@/components/BackLink'
 import AdminCompaniesTable from '@/components/admin/AdminCompaniesTable'
 
@@ -16,7 +16,8 @@ export default async function AdminPage() {
 
   const companies = await listAllCompanies()
   const totalVehiculos = companies.reduce((sum, c) => sum + c.maxVehiculos, 0)
-  const recaudacion = monthlyTotal(totalVehiculos)
+  // Estimación a tarifa mensual: el panel no distingue periodicidad por empresa.
+  const recaudacion = cargoDe({ vehiculos: totalVehiculos, periodicidad: 'mensual' }).monto
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">

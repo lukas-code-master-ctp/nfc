@@ -5,10 +5,9 @@ import { getCompany } from '@/lib/data/companies'
 import { listVehicles } from '@/lib/data/vehicles'
 import { maxVehiculosDe } from '@/lib/plan'
 import {
-  PRICE_PER_VEHICLE,
   TAG_PRICE,
   FREE_TAG_THRESHOLD,
-  monthlyTotal,
+  cargoDe,
   tagIncluded,
   formatCLP,
 } from '@/lib/billing'
@@ -27,7 +26,8 @@ export default async function FacturacionPage() {
   ])
   const cupo = maxVehiculosDe(company?.plan)
   const used = vehicles.length
-  const total = monthlyTotal(cupo)
+  const periodicidad = company?.plan?.periodicidad ?? 'mensual'
+  const cargo = cargoDe({ vehiculos: cupo, periodicidad })
   const tagFree = tagIncluded(cupo)
   const esAdmin = can(m.role, 'billing:manage')
 
@@ -43,8 +43,8 @@ export default async function FacturacionPage() {
             <p className="mt-0.5 text-sm text-acero">Suscripción por vehículo</p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold tracking-tight text-tinta">{formatCLP(total)}</p>
-            <p className="text-xs text-acero">/ mes</p>
+            <p className="text-2xl font-bold tracking-tight text-tinta">{formatCLP(cargo.monto)}</p>
+            <p className="text-xs text-acero">/ {cargo.unidad}</p>
           </div>
         </div>
 
@@ -59,7 +59,9 @@ export default async function FacturacionPage() {
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-acero">Valor por vehículo</dt>
-            <dd className="font-medium text-tinta tabular-nums">{formatCLP(PRICE_PER_VEHICLE)} / mes</dd>
+            <dd className="font-medium text-tinta tabular-nums">
+              {formatCLP(cargo.porVehiculo)} / {cargo.unidad}
+            </dd>
           </div>
         </dl>
       </section>
@@ -87,7 +89,7 @@ export default async function FacturacionPage() {
             electrónica</strong> contigo directamente. Envíanos tu solicitud y te contactamos.
           </p>
 
-          <BillingRequestForm currentCupo={cupo} />
+          <BillingRequestForm currentCupo={cupo} periodicidad={periodicidad} />
         </>
       ) : (
         <p className="rounded-xl bg-azul/5 px-4 py-3 text-sm text-acero">

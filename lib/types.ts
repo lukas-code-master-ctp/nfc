@@ -159,9 +159,20 @@ export interface Categoria {
   nombre: string
 }
 
+export type Periodicidad = 'mensual' | 'anual'
+
 export interface PlanData {
-  /** Máximo de vehículos permitidos por el plan (lo configura el admin). Mínimo 1. */
+  /** Máximo de vehículos permitidos por el plan. Mínimo 1. */
   maxVehiculos: number
+  /**
+   * `null` = cuenta nueva que todavía no eligió (dispara /plan).
+   * Ausente = cuenta anterior al selector: NO se le fuerza la pantalla.
+   * Esa distinción es lo que hace que la puerta no dependa de que el script
+   * de backfill haya corrido antes que el deploy.
+   */
+  periodicidad?: Periodicidad | null
+  /** `YYYY-MM-DD`: hasta cuándo esta cuenta no se cobra. */
+  gratisHasta?: string | null
 }
 
 export const DEFAULT_PLAN: PlanData = { maxVehiculos: 3 }

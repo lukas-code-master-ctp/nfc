@@ -1,8 +1,15 @@
 'use client'
 import { useState } from 'react'
-import { PRICE_PER_VEHICLE, monthlyTotal, formatCLP } from '@/lib/billing'
+import { cargoDe, formatCLP } from '@/lib/billing'
+import type { Periodicidad } from '@/lib/types'
 
-export default function BillingRequestForm({ currentCupo }: { currentCupo: number }) {
+export default function BillingRequestForm({
+  currentCupo,
+  periodicidad,
+}: {
+  currentCupo: number
+  periodicidad: Periodicidad
+}) {
   const [value, setValue] = useState(String(currentCupo))
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -64,9 +71,13 @@ export default function BillingRequestForm({ currentCupo }: { currentCupo: numbe
               className="w-24 rounded-lg border border-linea bg-superficie px-3 py-2.5 text-center text-tinta tabular-nums focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
             />
             <span className="text-sm text-acero">
-              × {formatCLP(PRICE_PER_VEHICLE)} ={' '}
+              × {formatCLP(cargoDe({ vehiculos: 1, periodicidad }).porVehiculo)} ={' '}
               <span className="font-semibold text-tinta">
-                {invalid ? '—' : `${formatCLP(monthlyTotal(n))} / mes`}
+                {invalid
+                  ? '—'
+                  : `${formatCLP(cargoDe({ vehiculos: n, periodicidad }).monto)} / ${
+                      periodicidad === 'anual' ? 'año' : 'mes'
+                    }`}
               </span>
             </span>
           </div>
