@@ -15,6 +15,19 @@ function chileDateParts(d: Date): { y: number; m: number; day: number } {
   return { y, m, day }
 }
 
+/**
+ * La fecha de hoy en Chile, como `YYYY-MM-DD`.
+ *
+ * Vive acá y no en el módulo de planes a propósito: la zona horaria de Chile
+ * tiene que tener un solo dueño en el proyecto. Duplicar el
+ * `Intl.DateTimeFormat` es exactamente cómo se llega a que dos partes de la
+ * app no coincidan en qué día es.
+ */
+export function hoyEnChile(now: Date): string {
+  const { y, m, day } = chileDateParts(now)
+  return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
 export function daysUntil(fechaVencimiento: string | null, now: Date): number | null {
   if (!fechaVencimiento) return null
   const { y, m, day } = chileDateParts(now)
