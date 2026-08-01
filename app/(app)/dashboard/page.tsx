@@ -60,12 +60,12 @@ export default async function DashboardPage() {
   const conTransferencia = new Set(salientes.map((t) => t.vehicleId))
 
   const now = new Date()
-  // El destino depende de si la cuenta llegó a elegir plan alguna vez: una
-  // anterior al selector todavía no tiene qué revisar en Facturación.
-  const prueba = {
+  // La franja solo se muestra al Administrador: el botón "Elegir plan" va a `/plan`,
+  // que rebota a quien no tenga billing:manage, dejando un callejón sin salida.
+  const prueba = puedeConfigurar ? {
     ...estadoPrueba(company?.plan?.gratisHasta, now),
     destino: company?.plan?.periodicidad ? '/facturacion' : '/plan',
-  }
+  } : null
   // Las cargas del fallback: solo se ejecutan para los vehículos que todavía no
   // tienen resumen guardado (creados antes del feature o saltados por el backfill).
   const cargas = {
