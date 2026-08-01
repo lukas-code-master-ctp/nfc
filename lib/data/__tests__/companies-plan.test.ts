@@ -82,4 +82,15 @@ describe('savePlan', () => {
     expect('periodicidad' in written.plan).toBe(false)
     expect(written.plan.gratisHasta).toBe('2026-09-01')
   })
+
+  it('escribe `null` explícito en periodicidad y gratisHasta', async () => {
+    // `periodicidad: null` y `gratisHasta: null` son valores legítimos que hay
+    // que guardar. Un chequeo de falsy en vez de `!== undefined` los
+    // descartaría silenciosamente, lo que rompe el marcador de "cuenta nueva".
+    await savePlan('c1', { periodicidad: null, gratisHasta: null })
+    expect(companySet).toHaveBeenCalledWith(
+      { plan: { periodicidad: null, gratisHasta: null } },
+      { merge: true },
+    )
+  })
 })
