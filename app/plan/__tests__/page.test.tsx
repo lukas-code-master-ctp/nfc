@@ -1,4 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+// Componente real (sin mockear): la creación de un elemento JSX no invoca la
+// función del componente, así que sirve solo como referencia para ubicarlo
+// dentro del árbol devuelto por PlanPage() y leer el prop `inicial` que recibe.
+import SelectorPlan from '@/components/plan/SelectorPlan'
 
 // Guarda de servidor de /plan (app/plan/page.tsx): quién entra, quién rebota
 // y a dónde. `can` y `debeElegirPlan`/`maxVehiculosDe` son lógica pura (sin
@@ -91,5 +95,70 @@ describe('guarda de /plan', () => {
 
     expect(result).toBeTruthy()
     expect(mocks.redirect).not.toHaveBeenCalled()
+  })
+})
+
+// Recorre el árbol de elementos que devuelve PlanPage() buscando el nodo
+// SelectorPlan y devuelve el prop `inicial` que le llegó.
+type Nodo = { type?: unknown; props?: { children?: unknown; inicial?: number } } | null | undefined
+
+function buscarInicial(nodo: unknown): number | undefined {
+  if (!nodo || typeof nodo !== 'object') return undefined
+  const n = nodo as Nodo
+  if (n?.type === SelectorPlan && typeof n.props?.inicial === 'number') return n.props.inicial
+  const children = n?.props?.children
+  if (Array.isArray(children)) {
+    for (const c of children) {
+      const found = buscarInicial(c)
+      if (found !== undefined) return found
+    }
+    return undefined
+  }
+  return buscarInicial(children)
+}
+
+describe('siembra del `inicial` que /plan pasa a SelectorPlan', () => {
+  it('periodicidad ausente (cuenta anterior al selector) con cupo 12: inicial es 12, no 3 (no le hace perder su propio cupo)', async () => {
+    mocks.getMembership.mockResolvedValue({ uid: 'u1', email: 'a@b.cl', companyId: 'c1', role: 'admin' })
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: {},
+      plan: { maxVehiculos: 12 }, // sin `periodicidad`
+    })
+
+    const result = await PlanPage()
+
+    expect(buscarInicial(result)).toBe(12)
+  })
+
+  it('periodicidad null + tipoCuenta personal: inicial es 1', async () => {
+    mocks.getMembership.mockResolvedValue({ uid: 'u1', email: 'a@b.cl', companyId: 'c1', role: 'admin' })
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: {},
+      plan: { maxVehiculos: 3, periodicidad: null },
+      onboarding: { tipoCuenta: 'personal' },
+    })
+
+    const result = await PlanPage()
+
+    expect(buscarInicial(result)).toBe(1)
+  })
+
+  it('periodicidad null + tipoCuenta empresa: inicial es 3', async () => {
+    mocks.getMembership.mockResolvedValue({ uid: 'u1', email: 'a@b.cl', companyId: 'c1', role: 'admin' })
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: {},
+      plan: { maxVehiculos: 3, periodicidad: null },
+      onboarding: { tipoCuenta: 'empresa' },
+    })
+
+    const result = await PlanPage()
+
+    expect(buscarInicial(result)).toBe(3)
   })
 })
