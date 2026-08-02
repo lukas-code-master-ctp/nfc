@@ -63,5 +63,10 @@ service cloud.firestore {
     match /transferencias/{id} {
       allow read, write: if false;
     }
+
+    // Códigos promocionales: solo server-side (Admin SDK). Cliente sin acceso.
+    match /promoCodes/{id} {
+      allow read, write: if false;
+    }
   }
 }
