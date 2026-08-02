@@ -11,6 +11,7 @@ import {
   MAX_VEHICULOS_SELF_SERVICE,
 } from '@/lib/billing'
 import type { Periodicidad } from '@/lib/types'
+import CampoPromo, { type PromoValidada } from '@/components/plan/CampoPromo'
 
 const ATAJOS = [1, 3, 5, 10]
 
@@ -20,6 +21,7 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
   const [vehiculos, setVehiculos] = useState(inicial)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [promo, setPromo] = useState<PromoValidada | null>(null)
 
   const excede = vehiculos > MAX_VEHICULOS_SELF_SERVICE
   const cargo = cargoDe({ vehiculos, periodicidad })
@@ -70,6 +72,30 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
       setError('No se pudo guardar. Inténtalo de nuevo.')
       return
     }
+
+    // El canje va DESPUÉS de guardar: `promo.hasta` se calcula desde
+    // `gratisHasta`, que no existe hasta que el plan está guardado. Si falla
+    // acá, el plan ya quedó a salvo y el usuario puede canjear en Facturación,
+    // que es la segunda puerta — por eso el mensaje lo manda ahí y no reintenta.
+    if (promo) {
+      try {
+        const res = await fetch('/api/promo/canjear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codigo: promo.codigo }),
+        })
+        if (!res.ok) {
+          setGuardando(false)
+          setError('Tu plan quedó guardado, pero el código no se pudo canjear. Inténtalo desde Facturación.')
+          return
+        }
+      } catch {
+        setGuardando(false)
+        setError('Tu plan quedó guardado, pero el código no se pudo canjear. Inténtalo desde Facturación.')
+        return
+      }
+    }
+
     router.push('/dashboard')
     router.refresh()
   }
@@ -204,6 +230,19 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
           </p>
         )}
       </div>
+
+      <CampoPromo onValidada={setPromo} />
+
+      {promo && promo.vehiculosIncluidos > 0 && (
+        <p className="text-sm text-acero">
+          Durante {promo.mesesGratis === 1 ? 'el mes' : `los ${promo.mesesGratis} meses`} de promoción
+          pagarías{' '}
+          <strong className="text-tinta">
+            {formatCLP(cargoDe({ vehiculos, periodicidad, vehiculosIncluidos: promo.vehiculosIncluidos }).monto)}
+          </strong>{' '}
+          {periodicidad === 'anual' ? 'al año' : 'al mes'}.
+        </p>
+      )}
 
       {excede ? (
         <div className="space-y-3 rounded-2xl border border-linea bg-azul/5 p-5">

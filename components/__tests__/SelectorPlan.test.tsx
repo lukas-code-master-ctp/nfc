@@ -132,4 +132,79 @@ describe('SelectorPlan', () => {
     fireEvent.change(input, { target: { value: '-5' } })
     expect(input.value).toBe('1')
   })
+
+  it('con un código validado, "Continuar" hace primero POST a /api/plan y después POST a /api/promo/canjear, en ese orden', async () => {
+    const llamadas: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        llamadas.push(url)
+        if (url === '/api/promo/validar') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ valido: true, mesesGratis: 3, vehiculosIncluidos: 5 }),
+          } as unknown as Response)
+        }
+        return Promise.resolve({ ok: true } as Response)
+      }),
+    )
+    render(<SelectorPlan inicial={3} />)
+
+    fireEvent.click(screen.getByText('¿Tienes un código promocional?'))
+    fireEvent.change(screen.getByLabelText('Código promocional'), { target: { value: 'TAPCAR' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    await waitFor(() => expect(screen.getByText(/3 meses gratis/)).toBeTruthy())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
+    // La validación ocurre antes (al aplicar el código); lo que importa acá es
+    // el orden relativo entre guardar el plan y canjear el código.
+    const planIdx = llamadas.indexOf('/api/plan')
+    const canjearIdx = llamadas.indexOf('/api/promo/canjear')
+    expect(planIdx).toBeGreaterThanOrEqual(0)
+    expect(canjearIdx).toBeGreaterThan(planIdx)
+    expect(fetch).toHaveBeenCalledWith('/api/promo/canjear', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ codigo: 'TAPCAR' }),
+    }))
+  })
+
+  it('si el canje falla, se muestra el mensaje que dice que el plan quedó guardado y NO se navega', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url === '/api/promo/validar') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ valido: true, mesesGratis: 3, vehiculosIncluidos: 5 }),
+          } as unknown as Response)
+        }
+        if (url === '/api/promo/canjear') {
+          return Promise.resolve({
+            ok: false,
+            json: () => Promise.resolve({ error: 'agotado' }),
+          } as unknown as Response)
+        }
+        return Promise.resolve({ ok: true } as Response)
+      }),
+    )
+    render(<SelectorPlan inicial={3} />)
+
+    fireEvent.click(screen.getByText('¿Tienes un código promocional?'))
+    fireEvent.change(screen.getByLabelText('Código promocional'), { target: { value: 'TAPCAR' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    await waitFor(() => expect(screen.getByText(/3 meses gratis/)).toBeTruthy())
+
+    const boton = screen.getByRole('button', { name: 'Continuar' })
+    fireEvent.click(boton)
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Tu plan quedó guardado, pero el código no se pudo canjear. Inténtalo desde Facturación.'),
+      ).toBeTruthy(),
+    )
+    expect(boton).not.toBeDisabled()
+    expect(push).not.toHaveBeenCalled()
+  })
 })
