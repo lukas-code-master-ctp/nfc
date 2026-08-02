@@ -6,7 +6,7 @@ import { getCompany } from '@/lib/data/companies'
 import { listVehicles } from '@/lib/data/vehicles'
 import { maxVehiculosDe } from '@/lib/plan'
 import { estadoPrueba } from '@/lib/plan/prueba'
-import { faseDelPlan } from '@/lib/plan/fase'
+import { coberturaDe } from '@/lib/plan/fase'
 import { hoyEnChile } from '@/lib/documents/status'
 import {
   TAG_PRICE,
@@ -48,11 +48,7 @@ export default async function FacturacionPage() {
   const used = vehicles.length
   const periodicidad = company?.plan?.periodicidad ?? 'mensual'
   const promo = company?.plan?.promo ?? null
-  const fase = faseDelPlan(
-    { gratisHasta: company?.plan?.gratisHasta, promoHasta: promo?.hasta },
-    hoyEnChile(new Date()),
-  )
-  const cobertura = fase === 'promo' ? (promo?.vehiculosIncluidos ?? 0) : 0
+  const cobertura = coberturaDe(company?.plan, hoyEnChile(new Date()))
   const cargo = cargoDe({ vehiculos: cupo, periodicidad, vehiculosIncluidos: cobertura })
   const tagFree = tagIncluded(cupo)
   const esAdmin = can(m.role, 'billing:manage')
@@ -158,7 +154,12 @@ export default async function FacturacionPage() {
             </Link>
           )}
 
-          {!promo && <PanelPromo />}
+          {/* Solo con plan ya elegido: sin `periodicidad`, canjear acá calcularía
+              `promo.hasta` desde `gratisHasta: null` y la promoción arrancaría
+              HOY, solapándose con los 30 días de prueba que "Elegir plan" recién
+              va a fijar — ver I1 de la revisión final. El camino correcto sin
+              plan es el botón de arriba, que ya lleva el campo de código. */}
+          {!promo && yaEligio && <PanelPromo />}
 
           <BillingRequestForm currentCupo={cupo} periodicidad={periodicidad} />
         </>
