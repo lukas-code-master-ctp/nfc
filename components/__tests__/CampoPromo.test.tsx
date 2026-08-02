@@ -98,4 +98,32 @@ describe('CampoPromo', () => {
 
     await waitFor(() => expect(screen.queryByText(/3 meses gratis/)).toBeNull())
   })
+
+  it('editar el código DESPUÉS de validar limpia el resultado sin apretar Aplicar (si no, "Continuar" canjearía el código viejo)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ valido: true, mesesGratis: 3, vehiculosIncluidos: 5 }),
+        } as unknown as Response),
+      ),
+    )
+    const onValidada = vi.fn()
+    render(<CampoPromo onValidada={onValidada} />)
+    fireEvent.click(screen.getByText('¿Tienes un código promocional?'))
+    const input = screen.getByLabelText('Código promocional')
+    fireEvent.change(input, { target: { value: 'CODIGOA' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    await waitFor(() => expect(screen.getByText(/3 meses gratis/)).toBeTruthy())
+    expect(onValidada).toHaveBeenLastCalledWith(
+      expect.objectContaining({ codigo: 'CODIGOA' }),
+    )
+
+    // Escribe CODIGOB SIN apretar Aplicar de nuevo.
+    fireEvent.change(input, { target: { value: 'CODIGOB' } })
+
+    expect(screen.queryByText(/3 meses gratis/)).toBeNull()
+    expect(onValidada).toHaveBeenLastCalledWith(null)
+  })
 })

@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import CampoPromo, { type PromoValidada } from '@/components/plan/CampoPromo'
+import CampoPromo, { MOTIVOS, type PromoValidada } from '@/components/plan/CampoPromo'
 
 /**
  * Panel de canje en Facturación: acá el plan ya existe (a diferencia del
@@ -24,7 +24,18 @@ export default function PanelPromo() {
         body: JSON.stringify({ codigo: p.codigo }),
       })
       if (!res.ok) {
-        setError('No se pudo canjear el código. Inténtalo de nuevo.')
+        // Mismo cuidado que en `SelectorPlan`: el 409 trae `{ error: MotivoRechazo
+        // }`, y sin leerlo un código agotado o ya vencido se lee acá como el
+        // mismo mensaje genérico para siempre — el usuario nunca se entera de
+        // por qué, y puede reintentar el mismo código indefinidamente.
+        let data: unknown = null
+        try {
+          data = await res.json()
+        } catch {
+          // sigue con data = null: el cuerpo puede no venir en JSON válido.
+        }
+        const motivo = (data as { error?: string } | null)?.error
+        setError((motivo && MOTIVOS[motivo]) || 'No se pudo canjear el código. Inténtalo de nuevo.')
         return
       }
       router.refresh()

@@ -11,7 +11,7 @@ import {
   MAX_VEHICULOS_SELF_SERVICE,
 } from '@/lib/billing'
 import type { Periodicidad } from '@/lib/types'
-import CampoPromo, { type PromoValidada } from '@/components/plan/CampoPromo'
+import CampoPromo, { MOTIVOS, type PromoValidada } from '@/components/plan/CampoPromo'
 
 const ATAJOS = [1, 3, 5, 10]
 
@@ -86,7 +86,21 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
         })
         if (!res.ok) {
           setGuardando(false)
-          setError('Tu plan quedó guardado, pero el código no se pudo canjear. Inténtalo desde Facturación.')
+          // El 409 trae `{ error: MotivoRechazo }`. Sin leerlo, la carrera EXACTA
+          // para la que existe la transacción del servidor (el código se agota
+          // entre validar y canjear) le mostraba a este usuario un mensaje
+          // genérico, y el mismo genérico otra vez en Facturación al reintentar
+          // el mismo código agotado — un bucle sin salida porque nunca se
+          // enteraba de que el motivo era "agotado" y no un fallo transitorio.
+          let data: unknown = null
+          try {
+            data = await res.json()
+          } catch {
+            // sigue con data = null: el cuerpo puede no venir en JSON válido.
+          }
+          const motivo = (data as { error?: string } | null)?.error
+          const detalle = (motivo && MOTIVOS[motivo]) || 'El código no se pudo canjear.'
+          setError(`Tu plan quedó guardado. ${detalle} Puedes intentarlo de nuevo desde Facturación.`)
           return
         }
       } catch {
