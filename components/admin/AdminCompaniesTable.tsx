@@ -24,28 +24,42 @@ function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => 
     setSaving(true)
     setError(null)
     setSaved(false)
-    const res = await fetch(`/api/admin/companies/${c.companyId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ maxVehiculos: n }),
-    })
-    setSaving(false)
-    if (!res.ok) {
-      setError('No se pudo guardar.')
-      return
+    try {
+      const res = await fetch(`/api/admin/companies/${c.companyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxVehiculos: n }),
+      })
+      if (!res.ok) {
+        setError('No se pudo guardar.')
+        return
+      }
+      setSavedMax(n)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch {
+      // El fetch puede RECHAZAR (sin conexión, timeout, DNS), no solo devolver
+      // !ok: sin este catch, ese camino dejaría el botón colgado en "…".
+      setError('No se pudo conectar con el servidor.')
+    } finally {
+      setSaving(false)
     }
-    setSavedMax(n)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
   }
 
   async function eliminar() {
     setBorrando(true)
     setErrorBorrar(null)
-    const res = await fetch(`/api/admin/companies/${c.companyId}`, { method: 'DELETE' })
-    setBorrando(false)
-    if (res.ok) onDeleted(c.companyId)
-    else setErrorBorrar('No se pudo eliminar la empresa.')
+    try {
+      const res = await fetch(`/api/admin/companies/${c.companyId}`, { method: 'DELETE' })
+      if (res.ok) onDeleted(c.companyId)
+      else setErrorBorrar('No se pudo eliminar la empresa.')
+    } catch {
+      // Igual que al guardar: un fetch rechazado no puede dejar el botón
+      // colgado en "Eliminando…" sin decir nada.
+      setErrorBorrar('No se pudo conectar con el servidor.')
+    } finally {
+      setBorrando(false)
+    }
   }
 
   return (
