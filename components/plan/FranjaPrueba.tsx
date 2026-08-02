@@ -18,6 +18,31 @@ function fechaCL(fechaISO: string): string {
   return new Date(y, m - 1, d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function RelojIcon() {
+  return (
+    <svg
+      className="size-5 shrink-0 opacity-70"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  )
+}
+
+// Ancho completo y `mb-6`, igual que `TransferenciasEntrantes`, que es el otro
+// banner de este mismo board: con `max-w-2xl` centrada era el único elemento
+// con un ancho distinto al del contenedor (`max-w-4xl`), así que quedaba
+// flotando entre el sidebar y la lista sin alinearse con ninguno de los dos.
+const MARCO =
+  'mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3'
+
 export default function FranjaPrueba({
   estado,
   diasRestantes,
@@ -51,8 +76,11 @@ export default function FranjaPrueba({
         : `Tienes una promoción activa · ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`} · hasta el ${fechaCL(promo.hasta)}.`
 
     return (
-      <div className="mx-auto flex max-w-2xl flex-col gap-3 rounded-2xl border border-azul/30 bg-azul/5 px-4 py-3 text-acero sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm">{texto}</p>
+      <div className={`${MARCO} border-azul/30 bg-azul/5 text-acero`}>
+        <p className="flex min-w-0 items-center gap-2.5 text-sm">
+          <RelojIcon />
+          <span>{texto}</span>
+        </p>
         <Link
           href={destino}
           className="shrink-0 rounded-lg bg-azul px-3 py-2 text-center text-sm font-medium text-white hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
@@ -78,10 +106,11 @@ export default function FranjaPrueba({
         : `Estás en la versión de prueba · ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`}.`
 
   return (
-    <div
-      className={`mx-auto flex max-w-2xl flex-col gap-3 rounded-2xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${TONO[estado]}`}
-    >
-      <p className="text-sm">{texto}</p>
+    <div className={`${MARCO} ${TONO[estado]}`}>
+      <p className="flex min-w-0 items-center gap-2.5 text-sm">
+        <RelojIcon />
+        <span>{texto}</span>
+      </p>
       <Link
         href={destino}
         className="shrink-0 rounded-lg bg-azul px-3 py-2 text-center text-sm font-medium text-white hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
