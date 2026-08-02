@@ -6,6 +6,8 @@ import { getCompany } from '@/lib/data/companies'
 import { listVehicles } from '@/lib/data/vehicles'
 import { maxVehiculosDe } from '@/lib/plan'
 import { estadoPrueba } from '@/lib/plan/prueba'
+import { faseDelPlan } from '@/lib/plan/fase'
+import { hoyEnChile } from '@/lib/documents/status'
 import {
   TAG_PRICE,
   FREE_TAG_THRESHOLD,
@@ -15,6 +17,7 @@ import {
 } from '@/lib/billing'
 import BackLink from '@/components/BackLink'
 import BillingRequestForm from '@/components/billing/BillingRequestForm'
+import PanelPromo from '@/components/plan/PanelPromo'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +47,13 @@ export default async function FacturacionPage() {
   const cupo = maxVehiculosDe(company?.plan)
   const used = vehicles.length
   const periodicidad = company?.plan?.periodicidad ?? 'mensual'
-  const cargo = cargoDe({ vehiculos: cupo, periodicidad })
+  const promo = company?.plan?.promo ?? null
+  const fase = faseDelPlan(
+    { gratisHasta: company?.plan?.gratisHasta, promoHasta: promo?.hasta },
+    hoyEnChile(new Date()),
+  )
+  const cobertura = fase === 'promo' ? (promo?.vehiculosIncluidos ?? 0) : 0
+  const cargo = cargoDe({ vehiculos: cupo, periodicidad, vehiculosIncluidos: cobertura })
   const tagFree = tagIncluded(cupo)
   const esAdmin = can(m.role, 'billing:manage')
   const prueba = estadoPrueba(company?.plan?.gratisHasta, new Date())
@@ -94,6 +103,26 @@ export default async function FacturacionPage() {
               <dd className="font-medium text-tinta">{fechaCL(company.plan.gratisHasta)}</dd>
             </div>
           )}
+          {promo && (
+            <>
+              <div className="flex justify-between gap-4">
+                <dt className="text-acero">Código aplicado</dt>
+                <dd className="font-medium text-tinta">{promo.codigo}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-acero">Promoción hasta</dt>
+                <dd className="font-medium text-tinta tabular-nums">{fechaCL(promo.hasta)}</dd>
+              </div>
+            </>
+          )}
+          {cargo.monto !== cargo.montoPleno && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-acero">Al terminar la promoción</dt>
+              <dd className="font-medium text-tinta tabular-nums">
+                {formatCLP(cargo.montoPleno)} / {cargo.unidad}
+              </dd>
+            </div>
+          )}
         </dl>
       </section>
 
@@ -128,6 +157,8 @@ export default async function FacturacionPage() {
               Elegir plan
             </Link>
           )}
+
+          {!promo && <PanelPromo />}
 
           <BillingRequestForm currentCupo={cupo} periodicidad={periodicidad} />
         </>
