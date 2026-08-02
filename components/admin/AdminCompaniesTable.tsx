@@ -24,28 +24,43 @@ function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => 
     setSaving(true)
     setError(null)
     setSaved(false)
-    const res = await fetch(`/api/admin/companies/${c.companyId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ maxVehiculos: n }),
-    })
-    setSaving(false)
-    if (!res.ok) {
-      setError('No se pudo guardar.')
-      return
+    // El try/catch no es decorativo: si el fetch RECHAZA (sin conexión,
+    // timeout, DNS) en vez de responder !ok, sin él `saving` queda encendido
+    // para siempre y el botón se deshabilita sin ningún mensaje. Es el mismo
+    // gotcha que colgó el login: si el catch es lo único que apaga un estado
+    // de carga, todo camino de fallo tiene que pasar por él.
+    try {
+      const res = await fetch(`/api/admin/companies/${c.companyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxVehiculos: n }),
+      })
+      if (!res.ok) {
+        setError('No se pudo guardar.')
+        return
+      }
+      setSavedMax(n)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch {
+      setError('No se pudo guardar. Revisa tu conexión.')
+    } finally {
+      setSaving(false)
     }
-    setSavedMax(n)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
   }
 
   async function eliminar() {
     setBorrando(true)
     setErrorBorrar(null)
-    const res = await fetch(`/api/admin/companies/${c.companyId}`, { method: 'DELETE' })
-    setBorrando(false)
-    if (res.ok) onDeleted(c.companyId)
-    else setErrorBorrar('No se pudo eliminar la empresa.')
+    try {
+      const res = await fetch(`/api/admin/companies/${c.companyId}`, { method: 'DELETE' })
+      if (res.ok) onDeleted(c.companyId)
+      else setErrorBorrar('No se pudo eliminar la empresa.')
+    } catch {
+      setErrorBorrar('No se pudo eliminar la empresa. Revisa tu conexión.')
+    } finally {
+      setBorrando(false)
+    }
   }
 
   return (
