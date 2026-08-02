@@ -161,6 +161,38 @@ export interface Categoria {
 
 export type Periodicidad = 'mensual' | 'anual'
 
+/** Lo que un código promocional otorgó a una empresa. Copia congelada: editar
+ *  el código después NO altera lo que ya se canjeó. */
+export interface PromoAplicada {
+  /** El código canjeado, en su forma canónica. */
+  codigo: string
+  mesesGratis: number
+  vehiculosIncluidos: number
+  /** ISO completo: cuándo se canjeó. */
+  canjeadoEn: string
+  /** `YYYY-MM-DD`: hasta cuándo dura la cobertura promocional. */
+  hasta: string
+}
+
+/** Un código de campaña. En Firestore, el **id del documento es `codigo`**. */
+export interface PromoCode {
+  codigo: string
+  descripcion: string
+  mesesGratis: number
+  vehiculosIncluidos: number
+  activo: boolean
+  /** `YYYY-MM-DD`: último día en que se puede canjear. `null` = sin vencimiento. */
+  expiraEn: string | null
+  /** Tope de empresas que pueden canjearlo. `null` = sin tope. */
+  maxCanjes: number | null
+  canjes: number
+  createdAt: string | null
+  createdByUid?: string
+}
+
+export const MAX_MESES_PROMO = 24
+export const MAX_VEHICULOS_PROMO = 100
+
 export interface PlanData {
   /** Máximo de vehículos permitidos por el plan. Mínimo 1. */
   maxVehiculos: number
@@ -173,6 +205,8 @@ export interface PlanData {
   periodicidad?: Periodicidad | null
   /** `YYYY-MM-DD`: hasta cuándo esta cuenta no se cobra. */
   gratisHasta?: string | null
+  /** El código canjeado. Uno por empresa. */
+  promo?: PromoAplicada | null
 }
 
 export const DEFAULT_PLAN: PlanData = { maxVehiculos: 3 }

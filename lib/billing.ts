@@ -13,8 +13,11 @@ export const TAG_PRICE = 1000 // CLP por tag cuando el plan es < umbral
 export const MAX_VEHICULOS_SELF_SERVICE = 30
 
 export interface Cargo {
-  /** Lo que se cobra en un ciclo. */
+  /** Lo que se cobra en un ciclo, ya descontada la cobertura promocional. */
   monto: number
+  /** Lo que se cobrará cuando no haya cobertura. Sin promo, igual a `monto`. */
+  montoPleno: number
+  vehiculosCobrados: number
   /** Valor unitario en la unidad del ciclo. */
   porVehiculo: number
   unidad: 'mes' | 'año'
@@ -27,15 +30,22 @@ function sanear(vehiculos: number): number {
 export function cargoDe({
   vehiculos,
   periodicidad,
+  // Opcional con default 0 a propósito: los llamadores que ya existen siguen
+  // funcionando sin cambios y obtienen `monto === montoPleno`.
+  vehiculosIncluidos = 0,
 }: {
   vehiculos: number
   periodicidad: Periodicidad
+  vehiculosIncluidos?: number
 }): Cargo {
   const v = sanear(vehiculos)
+  const cobrados = Math.max(0, v - sanear(vehiculosIncluidos))
   const porVehiculo =
     periodicidad === 'anual' ? PRICE_PER_VEHICLE_ANUAL_MES * MESES_ANUAL : PRICE_PER_VEHICLE
   return {
-    monto: v * porVehiculo,
+    monto: cobrados * porVehiculo,
+    montoPleno: v * porVehiculo,
+    vehiculosCobrados: cobrados,
     porVehiculo,
     unidad: periodicidad === 'anual' ? 'año' : 'mes',
   }
