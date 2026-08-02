@@ -4,6 +4,21 @@ import type { FormEvent } from 'react'
 import type { PromoCode } from '@/lib/types'
 import { MAX_MESES_PROMO, MAX_VEHICULOS_PROMO } from '@/lib/types'
 
+// Mensajes crudos que devuelve el servidor y que no alcanzan a ser legibles
+// para el admin (los de `mesesGratis`/`vehiculosIncluidos` ya vienen como
+// oración completa desde el endpoint y se muestran tal cual).
+const ERRORES_SERVIDOR: Record<string, string> = {
+  'codigo inválido': 'El código no puede quedar vacío tras normalizarlo (solo letras, números y guiones).',
+  'cuerpo inválido': 'No se pudo leer la solicitud. Inténtalo de nuevo.',
+  'maxCanjes inválido': 'El tope de canjes debe ser un número entero mayor o igual a 1.',
+  'activo requerido': 'Falta indicar si el código queda activo o inactivo.',
+}
+
+function mensajeError(raw: string | undefined, fallback: string): string {
+  if (!raw) return fallback
+  return ERRORES_SERVIDOR[raw] ?? raw
+}
+
 function queOtorga(c: Pick<PromoCode, 'mesesGratis' | 'vehiculosIncluidos'>): string {
   const partes: string[] = []
   if (c.mesesGratis > 0) partes.push(`${c.mesesGratis} ${c.mesesGratis === 1 ? 'mes' : 'meses'} gratis`)
@@ -101,8 +116,8 @@ export default function PromoCodesPanel({ codigos }: { codigos: PromoCode[] }) {
 
   const [codigo, setCodigo] = useState('')
   const [descripcion, setDescripcion] = useState('')
-  const [mesesGratis, setMesesGratis] = useState('0')
-  const [vehiculosIncluidos, setVehiculosIncluidos] = useState('0')
+  const [mesesGratis, setMesesGratis] = useState('1')
+  const [vehiculosIncluidos, setVehiculosIncluidos] = useState('1')
   const [expiraEn, setExpiraEn] = useState('')
   const [maxCanjes, setMaxCanjes] = useState('')
   const [creando, setCreando] = useState(false)
@@ -110,10 +125,13 @@ export default function PromoCodesPanel({ codigos }: { codigos: PromoCode[] }) {
 
   const meses = Number(mesesGratis)
   const vehiculos = Number(vehiculosIncluidos)
-  const mesesInvalido = !Number.isFinite(meses) || meses < 0 || meses > MAX_MESES_PROMO
-  const vehiculosInvalido = !Number.isFinite(vehiculos) || vehiculos < 0 || vehiculos > MAX_VEHICULOS_PROMO
-  const noOtorgaNada = meses === 0 && vehiculos === 0
-  const invalido = codigo.trim() === '' || mesesInvalido || vehiculosInvalido || noOtorgaNada
+  // Mínimo 1 en los dos campos, no un OR entre ellos: con `vehiculosIncluidos:
+  // 0` la fase promo no cubre nada (se cobra igual que sin canjear), y con
+  // `mesesGratis: 0` la ventana de promoción dura cero días. Un código así no
+  // otorga nada aunque la UI lo anuncie — ver C1 de la revisión final.
+  const mesesInvalido = !Number.isFinite(meses) || meses < 1 || meses > MAX_MESES_PROMO
+  const vehiculosInvalido = !Number.isFinite(vehiculos) || vehiculos < 1 || vehiculos > MAX_VEHICULOS_PROMO
+  const invalido = codigo.trim() === '' || mesesInvalido || vehiculosInvalido
 
   async function crear(e: FormEvent) {
     e.preventDefault()
@@ -140,7 +158,7 @@ export default function PromoCodesPanel({ codigos }: { codigos: PromoCode[] }) {
         if (res.status === 409 && data.error === 'codigo_existe') {
           setError('Ya existe un código con ese nombre.')
         } else {
-          setError(data.error ?? 'No se pudo crear el código.')
+          setError(mensajeError(data.error, 'No se pudo crear el código.'))
         }
         return
       }
@@ -161,8 +179,8 @@ export default function PromoCodesPanel({ codigos }: { codigos: PromoCode[] }) {
       ])
       setCodigo('')
       setDescripcion('')
-      setMesesGratis('0')
-      setVehiculosIncluidos('0')
+      setMesesGratis('1')
+      setVehiculosIncluidos('1')
       setExpiraEn('')
       setMaxCanjes('')
     } catch {
@@ -227,14 +245,14 @@ export default function PromoCodesPanel({ codigos }: { codigos: PromoCode[] }) {
             <input
               id="promo-meses"
               type="number"
-              min={0}
+              min={1}
               max={MAX_MESES_PROMO}
               inputMode="numeric"
               value={mesesGratis}
               onChange={(e) => setMesesGratis(e.target.value)}
               className="mt-1 w-full rounded-lg border border-linea bg-superficie px-3 py-2 text-sm text-tinta tabular-nums focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
             />
-            {mesesInvalido && <p className="mt-1 text-xs text-vencido">Entre 0 y {MAX_MESES_PROMO}.</p>}
+            {mesesInvalido && <p className="mt-1 text-xs text-vencido">Entre 1 y {MAX_MESES_PROMO}.</p>}
           </div>
 
           <div>
@@ -242,14 +260,17 @@ export default function PromoCodesPanel({ codigos }: { codigos: PromoCode[] }) {
             <input
               id="promo-vehiculos"
               type="number"
-              min={0}
+              min={1}
               max={MAX_VEHICULOS_PROMO}
               inputMode="numeric"
               value={vehiculosIncluidos}
               onChange={(e) => setVehiculosIncluidos(e.target.value)}
               className="mt-1 w-full rounded-lg border border-linea bg-superficie px-3 py-2 text-sm text-tinta tabular-nums focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
             />
-            {vehiculosInvalido && <p className="mt-1 text-xs text-vencido">Entre 0 y {MAX_VEHICULOS_PROMO}.</p>}
+            {vehiculosInvalido && <p className="mt-1 text-xs text-vencido">Entre 1 y {MAX_VEHICULOS_PROMO}.</p>}
+            <p className="mt-1 text-xs text-acero">
+              Para cubrir cualquier flota usa {MAX_VEHICULOS_PROMO} (el tope self-service de un plan es 30).
+            </p>
           </div>
 
           <div>
@@ -267,9 +288,6 @@ export default function PromoCodesPanel({ codigos }: { codigos: PromoCode[] }) {
           </div>
         </div>
 
-        {noOtorgaNada && !mesesInvalido && !vehiculosInvalido && (
-          <p className="mt-3 text-xs text-vencido">El código tiene que otorgar al menos meses gratis o vehículos.</p>
-        )}
         {error && <p className="mt-3 text-sm text-vencido">{error}</p>}
 
         <button
