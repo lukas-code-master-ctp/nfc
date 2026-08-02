@@ -34,7 +34,14 @@ export async function createPromoCode(
   },
   createdByUid: string,
 ): Promise<void> {
-  await adminDb.collection(COL).doc(input.codigo).set({
+  // `.create()` y NO `.set()`: el id del documento ES el código, así que un
+  // `.set()` sobre un código que ya existe lo pisa en silencio — reinicia
+  // `canjes` a 0 y pierde `createdAt`/`createdByUid` originales, lo que relaja
+  // `maxCanjes` para una campaña que ya venía canjeándose. `.create()` lanza
+  // (código Firestore `ALREADY_EXISTS`) si el documento ya existe, que es
+  // justo lo que queremos: fallar ruidoso en vez de pisar. No "simplificar"
+  // esto de vuelta a `.set()`.
+  await adminDb.collection(COL).doc(input.codigo).create({
     descripcion: input.descripcion,
     mesesGratis: input.mesesGratis,
     vehiculosIncluidos: input.vehiculosIncluidos,

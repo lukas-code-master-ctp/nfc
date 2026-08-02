@@ -5,7 +5,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // hay que simular tx.get/tx.update/tx.set además de collection().doc().
 const mocks = vi.hoisted(() => {
   const promoDocGet = vi.fn()
-  const promoDocSet = vi.fn().mockResolvedValue(undefined)
+  // `createPromoCode` usa `.create()` (no `.set()`): lanza si el doc ya
+  // existe, en vez de pisarlo en silencio. Ver el comentario en promoCodes.ts.
+  const promoDocCreate = vi.fn().mockResolvedValue(undefined)
   const promoDocUpdate = vi.fn().mockResolvedValue(undefined)
   const companyDocGet = vi.fn()
   const companyDocSet = vi.fn().mockResolvedValue(undefined)
@@ -15,7 +17,7 @@ const mocks = vi.hoisted(() => {
   const incrementMock = vi.fn((n: number) => ({ __increment: n }))
   return {
     promoDocGet,
-    promoDocSet,
+    promoDocCreate,
     promoDocUpdate,
     companyDocGet,
     companyDocSet,
@@ -36,7 +38,7 @@ vi.mock('@/lib/firebase/admin', () => ({
           // La referencia lleva `__col` para que el tx fake de cada test sepa
           // a qué colección corresponde cuando se la pasan a tx.get/update/set.
           if (name === 'promoCodes') {
-            return { __col: 'promoCodes', set: mocks.promoDocSet, get: mocks.promoDocGet, update: mocks.promoDocUpdate }
+            return { __col: 'promoCodes', create: mocks.promoDocCreate, get: mocks.promoDocGet, update: mocks.promoDocUpdate }
           }
           return { __col: 'companies', set: mocks.companyDocSet, get: mocks.companyDocGet }
         },
@@ -52,7 +54,7 @@ const { createPromoCode, getPromoCode, canjearPromo } = await import('@/lib/data
 
 beforeEach(() => {
   mocks.promoDocGet.mockReset()
-  mocks.promoDocSet.mockClear()
+  mocks.promoDocCreate.mockClear()
   mocks.promoDocUpdate.mockClear()
   mocks.companyDocGet.mockReset()
   mocks.companyDocSet.mockClear()
@@ -77,7 +79,7 @@ function fakeTx(snapshots: { code: unknown; company: unknown }) {
 }
 
 describe('createPromoCode', () => {
-  it('escribe en el doc cuyo ID es el código canónico, con canjes:0 y activo:true', async () => {
+  it('crea el doc cuyo ID es el código canónico, con canjes:0 y activo:true, vía `.create()` (no `.set()`)', async () => {
     await createPromoCode(
       {
         codigo: 'LANZAMIENTO',
@@ -91,9 +93,26 @@ describe('createPromoCode', () => {
     )
     expect(mocks.collectionSpy).toHaveBeenCalledWith('promoCodes')
     expect(mocks.docSpy).toHaveBeenCalledWith('promoCodes', 'LANZAMIENTO')
-    expect(mocks.promoDocSet).toHaveBeenCalledWith(
+    expect(mocks.promoDocCreate).toHaveBeenCalledWith(
       expect.objectContaining({ canjes: 0, activo: true }),
     )
+  })
+
+  it('propaga el error si el código ya existe (`.create()` lanza en vez de pisar el doc)', async () => {
+    mocks.promoDocCreate.mockRejectedValueOnce(Object.assign(new Error('6 ALREADY_EXISTS'), { code: 6 }))
+    await expect(
+      createPromoCode(
+        {
+          codigo: 'LANZAMIENTO',
+          descripcion: 'Lanzamiento agosto',
+          mesesGratis: 2,
+          vehiculosIncluidos: 5,
+          expiraEn: null,
+          maxCanjes: 50,
+        },
+        'uid-admin',
+      ),
+    ).rejects.toMatchObject({ code: 6 })
   })
 })
 

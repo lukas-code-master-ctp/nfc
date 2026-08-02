@@ -94,6 +94,19 @@ describe('POST /api/admin/promo-codes', () => {
       'admin1',
     )
   })
+
+  it('8. createPromoCode lanza ALREADY_EXISTS (code 6, como .create() de Firestore) -> 409 codigo_existe', async () => {
+    mocks.createPromoCode.mockRejectedValue(Object.assign(new Error('6 ALREADY_EXISTS'), { code: 6 }))
+    const res = await POST(req(BODY_SANO))
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({ error: 'codigo_existe' })
+  })
+
+  it('9. createPromoCode lanza un error DISTINTO de Firestore -> no se enmascara como 409', async () => {
+    mocks.createPromoCode.mockRejectedValue(Object.assign(new Error('unavailable'), { code: 14 }))
+    const res = await POST(req(BODY_SANO))
+    expect(res.status).not.toBe(409)
+  })
 })
 
 describe('PATCH /api/admin/promo-codes/[id]', () => {

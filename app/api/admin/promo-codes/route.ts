@@ -46,16 +46,35 @@ export async function POST(req: NextRequest) {
   const expiraEn =
     typeof b.expiraEn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.expiraEn) ? b.expiraEn : null
 
-  await createPromoCode(
-    {
-      codigo,
-      descripcion: typeof b.descripcion === 'string' ? b.descripcion.slice(0, 200) : '',
-      mesesGratis: Math.floor(meses),
-      vehiculosIncluidos: Math.floor(vehiculos),
-      expiraEn,
-      maxCanjes,
-    },
-    me.uid,
-  )
+  try {
+    await createPromoCode(
+      {
+        codigo,
+        descripcion: typeof b.descripcion === 'string' ? b.descripcion.slice(0, 200) : '',
+        mesesGratis: Math.floor(meses),
+        vehiculosIncluidos: Math.floor(vehiculos),
+        expiraEn,
+        maxCanjes,
+      },
+      me.uid,
+    )
+  } catch (err) {
+    // `createPromoCode` usa `.create()`, que lanza con código gRPC 6
+    // (ALREADY_EXISTS) si el código ya existe como documento. Solo ESE caso
+    // se traduce a 409: cualquier otro error es un fallo real de Firestore
+    // (500 + log), no lo enmascaramos como si el código ya existiera — ya
+    // pasó antes en este proyecto un catch genérico ocultando un fallo real.
+    if (esErrorYaExiste(err)) {
+      return NextResponse.json({ error: 'codigo_existe' }, { status: 409 })
+    }
+    console.error('[promo-codes:crear]', err)
+    return NextResponse.json({ error: 'No se pudo crear el código.' }, { status: 500 })
+  }
   return NextResponse.json({ ok: true, codigo })
+}
+
+// Código gRPC 6 = ALREADY_EXISTS. `firebase-admin`/`@google-cloud/firestore`
+// exponen el código del error como `.code` en el objeto lanzado.
+function esErrorYaExiste(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === 6
 }

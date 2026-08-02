@@ -134,8 +134,14 @@ export default function PromoCodesPanel({ codigos }: { codigos: PromoCode[] }) {
         }),
       })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error ?? 'No se pudo crear el código.')
+        // Igual que el resto del panel: si el cuerpo no es JSON válido, no se
+        // puede dejar la pantalla sin ningún mensaje.
+        const data = (await res.json().catch(() => ({}))) as { error?: string }
+        if (res.status === 409 && data.error === 'codigo_existe') {
+          setError('Ya existe un código con ese nombre.')
+        } else {
+          setError(data.error ?? 'No se pudo crear el código.')
+        }
         return
       }
       const data = (await res.json()) as { codigo: string }
