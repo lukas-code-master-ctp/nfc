@@ -2,9 +2,11 @@ import { redirect, notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/session'
 import { isAdminEmail } from '@/lib/auth/admin'
 import { listAllCompanies } from '@/lib/data/admin'
+import { listPromoCodes } from '@/lib/data/promoCodes'
 import { PRICE_PER_VEHICLE, cargoDe, formatCLP } from '@/lib/billing'
 import BackLink from '@/components/BackLink'
 import AdminCompaniesTable from '@/components/admin/AdminCompaniesTable'
+import PromoCodesPanel from '@/components/admin/PromoCodesPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +16,7 @@ export default async function AdminPage() {
   // Falla cerrado: si no es admin, la ruta no existe para él.
   if (!isAdminEmail(user.email)) notFound()
 
-  const companies = await listAllCompanies()
+  const [companies, codigos] = await Promise.all([listAllCompanies(), listPromoCodes()])
   const totalVehiculos = companies.reduce((sum, c) => sum + c.maxVehiculos, 0)
   // Estimación a tarifa mensual: el panel no distingue periodicidad por empresa.
   const recaudacion = cargoDe({ vehiculos: totalVehiculos, periodicidad: 'mensual' }).monto
@@ -38,6 +40,7 @@ export default async function AdminPage() {
       </section>
 
       <AdminCompaniesTable companies={companies} />
+      <PromoCodesPanel codigos={codigos} />
     </main>
   )
 }
