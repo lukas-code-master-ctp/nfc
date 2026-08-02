@@ -64,6 +64,8 @@ Esto no es una sutileza gratuita: hace que la puerta **no dependa de que el scri
 
 ### Una sola fecha, no dos
 
+> **Corregido por el spec de B** (`2026-08-01-codigos-promocionales-design.md`, §2). Esta regla vale mientras el código solo dé meses; al agregar cobertura de vehículos deja de servir, porque extender la fecha única haría que la cobertura aplicara también a los días de prueba que quedaban — y canjear dejaría al usuario **peor** que no canjear. En B la promoción empieza donde termina la prueba y lleva su propia fecha (`plan.promo.hasta`); `gratisHasta` ya no se toca al canjear. Lo de abajo queda como registro de por qué se intentó una sola fecha.
+
 `gratisHasta` es "hasta cuándo no se te cobra". Los 30 días de prueba y los meses del código promocional escriben **ahí mismo**. La regla de canje que usará B es una sola y sirve igual en el alta que en Facturación:
 
 ```
