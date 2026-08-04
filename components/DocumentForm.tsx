@@ -7,8 +7,20 @@ import { subirPaginas, ErrorPagina } from '@/lib/documentos/subir'
 import SelectorPaginas from '@/components/documento/SelectorPaginas'
 import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
 import { useLecturaFecha } from '@/components/documento/useLecturaFecha'
+import InfoTip from '@/components/InfoTip'
 
 const TYPES = Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]
+
+// Sin `motion-safe:` a propósito, igual que `LoadingDots`: no es decoración,
+// es la única señal de que algo está ocurriendo. Quieto no informa nada.
+function Spinner() {
+  return (
+    <svg className="size-3.5 shrink-0 animate-spin text-azul" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 export default function DocumentForm({
   vehicleId,
@@ -146,14 +158,36 @@ export default function DocumentForm({
             // la leyó una máquina —o pisarla con una lectura tardía— sería mentir.
             onChange={(e) => { setFecha(e.target.value); setCampoTocado(true); setFechaEsDeLaIA(false) }}
           />
-          {/* `aria-live` para que un lector de pantalla se entere de que el campo
-              lo llenó una máquina, no solo quien lo vea (M8). */}
-          {!campoTocado && estadoLectura === 'leyendo' && (
-            <p id="aviso-lectura-fecha" aria-live="polite" className="text-xs text-acero">Leyendo la fecha del documento…</p>
-          )}
-          {!campoTocado && estadoLectura === 'lista' && (
-            <p id="aviso-lectura-fecha" aria-live="polite" className="text-xs text-acero">Fecha leída del documento — revísala.</p>
-          )}
+          {/* El detalle va en el popover y no suelto en la pantalla: son cuatro
+              reglas (la leemos, la puedes corregir, si escribes dejamos de
+              rellenar, y qué pasa si guardas antes) y ninguna se lee si van
+              todas como texto plano bajo un campo opcional. */}
+          <p className="flex items-center gap-1 text-xs text-acero">
+            La leemos del documento por ti
+            <InfoTip label="Cómo se completa la fecha">
+              <p>
+                Al agregar la foto o el PDF leemos la fecha de vencimiento y la escribimos acá.
+                Puedes esperar a que aparezca y corregirla si quedó mal, o escribirla tú — si la
+                escribes, dejamos de rellenarla.
+              </p>
+              <p className="mt-2">
+                Si guardas antes de que aparezca, el documento queda <strong>sin fecha</strong> y
+                no te avisaremos antes de que venza. Puedes agregarla después editándolo.
+              </p>
+            </InfoTip>
+          </p>
+          {/* Altura reservada: sin esto el formulario salta cuando aparece y
+              desaparece el aviso. `aria-live` para que un lector de pantalla se
+              entere de que el campo lo llenó una máquina, no solo quien lo vea (M8). */}
+          <p id="aviso-lectura-fecha" aria-live="polite" className="flex min-h-4 items-center gap-1.5 text-xs text-acero">
+            {!campoTocado && estadoLectura === 'leyendo' && (
+              <>
+                <Spinner />
+                Leyendo la fecha del documento…
+              </>
+            )}
+            {!campoTocado && estadoLectura === 'lista' && 'Fecha leída del documento — revísala.'}
+          </p>
         </div>
       )}
       <div className="space-y-1.5">
