@@ -44,12 +44,10 @@ export function esDocumentType(v: unknown): v is DocumentType {
 
 export const REMINDER_MILESTONES = [30, 7, 0] as const
 
-// Tipos de documento que no tienen fecha de vencimiento: el Padrón y el
-// Certificado de Homologación se emiten una sola vez y no caducan.
-export const DOCUMENT_TYPES_SIN_VENCIMIENTO = new Set<DocumentType>([
-  'padron',
-  'certificado_homologacion',
-])
+// Tipos de documento que no tienen fecha de vencimiento (p.ej. el Padrón).
+// OJO: el Certificado de Homologación **sí vence** — el C.H.I.-e trae un
+// "VÁLIDO HASTA" y reemplaza a la Revisión Técnica hasta esa fecha.
+export const DOCUMENT_TYPES_SIN_VENCIMIENTO = new Set<DocumentType>(['padron'])
 
 export function tipoTieneVencimiento(tipo: DocumentType): boolean {
   return !DOCUMENT_TYPES_SIN_VENCIMIENTO.has(tipo)

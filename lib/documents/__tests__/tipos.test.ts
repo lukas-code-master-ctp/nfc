@@ -22,10 +22,16 @@ describe('el catálogo de tipos', () => {
     expect(esDocumentType('certificado_gases')).toBe(true)
   })
 
-  it('el Certificado de Homologación se ofrece y no vence', () => {
+  // El C.H.I.-e trae un "VÁLIDO HASTA" y reemplaza a la Revisión Técnica hasta
+  // esa fecha, así que necesita campo de fecha y recordatorios como cualquiera.
+  it('el Certificado de Homologación se ofrece y SÍ vence', () => {
     expect(DOCUMENT_TYPES_ELEGIBLES).toContain('certificado_homologacion')
-    expect(DOCUMENT_TYPES_SIN_VENCIMIENTO.has('certificado_homologacion')).toBe(true)
-    expect(tipoTieneVencimiento('certificado_homologacion')).toBe(false)
+    expect(DOCUMENT_TYPES_SIN_VENCIMIENTO.has('certificado_homologacion')).toBe(false)
+    expect(tipoTieneVencimiento('certificado_homologacion')).toBe(true)
+  })
+
+  it('el único sin vencimiento es el Padrón', () => {
+    expect([...DOCUMENT_TYPES_SIN_VENCIMIENTO]).toEqual(['padron'])
   })
 
   it('un tipo inventado no pasa la guarda', () => {
