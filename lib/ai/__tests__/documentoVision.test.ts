@@ -101,3 +101,47 @@ describe('el prompt', () => {
     expect(buildFechaPrompt().toLowerCase()).toContain('emisión')
   })
 })
+
+// El C.H.I.-e trae "VÁLIDO HASTA ENE/2027": mes y año, sin día. La regla del
+// dominio es que el documento vale hasta que el mes termina, así que tomar el
+// día 1 adelantaría el vencimiento —y el recordatorio— un mes entero.
+describe('fechas sin día: se completan al último del mes', () => {
+  it('enero cierra el 31', () => {
+    expect(parseFechaVision(respuesta('2027-01'), AHORA)).toBe('2027-01-31')
+  })
+
+  it('abril cierra el 30', () => {
+    expect(parseFechaVision(respuesta('2027-04'), AHORA)).toBe('2027-04-30')
+  })
+
+  it('febrero de un año normal cierra el 28', () => {
+    expect(parseFechaVision(respuesta('2027-02'), AHORA)).toBe('2027-02-28')
+  })
+
+  it('febrero de un año bisiesto cierra el 29', () => {
+    expect(parseFechaVision(respuesta('2028-02'), AHORA)).toBe('2028-02-29')
+  })
+
+  it('diciembre cierra el 31 sin irse al año siguiente', () => {
+    expect(parseFechaVision(respuesta('2027-12'), AHORA)).toBe('2027-12-31')
+  })
+
+  // El mes inválido no se completa a nada: lo atrapa la comprobación de ida y
+  // vuelta, igual que un 2027-02-31.
+  it('un mes que no existe sigue siendo null', () => {
+    expect(parseFechaVision(respuesta('2027-13'), AHORA)).toBeNull()
+    expect(parseFechaVision(respuesta('2027-00'), AHORA)).toBeNull()
+  })
+
+  it('el rango de cordura se sigue aplicando', () => {
+    expect(parseFechaVision(respuesta('9999-01'), AHORA)).toBeNull()
+  })
+
+  it('un año solo, sin mes, no se completa', () => {
+    expect(parseFechaVision(respuesta('2027'), AHORA)).toBeNull()
+  })
+
+  it('el prompt también lo pide, para que el modelo responda ya completo', () => {
+    expect(buildFechaPrompt()).toContain('2027-01-31')
+  })
+})
