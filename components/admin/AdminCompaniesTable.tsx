@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
-import type { AdminCompanyRow } from '@/lib/data/admin'
+import type { AdminCompanyResumen } from '@/lib/data/admin'
 
-function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => void }) {
+function Row({ c, onDeleted }: { c: AdminCompanyResumen; onDeleted: (id: string) => void }) {
   const [value, setValue] = useState(String(c.maxVehiculos))
   // Cupo ya guardado (parte del valor del servidor y se actualiza al guardar).
   // Estado local en vez de mutar el prop `c`.
@@ -149,7 +149,7 @@ function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => 
   )
 }
 
-export default function AdminCompaniesTable({ companies }: { companies: AdminCompanyRow[] }) {
+export default function AdminCompaniesTable({ companies }: { companies: AdminCompanyResumen[] }) {
   const [rows, setRows] = useState(companies)
 
   if (rows.length === 0) {

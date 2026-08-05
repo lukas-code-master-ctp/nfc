@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import AdminCompaniesTable from '@/components/admin/AdminCompaniesTable'
-import type { AdminCompanyRow } from '@/lib/data/admin'
+import type { AdminCompanyResumen } from '@/lib/data/admin'
 
-const empresa: AdminCompanyRow = {
+const empresa: AdminCompanyResumen = {
   companyId: 'c1',
   razonSocial: 'Transportes Andes',
   ownerEmail: 'duenio@andes.cl',
