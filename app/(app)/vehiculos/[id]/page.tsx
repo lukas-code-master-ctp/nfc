@@ -141,7 +141,13 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         documentos={
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-tinta">Documentos</h2>
-            {canEditDocs && <DocumentForm vehicleId={vehicle.id} sinDocumentos={docs.length === 0} />}
+            {canEditDocs && (
+              <DocumentForm
+                vehicleId={vehicle.id}
+                sinDocumentos={docs.length === 0}
+                tiposUsados={docs.map((d) => d.tipo)}
+              />
+            )}
             <DocumentList documents={items} vehicleId={vehicle.id} canEdit={canEditDocs} />
           </section>
         }

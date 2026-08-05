@@ -5,19 +5,23 @@ import { DOCUMENT_TYPE_LABELS, tipoTieneVencimiento, type DocumentType, type Veh
 import { textoProgreso, type Pagina, type Progreso } from '@/lib/documentos/paginas'
 import { subirPaginas, ErrorPagina } from '@/lib/documentos/subir'
 import SelectorPaginas from '@/components/documento/SelectorPaginas'
-
-const TYPES = Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]
+import { tiposDisponibles } from '@/lib/documents/tipos'
 
 export default function DocumentEditForm({
   vehicleId,
   document,
   onClose,
+  tiposUsados = [],
 }: {
   vehicleId: string
   document: VehicleDocument
   onClose: () => void
+  /** Tipos que el vehículo ya tiene cargados. El de este documento se sigue
+   *  ofreciendo — es suyo — pero los de los demás no, para no duplicar. */
+  tiposUsados?: DocumentType[]
 }) {
   const router = useRouter()
+  const disponibles = tiposDisponibles({ usados: tiposUsados, incluir: document.tipo })
   const [tipo, setTipo] = useState<DocumentType>(document.tipo)
   const [nombrePersonalizado, setNombre] = useState(document.nombrePersonalizado ?? '')
   const [fechaVencimiento, setFecha] = useState(document.fechaVencimiento ?? '')
@@ -71,9 +75,13 @@ export default function DocumentEditForm({
   return (
     <form onSubmit={submit} className="mt-3 space-y-3 rounded-xl border border-linea bg-lienzo p-4">
       <div className="space-y-1.5">
-        <label className={labelCls}>Tipo de documento</label>
-        <select className={inputCls} value={tipo} onChange={(e) => setTipo(e.target.value as DocumentType)}>
-          {TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        {/* El id lleva el del documento: la lista puede tener varias filas y
+            un id repetido asociaría el label al `<select>` equivocado. */}
+        <label htmlFor={`tipoDocumento-${document.id}`} className={labelCls}>Tipo de documento</label>
+        <select id={`tipoDocumento-${document.id}`} className={inputCls} value={tipo} onChange={(e) => setTipo(e.target.value as DocumentType)}>
+          {disponibles.map((value) => (
+            <option key={value} value={value}>{DOCUMENT_TYPE_LABELS[value]}</option>
+          ))}
         </select>
       </div>
       {tipo === 'otro' && (

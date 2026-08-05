@@ -149,3 +149,51 @@ describe('DocumentForm', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 })
+
+describe('el selector no ofrece tipos que el vehículo ya tiene', () => {
+  const abrir = () => fireEvent.click(screen.getByRole('button', { name: /Agregar documento/i }))
+  const opciones = () =>
+    [...(screen.getByLabelText(/Tipo de documento/i) as HTMLSelectElement).options].map((o) => o.text)
+
+  it('un tipo ya cargado desaparece de la lista', () => {
+    render(<DocumentForm vehicleId="v1" tiposUsados={['soap']} />)
+    abrir()
+    expect(opciones()).not.toContain('SOAP')
+    expect(opciones()).toContain('Permiso de Circulación')
+  })
+
+  // `otro` es el cajón para todo lo demás: tiene que poder repetirse.
+  it('"Otro" sigue disponible aunque ya haya uno', () => {
+    render(<DocumentForm vehicleId="v1" tiposUsados={['otro']} />)
+    abrir()
+    expect(opciones()).toContain('Otro')
+  })
+
+  // Si el formulario abriera en un tipo ya usado, el <select> mostraría un
+  // valor que no está entre sus opciones: en blanco.
+  it('abre en el primer tipo disponible, no en uno ya usado', () => {
+    render(<DocumentForm vehicleId="v1" tiposUsados={['permiso_circulacion']} />)
+    abrir()
+    const select = screen.getByLabelText(/Tipo de documento/i) as HTMLSelectElement
+    expect(select.value).not.toBe('permiso_circulacion')
+    expect(opciones()).toContain(select.selectedOptions[0].text)
+  })
+
+  it('el Certificado de Gases ya no se ofrece y el de Homologación sí', () => {
+    render(<DocumentForm vehicleId="v1" />)
+    abrir()
+    expect(opciones()).not.toContain('Certificado de Gases')
+    expect(opciones()).toContain('Certificado de Homologación')
+  })
+
+  it('con todos los tipos cargados queda solo "Otro"', () => {
+    render(
+      <DocumentForm
+        vehicleId="v1"
+        tiposUsados={['permiso_circulacion', 'revision_tecnica', 'soap', 'certificado_homologacion', 'padron']}
+      />,
+    )
+    abrir()
+    expect(opciones()).toEqual(['Otro'])
+  })
+})

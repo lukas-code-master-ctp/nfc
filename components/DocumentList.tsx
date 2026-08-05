@@ -94,7 +94,12 @@ export default function DocumentList({
           </div>
 
           {canEdit && editing && (
-            <DocumentEditForm vehicleId={vehicleId} document={d} onClose={() => setEditingId(null)} />
+            <DocumentEditForm
+              vehicleId={vehicleId}
+              document={d}
+              onClose={() => setEditingId(null)}
+              tiposUsados={documents.map((x) => x.tipo)}
+            />
           )}
         </li>
         )
