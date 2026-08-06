@@ -26,11 +26,15 @@ describe('reminderHtml', () => {
   it('incluye patente, etiqueta y fecha', () => {
     expect(html).toContain('ABCD12')
     expect(html).toContain('SOAP')
-    expect(html).toContain('2026-07-27')
+    expect(html).toContain('27/07/2026')
   })
   it('lleva CTA al vehículo y va brandeado', () => {
     expect(html).toContain('/vehiculos/v123')
     expect(html).toContain('Actualizar en TapCar')
     expect(html).toContain('Tap<span')
+  })
+  it('formatea la fecha como dd/mm/aaaa y no como YYYY-MM-DD crudo', () => {
+    expect(html).toContain('27/07/2026')
+    expect(html).not.toContain('2026-07-27')
   })
 })
