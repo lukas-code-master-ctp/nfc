@@ -74,6 +74,23 @@ describe('POST /api/admin/promo-codes', () => {
     expect(mocks.createPromoCode).not.toHaveBeenCalled()
   })
 
+  // C1: el AND viejo ("rechaza solo si LOS DOS son 0") dejaba pasar un código
+  // que en la práctica no otorga nada: con vehiculosIncluidos 0, la fase promo
+  // no descuenta nada del cargo, así que "3 meses gratis" son gratis de nada.
+  it('3b. mesesGratis 3 Y vehiculosIncluidos 0 -> 400 (la cobertura sería 0 durante toda la promo)', async () => {
+    const res = await POST(req({ ...BODY_SANO, mesesGratis: 3, vehiculosIncluidos: 0 }))
+    expect(res.status).toBe(400)
+    expect(mocks.createPromoCode).not.toHaveBeenCalled()
+  })
+
+  // Con mesesGratis 0, `aplicarCanje` calcula `hasta = desde + 0 meses`: la
+  // ventana de promoción dura cero días y la cobertura nunca llega a aplicarse.
+  it('3c. mesesGratis 0 Y vehiculosIncluidos 5 -> 400 (la ventana de promoción duraría 0 días)', async () => {
+    const res = await POST(req({ ...BODY_SANO, mesesGratis: 0, vehiculosIncluidos: 5 }))
+    expect(res.status).toBe(400)
+    expect(mocks.createPromoCode).not.toHaveBeenCalled()
+  })
+
   it('4a. mesesGratis 25 -> 400', async () => {
     const res = await POST(req({ ...BODY_SANO, mesesGratis: 25 }))
     expect(res.status).toBe(400)

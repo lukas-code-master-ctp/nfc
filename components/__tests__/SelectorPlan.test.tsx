@@ -199,11 +199,47 @@ describe('SelectorPlan', () => {
     const boton = screen.getByRole('button', { name: 'Continuar' })
     fireEvent.click(boton)
 
-    await waitFor(() =>
-      expect(
-        screen.getByText('Tu plan quedó guardado, pero el código no se pudo canjear. Inténtalo desde Facturación.'),
-      ).toBeTruthy(),
+    // El plan sí quedó guardado (I3): el mensaje lo aclara. Y ya no es el
+    // genérico de antes: trae el MOTIVO real ("agotado") traducido, porque
+    // sin él el usuario reintenta el mismo código agotado para siempre sin
+    // enterarse nunca de por qué falla — la carrera exacta para la que existe
+    // la transacción del servidor.
+    await waitFor(() => expect(screen.getByText(/Tu plan quedó guardado\./)).toBeTruthy())
+    expect(screen.getByText(/Ese código ya se usó todas las veces disponibles\./)).toBeTruthy()
+    expect(boton).not.toBeDisabled()
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('si el 409 del canje no trae un cuerpo JSON válido, igual muestra un mensaje (no deja la pantalla sin respuesta)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url === '/api/promo/validar') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ valido: true, mesesGratis: 3, vehiculosIncluidos: 5 }),
+          } as unknown as Response)
+        }
+        if (url === '/api/promo/canjear') {
+          return Promise.resolve({
+            ok: false,
+            json: () => Promise.reject(new Error('cuerpo no es JSON')),
+          } as unknown as Response)
+        }
+        return Promise.resolve({ ok: true } as Response)
+      }),
     )
+    render(<SelectorPlan inicial={3} />)
+
+    fireEvent.click(screen.getByText('¿Tienes un código promocional?'))
+    fireEvent.change(screen.getByLabelText('Código promocional'), { target: { value: 'TAPCAR' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    await waitFor(() => expect(screen.getByText(/3 meses gratis/)).toBeTruthy())
+
+    const boton = screen.getByRole('button', { name: 'Continuar' })
+    fireEvent.click(boton)
+
+    await waitFor(() => expect(screen.getByText(/Tu plan quedó guardado\./)).toBeTruthy())
     expect(boton).not.toBeDisabled()
     expect(push).not.toHaveBeenCalled()
   })

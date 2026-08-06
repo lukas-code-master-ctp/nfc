@@ -1,10 +1,12 @@
 import { estadoMantencion } from '@/lib/mantencion/status'
 import { hitoMantencion } from '@/lib/mantencion/reminders'
+import { resolverUltimaMantencion } from '@/lib/vehicles/resumen'
 import type { PautaMantencion, Vehicle } from '@/lib/types'
 
 export interface MantencionReminderDeps {
   allCompanies: () => Promise<{ id: string; ownerUid: string; pauta: PautaMantencion | null }[]>
   vehiclesOf: (companyId: string) => Promise<Vehicle[]>
+  /** Solo se llama para los vehículos **sin** resumen guardado. Ver abajo. */
   ultimaMantencion: (vehicleId: string) => Promise<{ km: number | null; fecha: string } | null>
   recipients: (companyId: string, ownerUid: string) => Promise<string[]>
   sendMantencionEmail: (to: string, p: { patente: string; vehicleId: string; estado: 'proxima' | 'vencida'; detalle: string }) => Promise<void>
@@ -19,7 +21,11 @@ export async function processMantencionReminders(deps: MantencionReminderDeps, n
     let emails: string[] | null = null
     for (const v of vehicles) {
       const pauta = v.pautaMantencion ?? c.pauta ?? null
-      const ultima = await deps.ultimaMantencion(v.id)
+      // El resumen que el vehículo ya trae, y solo se consulta si falta. Antes
+      // esto era una consulta por vehículo **por día**, y `ultimaMantencion`
+      // lee el historial completo para quedarse con el primero: un vehículo con
+      // 30 mantenciones registradas costaba 30 lecturas diarias en vez de cero.
+      const ultima = await resolverUltimaMantencion(v, deps.ultimaMantencion)
       const { estado, detalle } = estadoMantencion({ pauta, ultima, kmActual: v.kmActual ?? null, now })
       if (estado !== 'proxima' && estado !== 'vencida') continue
       const enviados = v.mantencionReminders ?? []

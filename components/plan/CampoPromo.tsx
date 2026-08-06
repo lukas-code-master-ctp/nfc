@@ -7,7 +7,13 @@ export interface PromoValidada {
   vehiculosIncluidos: number
 }
 
-const MOTIVOS: Record<string, string> = {
+// Exportado: lo reusan `SelectorPlan` y `PanelPromo` para traducir el motivo
+// que devuelve `POST /api/promo/canjear` en un 409 — antes de este fix ninguno
+// de los dos leía el cuerpo de esa respuesta, así que un código que se agotaba
+// justo entre "validar" y "canjear" (la carrera para la que existe la
+// transacción del servidor) le mostraba al usuario un mensaje genérico que no
+// explicaba nada, y encima podía repetirse sin fin en Facturación.
+export const MOTIVOS: Record<string, string> = {
   no_existe: 'Ese código no existe.',
   inactivo: 'Ese código ya no está disponible.',
   expirado: 'Ese código venció.',
@@ -91,7 +97,17 @@ export default function CampoPromo({
         <input
           id="promo"
           value={codigo}
-          onChange={(e) => setCodigo(e.target.value)}
+          onChange={(e) => {
+            setCodigo(e.target.value)
+            // Editar el código después de validarlo invalida ese resultado: sin
+            // esto, escribir CODIGOB encima de un CODIGOA ya validado deja "3
+            // meses gratis" en pantalla y, al continuar, canjea CODIGOA (el
+            // padre todavía tiene ESE objeto) mientras el input muestra otra
+            // cosa.
+            setOk(null)
+            setError(null)
+            onValidada(null)
+          }}
           autoCapitalize="characters"
           className="min-w-0 flex-1 rounded-xl border border-linea bg-superficie px-3 py-2.5 uppercase text-tinta focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
         />

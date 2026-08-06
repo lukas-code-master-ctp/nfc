@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { faseDelPlan } from '@/lib/plan/fase'
+import { faseDelPlan, coberturaDe } from '@/lib/plan/fase'
 
 describe('faseDelPlan', () => {
   it('dentro de la prueba es prueba', () => {
@@ -36,5 +36,44 @@ describe('faseDelPlan', () => {
   // pero sí promo.
   it('con la prueba vencida y promo vigente, es promo', () => {
     expect(faseDelPlan({ gratisHasta: '2026-07-01', promoHasta: '2026-11-30' }, '2026-09-01')).toBe('promo')
+  })
+})
+
+describe('coberturaDe', () => {
+  const PROMO = {
+    codigo: 'TAPCAR2026',
+    mesesGratis: 3,
+    vehiculosIncluidos: 10,
+    canjeadoEn: '2026-09-01T00:00:00.000Z',
+    hasta: '2026-11-30',
+  }
+
+  // Es el bug que este test cierra: "simplificar" a `promo?.vehiculosIncluidos
+  // ?? 0` cobraría 0 para siempre en fase `plena`, porque `PromoAplicada` es
+  // una copia congelada que no se borra al vencer.
+  it('en fase plena (promo vencida) la cobertura es 0, no vehiculosIncluidos', () => {
+    expect(
+      coberturaDe({ gratisHasta: '2026-08-31', promo: PROMO }, '2026-12-01'),
+    ).toBe(0)
+  })
+
+  it('en fase prueba la cobertura es 0 (todavía no se cobra nada)', () => {
+    expect(
+      coberturaDe({ gratisHasta: '2026-08-31', promo: PROMO }, '2026-08-15'),
+    ).toBe(0)
+  })
+
+  it('en fase promo la cobertura es vehiculosIncluidos', () => {
+    expect(
+      coberturaDe({ gratisHasta: '2026-08-31', promo: PROMO }, '2026-09-15'),
+    ).toBe(10)
+  })
+
+  it('sin promo, la cobertura es 0 en cualquier fecha', () => {
+    expect(coberturaDe({ gratisHasta: '2026-08-31' }, '2026-09-15')).toBe(0)
+  })
+
+  it('sin plan (undefined), la cobertura es 0', () => {
+    expect(coberturaDe(undefined, '2026-09-15')).toBe(0)
   })
 })

@@ -2,7 +2,10 @@ import { dueReminder } from '@/lib/documents/reminders'
 import { DOCUMENT_TYPE_LABELS, type VehicleDocument } from '@/lib/types'
 
 export interface ReminderDeps {
-  allDocuments: () => Promise<VehicleDocument[]>
+  /** Los candidatos a recordatorio, NO la colección entera: quien la provee
+   *  ya acotó por `ventanaRecordatorios`. El nombre importa — mientras se
+   *  llamó `allDocuments` nadie notó que leía todo el padrón cada día. */
+  documentosPorVencer: (now: Date) => Promise<VehicleDocument[]>
   vehicleInfo: (vehicleId: string) => Promise<{ patente: string; emails: string[] } | null>
   sendReminderEmail: (
     to: string,
@@ -12,7 +15,7 @@ export interface ReminderDeps {
 }
 
 export async function processReminders(deps: ReminderDeps, now: Date): Promise<{ sent: number }> {
-  const docs = await deps.allDocuments()
+  const docs = await deps.documentosPorVencer(now)
   let sent = 0
   for (const d of docs) {
     const milestone = dueReminder(d.fechaVencimiento, d.remindersSent, now)

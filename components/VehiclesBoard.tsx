@@ -102,7 +102,12 @@ export default function VehiclesBoard({
   categorias: Categoria[]
   entrantes?: { token: string; patente: string; deCompanyNombre: string }[]
   onboarding?: { pasos: Paso[]; tipoCuenta: TipoCuenta } | null
-  prueba?: { estado: EstadoPrueba; diasRestantes: number | null; destino: string } | null
+  prueba?: {
+    estado: EstadoPrueba
+    diasRestantes: number | null
+    destino: string
+    promo?: { diasRestantes: number; hasta: string } | null
+  } | null
 }) {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<Filter>('todos')
@@ -351,6 +356,7 @@ export default function VehiclesBoard({
           estado={prueba.estado}
           diasRestantes={prueba.diasRestantes}
           destino={prueba.destino}
+          promo={prueba.promo}
         />
       )}
 

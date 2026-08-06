@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
-import type { AdminCompanyRow } from '@/lib/data/admin'
+import type { AdminCompanyResumen } from '@/lib/data/admin'
 
-function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => void }) {
+function Row({ c, onDeleted }: { c: AdminCompanyResumen; onDeleted: (id: string) => void }) {
   const [value, setValue] = useState(String(c.maxVehiculos))
   // Cupo ya guardado (parte del valor del servidor y se actualiza al guardar).
   // Estado local en vez de mutar el prop `c`.
@@ -24,6 +24,11 @@ function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => 
     setSaving(true)
     setError(null)
     setSaved(false)
+    // El try/catch no es decorativo: si el fetch RECHAZA (sin conexión,
+    // timeout, DNS) en vez de responder !ok, sin él `saving` queda encendido
+    // para siempre y el botón se deshabilita sin ningún mensaje. Es el mismo
+    // gotcha que colgó el login: si el catch es lo único que apaga un estado
+    // de carga, todo camino de fallo tiene que pasar por él.
     try {
       const res = await fetch(`/api/admin/companies/${c.companyId}`, {
         method: 'PATCH',
@@ -38,9 +43,7 @@ function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => 
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch {
-      // El fetch puede RECHAZAR (sin conexión, timeout, DNS), no solo devolver
-      // !ok: sin este catch, ese camino dejaría el botón colgado en "…".
-      setError('No se pudo conectar con el servidor.')
+      setError('No se pudo guardar. Revisa tu conexión.')
     } finally {
       setSaving(false)
     }
@@ -54,9 +57,7 @@ function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => 
       if (res.ok) onDeleted(c.companyId)
       else setErrorBorrar('No se pudo eliminar la empresa.')
     } catch {
-      // Igual que al guardar: un fetch rechazado no puede dejar el botón
-      // colgado en "Eliminando…" sin decir nada.
-      setErrorBorrar('No se pudo conectar con el servidor.')
+      setErrorBorrar('No se pudo eliminar la empresa. Revisa tu conexión.')
     } finally {
       setBorrando(false)
     }
@@ -148,7 +149,7 @@ function Row({ c, onDeleted }: { c: AdminCompanyRow; onDeleted: (id: string) => 
   )
 }
 
-export default function AdminCompaniesTable({ companies }: { companies: AdminCompanyRow[] }) {
+export default function AdminCompaniesTable({ companies }: { companies: AdminCompanyResumen[] }) {
   const [rows, setRows] = useState(companies)
 
   if (rows.length === 0) {

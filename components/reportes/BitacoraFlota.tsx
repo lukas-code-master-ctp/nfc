@@ -95,7 +95,16 @@ export default function BitacoraFlota({
         <ul className="mt-4 space-y-2">
           {items.length === 0 && !loading && <li className="text-sm text-acero">Sin usos para el filtro.</li>}
           {items.map((u) => (
-            <li key={u.id} className="relative flex items-center justify-between gap-3 rounded-lg border border-linea px-3 py-2.5 transition-colors hover:border-azul/40 hover:bg-lienzo">
+            // `has-[[role=tooltip]]:z-20`: el contenedor de pills de más abajo
+            // es `relative z-10`, y eso crea un contexto de apilamiento que
+            // ENCIERRA al popover — su `z-30` no compite fuera de la fila. Como
+            // la fila siguiente tiene otro contenedor en el mismo z-10 y va
+            // después en el DOM, sus pills se dibujaban ENCIMA del popover de
+            // esta fila (medido en el navegador: `elementFromPoint` devolvía el
+            // botón de la fila de abajo). Subir la fila abierta a z-20 la pone
+            // sobre todas las que vienen. No se puede arreglar dentro de
+            // `Popover`: el contexto de apilamiento lo crea el consumidor.
+            <li key={u.id} className="relative flex items-center justify-between gap-3 rounded-lg border border-linea px-3 py-2.5 transition-colors hover:border-azul/40 hover:bg-lienzo has-[[role=tooltip]]:z-20">
               <div className="min-w-0">
                 {/* Stretched-link: el ::after cubre toda la fila y lleva a la bitácora del vehículo
                     (deep-link #uso-{id}). Las pills quedan por encima (z-10) para conservar su tooltip. */}

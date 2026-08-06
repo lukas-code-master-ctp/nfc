@@ -130,6 +130,40 @@ describe('el aviso', () => {
     expect(screen.queryByText(/Fecha leída del documento/i)).toBeNull()
   })
 
+  it('muestra un indicador de carga mientras lee, no solo texto', () => {
+    mocks.useLecturaFecha.mockReturnValue('leyendo')
+    const { container } = render(<DocumentForm vehicleId="v1" />)
+    abrir()
+    // El spinner va `aria-hidden` (lo anunciable es el texto de al lado), así
+    // que se busca por su clase. Ojo: en un SVG `className` no es un string,
+    // por eso se consulta el DOM y no la propiedad.
+    expect(container.querySelector('svg.animate-spin')).toBeTruthy()
+  })
+
+  it('sin lectura en curso no queda el spinner dando vueltas', () => {
+    const { container } = render(<DocumentForm vehicleId="v1" />)
+    abrir()
+    expect(container.querySelector('svg.animate-spin')).toBeNull()
+  })
+})
+
+describe('la explicación de que la fecha la lee una máquina', () => {
+  it('está visible aunque no haya ninguna lectura en curso', () => {
+    render(<DocumentForm vehicleId="v1" />)
+    abrir()
+    expect(screen.getByText(/La leemos del documento por ti/i)).toBeTruthy()
+  })
+
+  // Es la parte que el usuario no puede adivinar: guardar antes de que llegue
+  // la fecha deja el documento en `sin_vencimiento`, y eso significa que NUNCA
+  // va a mandar recordatorio. Si alguien recorta este texto, que se caiga acá.
+  it('advierte que guardar antes deja el documento sin fecha y sin aviso', () => {
+    render(<DocumentForm vehicleId="v1" />)
+    abrir()
+    fireEvent.click(screen.getByRole('button', { name: /Cómo se completa la fecha/i }))
+    expect(document.body.textContent).toContain('no te avisaremos antes de que venza')
+  })
+
   // M8: el aviso lo tiene que poder encontrar un lector de pantalla, no solo
   // quien vea la pantalla.
   it('el aviso queda asociado al campo para un lector de pantalla', () => {

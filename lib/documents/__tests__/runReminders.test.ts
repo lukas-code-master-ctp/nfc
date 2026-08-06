@@ -17,7 +17,7 @@ describe('processReminders', () => {
     const send = vi.fn().mockResolvedValue(undefined)
     const mark = vi.fn().mockResolvedValue(undefined)
     const deps = {
-      allDocuments: async () => [doc({})],
+      documentosPorVencer: async () => [doc({})],
       vehicleInfo: async () => ({ patente: 'ABCD12', emails: ['a@b.cl', 'c@d.cl'] }),
       sendReminderEmail: send,
       markReminderSent: mark,
@@ -33,7 +33,7 @@ describe('processReminders', () => {
   it('no envía si el hito ya fue enviado', async () => {
     const send = vi.fn()
     const deps = {
-      allDocuments: async () => [doc({ remindersSent: ['30'] })],
+      documentosPorVencer: async () => [doc({ remindersSent: ['30'] })],
       vehicleInfo: async () => ({ patente: 'ABCD12', emails: ['a@b.cl'] }),
       sendReminderEmail: send,
       markReminderSent: vi.fn(),
@@ -46,7 +46,7 @@ describe('processReminders', () => {
   it('omite documentos sin fecha de vencimiento', async () => {
     const send = vi.fn()
     const deps = {
-      allDocuments: async () => [doc({ fechaVencimiento: null })],
+      documentosPorVencer: async () => [doc({ fechaVencimiento: null })],
       vehicleInfo: async () => ({ patente: 'X', emails: ['a@b.cl'] }),
       sendReminderEmail: send,
       markReminderSent: vi.fn(),
@@ -58,7 +58,7 @@ describe('processReminders', () => {
   it('no envía si no hay destinatarios', async () => {
     const send = vi.fn()
     const deps = {
-      allDocuments: async () => [doc({})],
+      documentosPorVencer: async () => [doc({})],
       vehicleInfo: async () => ({ patente: 'ABCD12', emails: [] }),
       sendReminderEmail: send,
       markReminderSent: vi.fn(),

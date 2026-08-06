@@ -1,7 +1,24 @@
 import { resumirDocumentos } from '@/lib/documents/resumen'
 import type { ResumenDocs, Vehicle, VehicleDocument } from '@/lib/types'
 
-type UltimaMantencion = { km: number | null; fecha: string } | null
+export type UltimaMantencion = { km: number | null; fecha: string } | null
+
+/**
+ * La última mantención del vehículo: la guardada si existe, o consultada.
+ *
+ * La distinción que hace todo el trabajo: **campo ausente** = nunca se calculó
+ * (hay que consultar), `{ ultima: null }` = se calculó y no tiene mantenciones
+ * (no hay nada que consultar). Vive acá y no repetida en cada llamador porque
+ * es exactamente el ternario que alguien "simplifica" a `?.ultima ?? null`,
+ * y con eso un vehículo sin resumen pasaría a reportar "sin mantenciones"
+ * para siempre — es decir, dejaría de avisar que le toca mantención.
+ */
+export async function resolverUltimaMantencion(
+  v: Pick<Vehicle, 'id' | 'resumenMantencion'>,
+  cargar: (vehicleId: string) => Promise<UltimaMantencion>,
+): Promise<UltimaMantencion> {
+  return v.resumenMantencion ? v.resumenMantencion.ultima : cargar(v.id)
+}
 
 export type CargasResumen = {
   cargarDocumentos: (vehicleId: string) => Promise<Pick<VehicleDocument, 'fechaVencimiento'>[]>
@@ -29,8 +46,7 @@ export async function resolverResumen(
 ): Promise<ResumenResuelto> {
   const [docs, ultimaMantencion] = await Promise.all([
     v.resumenDocs ?? cargas.cargarDocumentos(v.id).then(resumirDocumentos),
-    // Ojo: `resumenMantencion` ausente = sin calcular; `{ ultima: null }` = no hay.
-    v.resumenMantencion ? v.resumenMantencion.ultima : cargas.cargarUltimaMantencion(v.id),
+    resolverUltimaMantencion(v, cargas.cargarUltimaMantencion),
   ])
   return { docs, ultimaMantencion }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Guarda de servidor del dashboard (app/(app)/dashboard/page.tsx): la puerta
 // que manda a una cuenta nueva a elegir plan antes de operar. Mismo patrón que
@@ -128,5 +128,73 @@ describe('puerta de elección de plan en el dashboard', () => {
 
     expect(result).toBeTruthy()
     expect(mocks.redirect).not.toHaveBeenCalled()
+  })
+})
+
+// I2: el dashboard arma `prueba` con `estadoPrueba(gratisHasta)` solo, sin
+// leer `plan.promo`. `DashboardPage()` se llama directo (sin renderizar), así
+// que el elemento que devuelve es el objeto de React con `props` — se puede
+// inspeccionar `result.props.prueba` sin montar `VehiclesBoard`, igual que las
+// pruebas de arriba miran `mocks.redirect` sin renderizar nada.
+describe('promoción en la franja del dashboard', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-01T12:00:00Z')) // 2026-08-01 en Chile
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function empresaConPromo(overrides: { gratisHasta?: string | null; promoHasta?: string | null }) {
+    return {
+      id: 'c1',
+      ownerUid: 'u1',
+      company: {},
+      plan: {
+        maxVehiculos: 3,
+        periodicidad: 'mensual',
+        gratisHasta: overrides.gratisHasta,
+        promo: overrides.promoHasta
+          ? {
+              codigo: 'TAPCAR2026',
+              mesesGratis: 3,
+              vehiculosIncluidos: 10,
+              canjeadoEn: '2026-07-15T00:00:00.000Z',
+              hasta: overrides.promoHasta,
+            }
+          : null,
+      },
+      onboarding: { tipoCuenta: 'empresa', completadoEn: '2026-01-01T00:00:00.000Z' },
+    }
+  }
+
+  it('promoción vigente (fase promo): prueba.promo trae los días y la fecha', async () => {
+    mocks.getMembership.mockResolvedValue(membresia('admin'))
+    // Prueba terminó el 2026-07-15; promoción corre hasta el 2026-11-30. Hoy
+    // (2026-08-01) cae dentro de la ventana de promoción.
+    mocks.getCompany.mockResolvedValue(empresaConPromo({ gratisHasta: '2026-07-15', promoHasta: '2026-11-30' }))
+
+    const result = (await DashboardPage()) as { props: { prueba: { promo: { diasRestantes: number; hasta: string } | null } } }
+
+    expect(result.props.prueba.promo).toEqual({ diasRestantes: 121, hasta: '2026-11-30' })
+  })
+
+  it('promoción ya vencida (fase plena): prueba.promo es null, no le queda diciendo "activa" para siempre', async () => {
+    mocks.getMembership.mockResolvedValue(membresia('admin'))
+    mocks.getCompany.mockResolvedValue(empresaConPromo({ gratisHasta: '2026-05-01', promoHasta: '2026-06-01' }))
+
+    const result = (await DashboardPage()) as { props: { prueba: { promo: unknown } } }
+
+    expect(result.props.prueba.promo).toBeNull()
+  })
+
+  it('todavía en la prueba (fase prueba, sin promo canjeada): prueba.promo es null', async () => {
+    mocks.getMembership.mockResolvedValue(membresia('admin'))
+    mocks.getCompany.mockResolvedValue(empresaConPromo({ gratisHasta: '2026-08-31', promoHasta: null }))
+
+    const result = (await DashboardPage()) as { props: { prueba: { promo: unknown } } }
+
+    expect(result.props.prueba.promo).toBeNull()
   })
 })

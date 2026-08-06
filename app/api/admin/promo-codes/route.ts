@@ -28,15 +28,33 @@ export async function POST(req: NextRequest) {
 
   const meses = Number(b.mesesGratis)
   const vehiculos = Number(b.vehiculosIncluidos)
-  if (!Number.isFinite(meses) || meses < 0 || meses > MAX_MESES_PROMO) {
-    return NextResponse.json({ error: 'mesesGratis inválido' }, { status: 400 })
+  // Los dos campos son obligatorios (mínimo 1), no un OR/AND entre ellos: bajo
+  // el modelo de tres fases (prueba → promo → plena), lo único que hace la
+  // fase `promo` es descontar `vehiculosIncluidos` durante la ventana que
+  // marca `mesesGratis`. Con `vehiculosIncluidos: 0` la ventana existe pero no
+  // cubre nada (se cobra igual que sin canjear); con `mesesGratis: 0` la
+  // ventana dura cero días (`aplicarCanje` calcula `hasta = desde + 0 meses`)
+  // y la cobertura nunca llega a aplicarse. En ambos casos el código "otorga"
+  // algo en la UI pero no cambia lo que se cobra: ver C1 de la revisión final.
+  if (!Number.isFinite(meses) || meses < 1 || meses > MAX_MESES_PROMO) {
+    return NextResponse.json(
+      {
+        error:
+          `mesesGratis inválido: debe ser un número entre 1 y ${MAX_MESES_PROMO}. En 0 la ventana ` +
+          'de promoción dura cero días y la cobertura de vehículos nunca se aplica.',
+      },
+      { status: 400 },
+    )
   }
-  if (!Number.isFinite(vehiculos) || vehiculos < 0 || vehiculos > MAX_VEHICULOS_PROMO) {
-    return NextResponse.json({ error: 'vehiculosIncluidos inválido' }, { status: 400 })
-  }
-  // Un código que no otorga nada es un error de captura, no una campaña.
-  if (meses === 0 && vehiculos === 0) {
-    return NextResponse.json({ error: 'el código no otorga nada' }, { status: 400 })
+  if (!Number.isFinite(vehiculos) || vehiculos < 1 || vehiculos > MAX_VEHICULOS_PROMO) {
+    return NextResponse.json(
+      {
+        error:
+          `vehiculosIncluidos inválido: debe ser un número entre 1 y ${MAX_VEHICULOS_PROMO}. En 0 la ` +
+          'promoción no cubre nada y la empresa paga exactamente igual que sin canjear.',
+      },
+      { status: 400 },
+    )
   }
 
   const maxCanjes = b.maxCanjes == null || b.maxCanjes === '' ? null : Math.floor(Number(b.maxCanjes))

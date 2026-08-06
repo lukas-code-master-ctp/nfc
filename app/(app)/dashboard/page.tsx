@@ -4,7 +4,8 @@ import { can } from '@/lib/auth/roles'
 import { listVehicles } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
 import { getCompany } from '@/lib/data/companies'
-import { documentStatus } from '@/lib/documents/status'
+import { documentStatus, hoyEnChile, daysUntil } from '@/lib/documents/status'
+import { faseDelPlan } from '@/lib/plan/fase'
 import { maxVehiculosDe, debeElegirPlan } from '@/lib/plan'
 import VehiclesBoard from '@/components/VehiclesBoard'
 import { listAlertas } from '@/lib/data/alertas'
@@ -60,11 +61,25 @@ export default async function DashboardPage() {
   const conTransferencia = new Set(salientes.map((t) => t.vehicleId))
 
   const now = new Date()
+  // Promoción VIGENTE (fase 'promo', ver lib/plan/fase.ts): mutuamente
+  // excluyente con la fase 'prueba'. Sin esto la franja se armaba solo con
+  // `estadoPrueba`, que no sabe nada de `plan.promo` — una empresa que canjeó
+  // un código veía la franja roja de "tu prueba terminó" durante los meses
+  // que dura su promoción, contradiciendo lo que /facturacion le muestra en
+  // paralelo. Ver I2 de la revisión final.
+  const promoAplicada = company?.plan?.promo ?? null
+  const fasePlan = faseDelPlan(
+    { gratisHasta: company?.plan?.gratisHasta, promoHasta: promoAplicada?.hasta },
+    hoyEnChile(now),
+  )
   // La franja solo se muestra al Administrador: el botón "Elegir plan" va a `/plan`,
   // que rebota a quien no tenga billing:manage, dejando un callejón sin salida.
   const prueba = puedeConfigurar ? {
     ...estadoPrueba(company?.plan?.gratisHasta, now),
     destino: company?.plan?.periodicidad ? '/facturacion' : '/plan',
+    promo: fasePlan === 'promo' && promoAplicada
+      ? { diasRestantes: daysUntil(promoAplicada.hasta, now) ?? 0, hasta: promoAplicada.hasta }
+      : null,
   } : null
   // Las cargas del fallback: solo se ejecutan para los vehículos que todavía no
   // tienen resumen guardado (creados antes del feature o saltados por el backfill).

@@ -21,6 +21,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { activo } = body as Record<string, unknown>
   if (typeof activo !== 'boolean') return NextResponse.json({ error: 'activo requerido' }, { status: 400 })
 
-  await setPromoCodeActivo(id, activo)
+  try {
+    await setPromoCodeActivo(id, activo)
+  } catch (err) {
+    console.error('[promo-codes:activo]', err)
+    return NextResponse.json({ error: 'No se pudo actualizar el código.' }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }

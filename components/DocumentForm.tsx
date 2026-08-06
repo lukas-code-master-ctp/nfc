@@ -2,27 +2,46 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DOCUMENT_TYPE_LABELS, tipoTieneVencimiento, type DocumentType } from '@/lib/types'
+import { tiposDisponibles } from '@/lib/documents/tipos'
 import { textoProgreso, type Pagina, type Progreso } from '@/lib/documentos/paginas'
 import { subirPaginas, ErrorPagina } from '@/lib/documentos/subir'
 import SelectorPaginas from '@/components/documento/SelectorPaginas'
 import { useAvisoPaso } from '@/components/onboarding/AvisosOnboarding'
 import { useLecturaFecha } from '@/components/documento/useLecturaFecha'
+import InfoTip from '@/components/InfoTip'
 
-const TYPES = Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]
+
+// Sin `motion-safe:` a propósito, igual que `LoadingDots`: no es decoración,
+// es la única señal de que algo está ocurriendo. Quieto no informa nada.
+function Spinner() {
+  return (
+    <svg className="size-3.5 shrink-0 animate-spin text-azul" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 export default function DocumentForm({
   vehicleId,
   sinDocumentos = false,
+  tiposUsados = [],
 }: {
   vehicleId: string
   /** El vehículo no tiene ningún documento todavía: el próximo completa el paso
    *  "Sube sus documentos" del onboarding. */
   sinDocumentos?: boolean
+  /** Tipos que el vehículo ya tiene cargados: no se vuelven a ofrecer. */
+  tiposUsados?: DocumentType[]
 }) {
   const avisarPaso = useAvisoPaso()
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [tipo, setTipo] = useState<DocumentType>('permiso_circulacion')
+  const disponibles = tiposDisponibles({ usados: tiposUsados })
+  // El primero disponible y no un tipo fijo: si el vehículo ya tiene su Permiso
+  // de Circulación, abrir el formulario en ese tipo mostraría un `<select>` con
+  // un valor que no está entre sus opciones, o sea en blanco.
+  const [tipo, setTipo] = useState<DocumentType>(disponibles[0])
   const [nombrePersonalizado, setNombre] = useState('')
   const [fechaVencimiento, setFecha] = useState('')
   const [paginas, setPaginas] = useState<Pagina[]>([])
@@ -107,7 +126,10 @@ export default function DocumentForm({
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        // Se resetea el tipo al abrir: `open` no desmonta nada, así que tras
+        // guardar un documento el estado conserva el tipo anterior — que ahora
+        // ya está usado y no está entre las opciones.
+        onClick={() => { setTipo(disponibles[0]); setOpen(true) }}
         className="inline-flex items-center gap-1.5 rounded-lg bg-azul px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-azul-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
@@ -121,9 +143,11 @@ export default function DocumentForm({
   return (
     <form onSubmit={submit} className="space-y-3 rounded-2xl border border-linea bg-superficie p-5 shadow-sm">
       <div className="space-y-1.5">
-        <label className={labelCls}>Tipo de documento</label>
-        <select className={inputCls} value={tipo} onChange={(e) => setTipo(e.target.value as DocumentType)}>
-          {TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        <label htmlFor="tipoDocumento" className={labelCls}>Tipo de documento</label>
+        <select id="tipoDocumento" className={inputCls} value={tipo} onChange={(e) => setTipo(e.target.value as DocumentType)}>
+          {disponibles.map((value) => (
+            <option key={value} value={value}>{DOCUMENT_TYPE_LABELS[value]}</option>
+          ))}
         </select>
       </div>
       {tipo === 'otro' && (
@@ -146,14 +170,36 @@ export default function DocumentForm({
             // la leyó una máquina —o pisarla con una lectura tardía— sería mentir.
             onChange={(e) => { setFecha(e.target.value); setCampoTocado(true); setFechaEsDeLaIA(false) }}
           />
-          {/* `aria-live` para que un lector de pantalla se entere de que el campo
-              lo llenó una máquina, no solo quien lo vea (M8). */}
-          {!campoTocado && estadoLectura === 'leyendo' && (
-            <p id="aviso-lectura-fecha" aria-live="polite" className="text-xs text-acero">Leyendo la fecha del documento…</p>
-          )}
-          {!campoTocado && estadoLectura === 'lista' && (
-            <p id="aviso-lectura-fecha" aria-live="polite" className="text-xs text-acero">Fecha leída del documento — revísala.</p>
-          )}
+          {/* El detalle va en el popover y no suelto en la pantalla: son cuatro
+              reglas (la leemos, la puedes corregir, si escribes dejamos de
+              rellenar, y qué pasa si guardas antes) y ninguna se lee si van
+              todas como texto plano bajo un campo opcional. */}
+          <p className="flex items-center gap-1 text-xs text-acero">
+            La leemos del documento por ti
+            <InfoTip label="Cómo se completa la fecha">
+              <p>
+                Al agregar la foto o el PDF leemos la fecha de vencimiento y la escribimos acá.
+                Puedes esperar a que aparezca y corregirla si quedó mal, o escribirla tú — si la
+                escribes, dejamos de rellenarla.
+              </p>
+              <p className="mt-2">
+                Si guardas antes de que aparezca, el documento queda <strong>sin fecha</strong> y
+                no te avisaremos antes de que venza. Puedes agregarla después editándolo.
+              </p>
+            </InfoTip>
+          </p>
+          {/* Altura reservada: sin esto el formulario salta cuando aparece y
+              desaparece el aviso. `aria-live` para que un lector de pantalla se
+              entere de que el campo lo llenó una máquina, no solo quien lo vea (M8). */}
+          <p id="aviso-lectura-fecha" aria-live="polite" className="flex min-h-4 items-center gap-1.5 text-xs text-acero">
+            {!campoTocado && estadoLectura === 'leyendo' && (
+              <>
+                <Spinner />
+                Leyendo la fecha del documento…
+              </>
+            )}
+            {!campoTocado && estadoLectura === 'lista' && 'Fecha leída del documento — revísala.'}
+          </p>
         </div>
       )}
       <div className="space-y-1.5">

@@ -5,6 +5,7 @@ export type DocumentType =
   | 'revision_tecnica'
   | 'soap'
   | 'certificado_gases'
+  | 'certificado_homologacion'
   | 'padron'
   | 'otro'
 
@@ -13,13 +14,39 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   revision_tecnica: 'Revisión Técnica',
   soap: 'SOAP',
   certificado_gases: 'Certificado de Gases',
+  certificado_homologacion: 'Certificado de Homologación',
   padron: 'Padrón',
   otro: 'Otro',
+}
+
+/**
+ * Tipos que ya NO se ofrecen al crear un documento, pero que siguen existiendo
+ * en los que ya están cargados.
+ *
+ * El Certificado de Gases salió del selector porque en Chile viene junto con la
+ * Revisión Técnica. **No se borra del enum ni de las etiquetas**: los documentos
+ * ya cargados se muestran con `DOCUMENT_TYPE_LABELS[d.tipo]` en la lista, en el
+ * correo de recordatorio y en la **ficha pública que ve un carabinero** —
+ * borrar la clave dejaría ese label vacío justo donde más importa.
+ */
+export const DOCUMENT_TYPES_DESCONTINUADOS = new Set<DocumentType>(['certificado_gases'])
+
+/** Los tipos que se ofrecen al crear, en el orden en que aparecen. */
+export const DOCUMENT_TYPES_ELEGIBLES: DocumentType[] = (
+  Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[]
+).filter((t) => !DOCUMENT_TYPES_DESCONTINUADOS.has(t))
+
+/** Guarda para los endpoints: hasta ahora aceptaban cualquier string como tipo,
+ *  y un tipo desconocido se muestra vacío en la ficha pública. */
+export function esDocumentType(v: unknown): v is DocumentType {
+  return typeof v === 'string' && Object.prototype.hasOwnProperty.call(DOCUMENT_TYPE_LABELS, v)
 }
 
 export const REMINDER_MILESTONES = [30, 7, 0] as const
 
 // Tipos de documento que no tienen fecha de vencimiento (p.ej. el Padrón).
+// OJO: el Certificado de Homologación **sí vence** — el C.H.I.-e trae un
+// "VÁLIDO HASTA" y reemplaza a la Revisión Técnica hasta esa fecha.
 export const DOCUMENT_TYPES_SIN_VENCIMIENTO = new Set<DocumentType>(['padron'])
 
 export function tipoTieneVencimiento(tipo: DocumentType): boolean {

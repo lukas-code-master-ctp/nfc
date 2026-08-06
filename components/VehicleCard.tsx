@@ -43,7 +43,14 @@ export default function VehicleCard({
   const href = destinoVehiculo({ vehicleId: vehicle.id, danoUsageId, documentos: status, mantencion })
 
   return (
-    <div className="relative flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-4 shadow-sm transition-shadow hover:shadow-md">
+    // `has-[[role=tooltip]]:z-30`: lo interactivo de la tarjeta va en `z-20`, y
+    // eso crea un contexto de apilamiento que ENCIERRA al popover — su `z-30` no
+    // compite fuera de la tarjeta. Como la tarjeta siguiente tiene otro `z-20` y
+    // va después en el DOM, sus pills se dibujaban ENCIMA del popover de esta
+    // (medido: `elementFromPoint` devolvía el botón de la tarjeta de abajo).
+    // Subir la tarjeta abierta a z-30 la pone sobre todas las que vienen. No se
+    // puede arreglar dentro de `Popover`: el contexto lo crea el consumidor.
+    <div className="relative flex items-center gap-4 rounded-2xl border border-linea bg-superficie p-4 shadow-sm transition-shadow hover:shadow-md has-[[role=tooltip]]:z-30">
       {/*
         El enlace cubre la tarjeta como una capa en vez de envolverla. Envolviéndola
         no se pueden poner botones adentro (HTML no permite contenido interactivo
