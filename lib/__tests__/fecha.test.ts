@@ -29,10 +29,13 @@ describe('fecha', () => {
     expect(fecha('2026-09-01T15:30:00Z')).toBe('01/09/2026')
   })
 
-  // Chile va detrás de UTC: a las 23:30 UTC allá todavía es el día anterior.
-  // Formatear en UTC mostraría el 02/09.
+  // Chile va detrás de UTC, así que a las 02:00 UTC allá todavía es el día
+  // anterior. Este instante es el único tipo que distingue: formatear en UTC
+  // daría 02/09/2026. El caso de las 23:30 UTC que había antes NO servía —
+  // es el 1 de septiembre en las dos zonas, así que pasaba con o sin
+  // `timeZone`, y la garantía central del módulo quedaba sin test.
   it('respeta la zona horaria de Chile en el borde del día', () => {
-    expect(fecha('2026-09-01T23:30:00Z')).toBe('01/09/2026')
+    expect(fecha('2026-09-02T02:00:00Z')).toBe('01/09/2026')
   })
 
   it('devuelve cadena vacía ante entrada inválida', () => {
@@ -52,6 +55,14 @@ describe('fechaHora', () => {
   // o sea, en producción y de noche, si no estuviera.
   it('muestra la medianoche como 00:00 y no como 24:00', () => {
     expect(fechaHora('2026-09-01T04:00:00Z')).toBe('01/09/2026 00:00')
+  })
+
+  // Mismo hueco que en `fecha`: este instante es 2 de septiembre en UTC pero
+  // todavía 1 de septiembre en Chile, así que solo un test que cruce la
+  // medianoche en direcciones distintas según la zona prueba de verdad que
+  // la FECHA (no solo la hora) de `fechaHora` use `timeZone: ZONA`.
+  it('respeta la zona horaria de Chile también en la fecha, no solo en la hora', () => {
+    expect(fechaHora('2026-09-02T02:15:00Z')).toBe('01/09/2026 22:15')
   })
 
   it('devuelve cadena vacía ante entrada inválida', () => {
