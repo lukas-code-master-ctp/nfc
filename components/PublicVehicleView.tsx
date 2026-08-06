@@ -45,7 +45,12 @@ function DocumentosView({ documents }: { documents: Item[] }) {
                   <div className="min-w-0">
                     <p className="truncate text-lg font-semibold text-tinta">{label}</p>
                     <p className="mt-0.5 text-base text-acero">
-                      {d.fechaVencimiento ? `Vence el ${fechaCalendario(d.fechaVencimiento)}` : 'Sin vencimiento'}
+                      {d.fechaVencimiento
+                        ? // Si `fechaVencimiento` no calza con YYYY-MM-DD (documento cargado antes
+                          // de que el servidor validara el formato), `fechaCalendario` da '' y esta
+                          // es la ficha que lee un carabinero: un valor crudo vence mejor que uno en blanco.
+                          `Vence el ${fechaCalendario(d.fechaVencimiento) || d.fechaVencimiento}`
+                        : 'Sin vencimiento'}
                     </p>
                   </div>
                   <StatusBadge status={d.status} />

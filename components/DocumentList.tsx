@@ -48,7 +48,13 @@ export default function DocumentList({
                 {d.tipo === 'otro' ? d.nombrePersonalizado : DOCUMENT_TYPE_LABELS[d.tipo]}
               </p>
               <p className="mt-0.5 text-sm text-acero">
-                {d.fechaVencimiento ? `Vence el ${fechaCalendario(d.fechaVencimiento)}` : 'Sin vencimiento'}
+                {d.fechaVencimiento
+                  ? // Si `fechaVencimiento` no calza con YYYY-MM-DD (documento cargado antes
+                    // de que el servidor validara el formato), `fechaCalendario` da '' y el equipo
+                    // que gestiona la flota se quedaría sin ninguna pista: un valor crudo vence
+                    // mejor que uno en blanco (mismo criterio que la ficha pública).
+                    `Vence el ${fechaCalendario(d.fechaVencimiento) || d.fechaVencimiento}`
+                  : 'Sin vencimiento'}
               </p>
             </div>
             <StatusBadge status={d.status} />
