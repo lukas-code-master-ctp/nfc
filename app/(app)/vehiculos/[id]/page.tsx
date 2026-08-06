@@ -5,7 +5,7 @@ import { getVehicle } from '@/lib/data/vehicles'
 import { listDocuments } from '@/lib/data/documents'
 import { listUsages } from '@/lib/data/usages'
 import { getCompany } from '@/lib/data/companies'
-import { listMantenciones, ultimaMantencion } from '@/lib/data/mantenciones'
+import { listMantenciones } from '@/lib/data/mantenciones'
 import { getPendienteByVehicle } from '@/lib/data/transferencias'
 import { documentStatus } from '@/lib/documents/status'
 import { estadoMantencion } from '@/lib/mantencion/status'
@@ -78,10 +78,12 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
     })),
   )
 
-  const [mantenciones, ultima] = await Promise.all([
-    listMantenciones(vehicle.id),
-    ultimaMantencion(vehicle.id),
-  ])
+  const mantenciones = await listMantenciones(vehicle.id)
+  // La más reciente sale de la lista que ya cargamos: `ultimaMantencion` corre
+  // exactamente la misma consulta y se queda con el primer elemento, así que
+  // pedirla aparte duplicaba las lecturas de esta página. `listMantenciones`
+  // ya ordena por fecha desc con desempate por id desc — el mismo criterio.
+  const ultima = mantenciones[0] ? { km: mantenciones[0].km, fecha: mantenciones[0].fecha } : null
   const mantencionesConUrl = await Promise.all(
     mantenciones.map(async (mt) => ({
       id: mt.id, fecha: mt.fecha, km: mt.km, nota: mt.nota ?? null,

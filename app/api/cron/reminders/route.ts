@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processReminders } from '@/lib/documents/runReminders'
-import { listAllDocuments, updateDocument } from '@/lib/data/documents'
+import { listDocumentsPorVencer, updateDocument } from '@/lib/data/documents'
 import { vehicleInfoForReminder, listVehicles, updateVehicle } from '@/lib/data/vehicles'
 import { sendReminderEmail, sendMantencionEmail } from '@/lib/email/resend'
 import { processMantencionReminders } from '@/lib/mantencion/runReminders'
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   }
   const result = await processReminders(
     {
-      allDocuments: listAllDocuments,
+      documentosPorVencer: listDocumentsPorVencer,
       vehicleInfo: vehicleInfoForReminder,
       sendReminderEmail,
       markReminderSent: async (id, companyId, remindersSent) => {

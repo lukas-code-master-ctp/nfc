@@ -1,5 +1,6 @@
 import { adminDb, adminBucket } from '@/lib/firebase/admin'
 import { resumirDocumentos } from '@/lib/documents/resumen'
+import { ventanaRecordatorios } from '@/lib/documents/reminders'
 import type { VehicleDocument } from '@/lib/types'
 
 const COL = 'documents'
@@ -76,8 +77,29 @@ export async function deleteDocument(documentId: string, companyId: string): Pro
   return d.vehicleId
 }
 
-export async function listAllDocuments(): Promise<VehicleDocument[]> {
-  const snap = await adminDb.collection(COL).where('fechaVencimiento', '!=', null).get()
+/**
+ * Los documentos que el cron diario tiene que evaluar: los que vencen dentro
+ * de la ventana de recordatorios (ver `ventanaRecordatorios`).
+ *
+ * Antes esto era `listAllDocuments`, un barrido de la colección **completa**
+ * todos los días. Como la mayoría de los documentos vence dentro de un año y
+ * la ventana útil es de un mes, la enorme mayoría se leía a diario solo para
+ * descartarla en memoria. Ese costo escalaba con toda la plataforma y se
+ * pagaba aunque nadie abriera la app.
+ *
+ * El rango va sobre un **solo campo**, así que le basta el índice de campo
+ * único que Firestore crea solo: no necesita índice compuesto. Y como en el
+ * orden de Firestore `null` va antes que cualquier string, el borde inferior
+ * ya excluye a los documentos sin vencimiento (el Padrón) sin filtro extra —
+ * que es lo que hacía el `!= null` anterior.
+ */
+export async function listDocumentsPorVencer(now: Date): Promise<VehicleDocument[]> {
+  const { desde, hasta } = ventanaRecordatorios(now)
+  const snap = await adminDb
+    .collection(COL)
+    .where('fechaVencimiento', '>=', desde)
+    .where('fechaVencimiento', '<=', hasta)
+    .get()
   return snap.docs.map((d) => toDoc(d.id, d.data()))
 }
 
