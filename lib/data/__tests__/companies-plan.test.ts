@@ -16,7 +16,7 @@ vi.mock('@/lib/firebase/admin', () => ({
 
 import { createCompany, getCompany, savePlan } from '@/lib/data/companies'
 import { debeElegirPlan } from '@/lib/plan'
-import { EMPTY_COMPANY } from '@/lib/types'
+import { EMPTY_COMPANY, suscripcionInicial } from '@/lib/types'
 
 beforeEach(() => {
   companySet.mockReset()
@@ -90,6 +90,18 @@ describe('savePlan', () => {
     await savePlan('c1', { periodicidad: null, gratisHasta: null })
     expect(companySet).toHaveBeenCalledWith(
       { plan: { periodicidad: null, gratisHasta: null } },
+      { merge: true },
+    )
+  })
+
+  it('escribe `suscripcion` en el payload real de Firestore', async () => {
+    // Bug: savePlan es un allowlist explícito y `suscripcion` no estaba en él,
+    // así que el campo se descartaba en silencio — la empresa quedaba sin
+    // `plan.suscripcion` y el cron de cobro nunca la encontraría.
+    const suscripcion = suscripcionInicial('2026-09-02')
+    await savePlan('c1', { periodicidad: 'anual', gratisHasta: '2026-09-01', suscripcion })
+    expect(companySet).toHaveBeenCalledWith(
+      { plan: { periodicidad: 'anual', gratisHasta: '2026-09-01', suscripcion } },
       { merge: true },
     )
   })
