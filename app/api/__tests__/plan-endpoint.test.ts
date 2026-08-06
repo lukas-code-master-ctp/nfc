@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { NextRequest } from 'next/server'
+import { LANZAMIENTO_HASTA } from '@/lib/plan/prueba'
 
 const mocks = vi.hoisted(() => ({
   getMembership: vi.fn(),
@@ -123,7 +124,7 @@ describe('alta ya hecha', () => {
 })
 
 describe('camino feliz', () => {
-  it('guarda el plan con gratisHasta = hoy + 30 días y registra la solicitud', async () => {
+  it('guarda el plan con gratisHasta = LANZAMIENTO_HASTA y una suscripción inicial, y registra la solicitud', async () => {
     vi.useFakeTimers()
     // 02:00 UTC del 2 de agosto es todavía 1 de agosto en Chile (UTC-4): si la
     // ruta calculara la fecha con `toISOString().slice(0,10)` en vez de
@@ -137,7 +138,16 @@ describe('camino feliz', () => {
     expect(mocks.savePlan).toHaveBeenCalledWith('c1', {
       periodicidad: 'anual',
       maxVehiculos: 8,
-      gratisHasta: '2026-08-31',
+      gratisHasta: LANZAMIENTO_HASTA,
+      suscripcion: {
+        flowCustomerId: null,
+        tarjeta: null,
+        cicloDesde: null,
+        proximoCobro: '2026-09-02',
+        impagoDesde: null,
+        cupoProximoCiclo: null,
+        cancelaEn: null,
+      },
     })
     // Verifica que createBillingRequest se llamó con los argumentos correctos, incluyendo desiredVehicles.
     expect(mocks.createBillingRequest).toHaveBeenCalledWith(
@@ -155,6 +165,23 @@ describe('camino feliz', () => {
         desiredVehicles: 8,
       })
     )
+  })
+
+  it('el alta después de la ventana de lanzamiento guarda gratisHasta: null y proximoCobro de hoy', async () => {
+    vi.useFakeTimers()
+    // Un día después del último día gratis: en Chile (UTC-4) sigue siendo
+    // 2026-09-02 a esta hora.
+    vi.setSystemTime(new Date('2026-09-02T12:00:00Z'))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 4 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', {
+      periodicidad: 'mensual',
+      maxVehiculos: 4,
+      gratisHasta: null,
+      suscripcion: expect.objectContaining({ proximoCobro: '2026-09-02' }),
+    })
   })
 })
 

@@ -7,9 +7,9 @@ import { listVehicles } from '@/lib/data/vehicles'
 import { createBillingRequest } from '@/lib/data/billing'
 import { sendBillingRequestEmail, billingNotifyEmail } from '@/lib/email/resend'
 import { MAX_VEHICULOS_SELF_SERVICE, cargoDe } from '@/lib/billing'
-import { addDias, DIAS_PRUEBA } from '@/lib/plan/prueba'
+import { addDias, gratisHastaDeAlta } from '@/lib/plan/prueba'
 import { hoyEnChile } from '@/lib/documents/status'
-import type { Periodicidad } from '@/lib/types'
+import { suscripcionInicial, type Periodicidad } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 // El `after()` del correo corre después de responder pero sigue contando
@@ -19,8 +19,8 @@ export const maxDuration = 30
 const PERIODICIDADES: Periodicidad[] = ['mensual', 'anual']
 
 /**
- * El alta del plan: la empresa elige periodicidad y cantidad, y queda con una
- * prueba de 30 días con fecha.
+ * El alta del plan: la empresa elige periodicidad y cantidad, y queda sin
+ * cobro hasta `LANZAMIENTO_HASTA` (o desde hoy si esa ventana ya pasó).
  *
  * Es el punto exacto que reemplaza la pasarela cuando exista: hoy registra una
  * solicitud de facturación y estampa `gratisHasta`; mañana redirige al
@@ -89,8 +89,16 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const gratisHasta = addDias(hoyEnChile(new Date()), DIAS_PRUEBA)
-  await savePlan(m.companyId, { periodicidad: periodicidad as Periodicidad, maxVehiculos: vehiculos, gratisHasta })
+  const hoy = hoyEnChile(new Date())
+  const gratisHasta = gratisHastaDeAlta(hoy)
+  await savePlan(m.companyId, {
+    periodicidad: periodicidad as Periodicidad,
+    maxVehiculos: vehiculos,
+    gratisHasta,
+    // El primer cobro cae al día siguiente del último día gratis, o hoy mismo
+    // si la ventana de lanzamiento ya pasó.
+    suscripcion: suscripcionInicial(gratisHasta ? addDias(gratisHasta, 1) : hoy),
+  })
 
   // Best-effort: que el correo falle no puede dejar a la empresa sin plan. El
   // try/catch va ALREDEDOR de after(), no solo dentro del callback: si after()
@@ -99,8 +107,8 @@ export async function POST(req: NextRequest) {
     const cargo = cargoDe({ vehiculos, periodicidad: periodicidad as Periodicidad })
     const razonSocial = company?.company.razonSocial ?? ''
     const message = excedeTope
-      ? `Alta ${periodicidad}: ${cargo.monto} CLP / ${cargo.unidad} · prueba hasta ${gratisHasta} · solicitó ${solicitadosNum} vehículos, se dejó en ${MAX_VEHICULOS_SELF_SERVICE} mientras se coordina el resto.`
-      : `Alta ${periodicidad}: ${cargo.monto} CLP / ${cargo.unidad} · prueba hasta ${gratisHasta}`
+      ? `Alta ${periodicidad}: ${cargo.monto} CLP / ${cargo.unidad} · sin cobro hasta ${gratisHasta ?? 'no aplica'} · solicitó ${solicitadosNum} vehículos, se dejó en ${MAX_VEHICULOS_SELF_SERVICE} mientras se coordina el resto.`
+      : `Alta ${periodicidad}: ${cargo.monto} CLP / ${cargo.unidad} · sin cobro hasta ${gratisHasta ?? 'no aplica'}`
     after(async () => {
       try {
         await createBillingRequest({
