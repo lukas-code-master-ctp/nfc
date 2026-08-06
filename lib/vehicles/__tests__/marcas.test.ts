@@ -2,6 +2,24 @@ import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { MARCAS, sugerirMarcas, normalizarMarca } from '@/lib/vehicles/marcas'
 
+/**
+ * Las guardas de abajo leen el archivo fuente del script y lo recorren con
+ * regex que cuentan saltos de línea (`\n}\n\n`). En Windows, con el
+ * `core.autocrlf=true` que es el default, el checkout entrega CRLF y esas
+ * secuencias pasan a ser `\r\n}\r\n\r\n`: el regex deja de calzar y la guarda
+ * falla por el sistema operativo, no por el código.
+ *
+ * Eso es peor que una molestia: la guarda existe para que
+ * `scripts/normalizar-marcas.mjs` no se desvíe de `lib/vehicles/marcas.ts`, y
+ * un fallo que depende del computador invita a "arreglarlo" aflojando el
+ * regex — con lo que dejaría de morder en silencio, que es exactamente lo que
+ * vino a evitar. Normalizar acá deja el regex estricto y el resultado igual en
+ * cualquier checkout.
+ */
+function leerFuente(ruta: string): string {
+  return readFileSync(ruta, 'utf8').replace(/\r\n/g, '\n')
+}
+
 describe('la lista', () => {
   it('está ordenada alfabéticamente, ignorando acentos y mayúsculas', () => {
     const clave = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -125,7 +143,7 @@ describe('normalizarMarca', () => {
  */
 describe('el script no puede desviarse de la librería', () => {
   it('su lista de marcas es idéntica, en el mismo orden', () => {
-    const fuente = readFileSync('scripts/normalizar-marcas.mjs', 'utf8')
+    const fuente = leerFuente('scripts/normalizar-marcas.mjs')
     const bloque = fuente.match(/const MARCAS = \[([\s\S]*?)\n\]/)
     expect(bloque, 'no se encontró `const MARCAS = [...]` en el script').toBeTruthy()
     const delScript = [...bloque![1].matchAll(/'([^']+)'/g)].map((m) => m[1])
@@ -145,7 +163,7 @@ describe('el script no puede desviarse de la librería', () => {
    * que incluye las 69 marcas y variantes sucias.
    */
   it('normaliza exactamente igual que la librería (comparando comportamiento, no texto)', () => {
-    const fuente = readFileSync('scripts/normalizar-marcas.mjs', 'utf8')
+    const fuente = leerFuente('scripts/normalizar-marcas.mjs')
     const bloque = fuente.match(/const normalizarBusqueda[\s\S]*?\n}\n\nconst projectId/)
     expect(bloque, 'no se encontró el bloque de normalización en el script').toBeTruthy()
     const codigo = bloque![0].replace(/\n\nconst projectId$/, '')
