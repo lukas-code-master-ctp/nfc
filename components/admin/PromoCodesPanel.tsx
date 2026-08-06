@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import type { PromoCode } from '@/lib/types'
 import { MAX_MESES_PROMO, MAX_VEHICULOS_PROMO } from '@/lib/types'
+import { fechaCalendario } from '@/lib/fecha'
 
 // Mensajes crudos que devuelve el servidor y que no alcanzan a ser legibles
 // para el admin (los de `mesesGratis`/`vehiculosIncluidos` ya vienen como
@@ -75,7 +76,7 @@ function Row({ c }: { c: PromoCode }) {
             <p className="text-xs">canjes</p>
           </div>
           <div className="text-right">
-            <p className="text-tinta tabular-nums">{c.expiraEn ?? 'Sin vencimiento'}</p>
+            <p className="text-tinta tabular-nums">{fechaCalendario(c.expiraEn) || 'Sin vencimiento'}</p>
             <p className="text-xs">vence</p>
           </div>
 
