@@ -621,6 +621,8 @@ export async function updateSuscripcion(
 
 Test obligatorio: escribir solo `impagoDesde` sobre una suscripción existente **deja los otros seis campos intactos**. Es el que impide que alguien lo "simplifique" a `savePlan` más adelante.
 
+**Verificar contra el emulador antes de desplegar esto.** La premisa —que `set(data, { merge: true })` fusiona mapas anidados de forma recursiva a cualquier profundidad, y no solo un nivel— está respaldada por la documentación de Firestore y por precedente en este mismo código (`savePlan` ya depende de ella un nivel más arriba, igual que `promoCodes.ts` y `saveOnboarding`), pero **no se pudo comprobar con una corrida real**: el emulador necesita Java, que no está en la máquina de desarrollo. Si la premisa fuera falsa, cada escritura de un campo suelto **borraría los otros seis** y una cuenta perdería su tarjeta registrada al primer cobro fallido. Correr `npm run test:rules` con el emulador levantado, o una prueba manual en el proyecto de Firebase, antes de que esto toque producción. (`Suscripcion` no tiene arreglos, que es la única excepción documentada al merge recursivo.)
+
 Todas las escrituras de suscripción de este entregable (`cobrarCiclo`, `/api/plan/cupo`, `/api/plan/cancelar`, el cron) pasan por acá, **no** por `savePlan`.
 
 - [ ] **Step 5: Bloquear la colección al cliente**
