@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { fechaCalendario } from '@/lib/fecha'
 import type { PautaMantencion } from '@/lib/types'
 import type { EstadoMantencion } from '@/lib/mantencion/status'
 
@@ -12,11 +13,6 @@ const BADGE: Record<EstadoMantencion, { label: string; cls: string }> = {
   vencida: { label: 'Vencida', cls: 'bg-[#FCE7E7] text-[#C81E1E]' },
   sin_registro: { label: 'Sin registro', cls: 'bg-[#EEF0F3] text-acero' },
   sin_pauta: { label: 'Sin pauta', cls: 'bg-[#EEF0F3] text-acero' },
-}
-
-function fecha(iso: string): string {
-  const [y, m, d] = iso.split('-')
-  return `${d}/${m}/${y}`
 }
 
 export default function MantencionPanel({
@@ -188,7 +184,7 @@ export default function MantencionPanel({
           {mantenciones.map((mt) => (
             <div key={mt.id} className="flex items-center justify-between gap-3 rounded-lg border border-linea px-3 py-2 text-sm">
               <div className="min-w-0">
-                <span className="font-medium text-tinta">{fecha(mt.fecha)}</span>
+                <span className="font-medium text-tinta">{fechaCalendario(mt.fecha)}</span>
                 {mt.km != null && <span className="text-acero"> · {mt.km.toLocaleString('es-CL')} km</span>}
                 {mt.nota && <span className="block truncate text-acero">{mt.nota}</span>}
               </div>

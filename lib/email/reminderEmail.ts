@@ -1,4 +1,5 @@
 import { emailLayout, ctaButton, appUrl } from '@/lib/email/layout'
+import { fechaCalendario } from '@/lib/fecha'
 
 export function reminderSubject(milestone: string, label: string, patente: string): string {
   if (milestone === '0') return `TapCar · El ${label} de ${patente} venció o vence hoy`
@@ -19,7 +20,7 @@ export function reminderHtml(params: {
     titulo: 'Recordatorio de documentación',
     contenidoHtml: `
       <p>El documento <strong>${label}</strong> del vehículo <strong>${patente}</strong> ${urgencia}.</p>
-      <p>Fecha de vencimiento: <strong>${fechaVencimiento}</strong></p>
+      <p>Fecha de vencimiento: <strong>${fechaCalendario(fechaVencimiento)}</strong></p>
       <p>Renueva y actualiza el documento para que la ficha de fiscalización siga al día.</p>
       ${ctaButton('Actualizar en TapCar', `${appUrl()}/vehiculos/${vehicleId}`)}
     `,

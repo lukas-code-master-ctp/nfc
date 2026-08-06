@@ -12,6 +12,7 @@ import {
   type DanoActivo,
 } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
+import { fechaCalendario, fechaHora } from '@/lib/fecha'
 
 type Item = VehicleDocument & { status: DocStatus; readUrl: string | null }
 
@@ -44,7 +45,7 @@ function DocumentosView({ documents }: { documents: Item[] }) {
                   <div className="min-w-0">
                     <p className="truncate text-lg font-semibold text-tinta">{label}</p>
                     <p className="mt-0.5 text-base text-acero">
-                      {d.fechaVencimiento ? `Vence el ${d.fechaVencimiento}` : 'Sin vencimiento'}
+                      {d.fechaVencimiento ? `Vence el ${fechaCalendario(d.fechaVencimiento)}` : 'Sin vencimiento'}
                     </p>
                   </div>
                   <StatusBadge status={d.status} />
@@ -117,10 +118,6 @@ function SobreVehiculoView({ vehicle }: { vehicle: Vehicle }) {
       )}
     </section>
   )
-}
-
-function hora(iso: string): string {
-  return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
 }
 
 // Aviso de daño preexistente. Se muestra solo al tomar/entregar (no en el menú),
@@ -227,7 +224,7 @@ export default function PublicVehicleView({
           {drivers.length > 0 && (
             <MenuBoton
               titulo={enUso ? 'Entregar vehículo' : 'Tomar vehículo'}
-              subtitulo={enUso ? `En uso por ${enUso.driverNombre} · desde ${hora(enUso.tomadoEn)}` : 'Disponible · registra quién lo usa'}
+              subtitulo={enUso ? `En uso por ${enUso.driverNombre} · desde ${fechaHora(enUso.tomadoEn)}` : 'Disponible · registra quién lo usa'}
               onClick={() => setVista('uso')}
             />
           )}

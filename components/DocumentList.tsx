@@ -5,6 +5,7 @@ import StatusBadge from '@/components/StatusBadge'
 import DocumentEditForm from '@/components/DocumentEditForm'
 import { DOCUMENT_TYPE_LABELS, type VehicleDocument } from '@/lib/types'
 import type { DocStatus } from '@/lib/documents/status'
+import { fechaCalendario } from '@/lib/fecha'
 
 type Item = VehicleDocument & { status: DocStatus; readUrl: string | null }
 
@@ -47,7 +48,7 @@ export default function DocumentList({
                 {d.tipo === 'otro' ? d.nombrePersonalizado : DOCUMENT_TYPE_LABELS[d.tipo]}
               </p>
               <p className="mt-0.5 text-sm text-acero">
-                {d.fechaVencimiento ? `Vence el ${d.fechaVencimiento}` : 'Sin vencimiento'}
+                {d.fechaVencimiento ? `Vence el ${fechaCalendario(d.fechaVencimiento)}` : 'Sin vencimiento'}
               </p>
             </div>
             <StatusBadge status={d.status} />

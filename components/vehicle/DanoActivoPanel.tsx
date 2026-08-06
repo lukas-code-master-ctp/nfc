@@ -1,11 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { fechaHora } from '@/lib/fecha'
 import type { DanoActivo } from '@/lib/types'
-
-function fecha(iso: string): string {
-  return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
-}
 
 export default function DanoActivoPanel({
   vehicleId, danoActivo, danoFotoUrl, puedeGestionar,
@@ -79,7 +76,7 @@ export default function DanoActivoPanel({
       {danoActivo ? (
         <div className="space-y-2">
           <p className="text-sm text-acero">
-            Reportado {danoActivo.reportadoPor === 'conductor' ? `por ${danoActivo.reportadoPorNombre ?? 'un conductor'}` : 'por un administrador'} · {fecha(danoActivo.reportadoEn)}
+            Reportado {danoActivo.reportadoPor === 'conductor' ? `por ${danoActivo.reportadoPorNombre ?? 'un conductor'}` : 'por un administrador'} · {fechaHora(danoActivo.reportadoEn)}
           </p>
           {danoActivo.nota && <p className="text-sm text-tinta">{danoActivo.nota}</p>}
           {danoFotoUrl && (

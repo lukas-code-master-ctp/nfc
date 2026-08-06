@@ -1,10 +1,8 @@
 'use client'
 import { useState } from 'react'
+import { fecha } from '@/lib/fecha'
 
 type Pendiente = { paraEmail: string; expiresAt: string }
-
-const fecha = (iso: string) =>
-  new Date(iso).toLocaleDateString('es-CL', { timeZone: 'America/Santiago', day: 'numeric', month: 'long' })
 
 export default function TransferirVehiculoPanel({
   vehicleId,
