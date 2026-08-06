@@ -35,7 +35,7 @@ describe('formato de fechas', () => {
   it('solo lib/fecha.ts (y hoyEnChile) saben formatear fechas', () => {
     const infractores = ['app', 'components', 'lib']
       .flatMap((d) => archivos(d))
-      .filter((p) => !PERMITIDOS.some((permitido) => p.endsWith(permitido)))
+      .filter((p) => !PERMITIDOS.includes(p))
       .filter((p) => PROHIBIDO.test(readFileSync(p, 'utf8')))
 
     expect(infractores).toEqual([])
