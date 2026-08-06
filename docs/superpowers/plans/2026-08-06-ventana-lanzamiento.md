@@ -178,17 +178,17 @@ Y sumar a `PlanData`:
 
 **No agregar `suscripcion` a `DEFAULT_PLAN`.** `getCompany` hace `{ ...DEFAULT_PLAN, ...(d.plan ?? {}) }`, así que un default inyectaría un bloque falso en toda cuenta que no lo tenga — el mismo error que `periodicidad` ya tiene fijado con un test.
 
-- [ ] **Step 5: `createCompany` siembra la suscripción**
+- [ ] **Step 5: `createCompany` NO siembra la suscripción — corrección al plan**
 
-En `lib/data/companies.ts`, al construir el `plan` de una empresa nueva, incluir:
+Una versión anterior de este paso mandaba sembrar `suscripcion` en `createCompany`. **Es incorrecto y no se hace.** Se deja escrito para que nadie lo reintroduzca:
 
-```ts
-    suscripcion: suscripcionInicial(
-      gratisHasta ? addDias(gratisHasta, 1) : hoy,
-    ),
-```
+`createCompany` (`lib/data/companies.ts:29-39`) escribe `plan: { maxVehiculos, periodicidad: null }` y **nada más**. No conoce `gratisHasta` — esa fecha la estampa `POST /api/plan` más tarde. Y una empresa recién creada todavía no eligió periodicidad, así que **no existe ningún `proximoCobro` que se pueda calcular** para ella: cualquier valor que se sembrara ahí sería inventado.
 
-donde `gratisHasta` es el de esa cuenta y `hoy` es `hoyEnChile(new Date())`. Es el mismo motivo por el que `createVehicle` siembra `resumenDocs`: sin esto, una cuenta nueva quedaría fuera de la consulta del cron para siempre y **no se le cobraría jamás**, y un backfill one-time no la alcanzaría porque ya habría corrido.
+La invariante correcta es más simple: **`periodicidad` y `suscripcion` se escriben juntas, en `POST /api/plan`** (Step 6). No hay forma de llegar a una empresa con `periodicidad` y sin `suscripcion`, porque el mismo `savePlan` pone las dos. Y una empresa sin `periodicidad` no puede cobrarse de todos modos — `debeElegirPlan` la manda a `/plan` antes de dejarla usar la app.
+
+Las cuentas que ya existen en producción las cubre el script de migración (Task 3), que es donde sí hay que sembrar.
+
+**Verificación de que la invariante se sostiene:** buscar todos los llamadores de `savePlan` y confirmar que ninguno escribe `periodicidad` sin `suscripcion`. Si aparece alguno además de `POST /api/plan`, reportarlo antes de seguir.
 
 - [ ] **Step 6: `POST /api/plan` usa la fecha de lanzamiento**
 
