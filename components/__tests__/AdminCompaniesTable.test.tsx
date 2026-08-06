@@ -83,4 +83,38 @@ describe('AdminCompaniesTable · caminos que ya funcionaban', () => {
 
     await waitFor(() => expect(screen.getByText('No hay empresas todavía.')).toBeTruthy())
   })
+
+  it('un guardado exitoso llama al PATCH y confirma en pantalla', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true } as Response)
+    render(<AdminCompaniesTable companies={[empresa]} />)
+
+    fireEvent.change(screen.getByLabelText('Cupo'), { target: { value: '9' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/admin/companies/c1',
+        expect.objectContaining({ method: 'PATCH' }),
+      ),
+    )
+    // La confirmación importa tanto como la llamada: el cupo se edita a ciegas
+    // y sin ese "Guardado ✓" no hay forma de saber si el número quedó puesto.
+    await waitFor(() => expect(screen.getByText('Guardado ✓')).toBeTruthy())
+  })
+
+  it('un !ok al eliminar avisa y deja la empresa en la lista', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false } as Response)
+    render(<AdminCompaniesTable companies={[empresa]} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }))
+    fireEvent.change(screen.getByPlaceholderText('Escribe ELIMINAR para confirmar'), {
+      target: { value: 'ELIMINAR' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
+
+    await waitFor(() => expect(screen.getByText('No se pudo eliminar la empresa.')).toBeTruthy())
+    const boton = screen.getByRole('button', { name: 'Eliminar definitivamente' }) as HTMLButtonElement
+    expect(boton.disabled).toBe(false)
+    expect(screen.queryByText('No hay empresas todavía.')).toBeNull()
+  })
 })
