@@ -8,6 +8,7 @@ import { maxVehiculosDe } from '@/lib/plan'
 import { estadoPrueba } from '@/lib/plan/prueba'
 import { coberturaDe } from '@/lib/plan/fase'
 import { hoyEnChile } from '@/lib/documents/status'
+import { fechaCalendario } from '@/lib/fecha'
 import {
   TAG_PRICE,
   FREE_TAG_THRESHOLD,
@@ -20,21 +21,6 @@ import BillingRequestForm from '@/components/billing/BillingRequestForm'
 import PanelPromo from '@/components/plan/PanelPromo'
 
 export const dynamic = 'force-dynamic'
-
-/**
- * `gratisHasta` es una fecha calendario `YYYY-MM-DD`, no un instante: pasarla
- * directo a `new Date(...)` la interpreta como medianoche UTC, y en Chile
- * (detrás de UTC) `toLocaleDateString` con esa zona horaria puede mostrar el
- * día anterior. Arma la fecha por componentes en vez de parsear la cadena.
- */
-function fechaCL(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('es-CL', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-}
 
 export default async function FacturacionPage() {
   const m = await getMembership()
@@ -96,7 +82,7 @@ export default async function FacturacionPage() {
           {company?.plan?.gratisHasta && (
             <div className="flex justify-between gap-4">
               <dt className="text-acero">{prueba.estado === 'vencida' ? 'Prueba terminada el' : 'Sin cobro hasta'}</dt>
-              <dd className="font-medium text-tinta">{fechaCL(company.plan.gratisHasta)}</dd>
+              <dd className="font-medium text-tinta">{fechaCalendario(company.plan.gratisHasta)}</dd>
             </div>
           )}
           {promo && (
@@ -107,7 +93,7 @@ export default async function FacturacionPage() {
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-acero">Promoción hasta</dt>
-                <dd className="font-medium text-tinta tabular-nums">{fechaCL(promo.hasta)}</dd>
+                <dd className="font-medium text-tinta tabular-nums">{fechaCalendario(promo.hasta)}</dd>
               </div>
             </>
           )}

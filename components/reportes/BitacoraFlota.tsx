@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import PillTip from '@/components/PillTip'
+import { fechaHora } from '@/lib/fecha'
 
 interface Opcion { id: string; nombre: string }
 interface Vehiculo { id: string; patente: string }
@@ -16,10 +17,6 @@ interface Uso {
   bencina?: string
   limpieza?: string
   dano?: { hay: boolean; nota?: string; revisadoPorNombre?: string }
-}
-
-function fecha(iso: string): string {
-  return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
 }
 
 export default function BitacoraFlota({
@@ -115,7 +112,7 @@ export default function BitacoraFlota({
                   {patentePorId.get(u.vehicleId) ?? u.vehicleId} · {u.driverNombre}
                 </Link>
                 <p className="text-xs text-acero">
-                  Tomó {fecha(u.tomadoEn)}{u.entregadoEn ? ` · Entregó ${fecha(u.entregadoEn)}` : ''}
+                  Tomó {fechaHora(u.tomadoEn)}{u.entregadoEn ? ` · Entregó ${fechaHora(u.entregadoEn)}` : ''}
                 </p>
               </div>
               <div className="relative z-10 flex shrink-0 flex-wrap items-center justify-end gap-1">

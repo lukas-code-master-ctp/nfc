@@ -3,13 +3,10 @@ import StatusBadge from '@/components/StatusBadge'
 import PillTip from '@/components/PillTip'
 import Popover from '@/components/Popover'
 import { destinoVehiculo } from '@/lib/vehicles/destino'
+import { fechaHora } from '@/lib/fecha'
 import type { DocStatus } from '@/lib/documents/status'
 import type { Vehicle } from '@/lib/types'
 import type { EstadoMantencion } from '@/lib/mantencion/status'
-
-function horaUso(iso: string): string {
-  return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
-}
 
 function CarIcon({ className }: { className?: string }) {
   return (
@@ -81,7 +78,7 @@ export default function VehicleCard({
               }
             >
               <p className="font-semibold">En uso por {uso.driverNombre}</p>
-              <p className="mt-0.5 text-acero">Desde {horaUso(uso.tomadoEn)}</p>
+              <p className="mt-0.5 text-acero">Desde {fechaHora(uso.tomadoEn)}</p>
               {prolongado && <p className="mt-1 font-medium text-[#B45309]">Sin entregar hace {horasUso} h</p>}
             </Popover>
           </span>

@@ -78,7 +78,7 @@ describe('FranjaPrueba', () => {
         />,
       )
       expect(screen.getByText(/quedan 19 días/)).toBeTruthy()
-      expect(screen.getByText(/hasta el 30 de noviembre de 2026/)).toBeTruthy()
+      expect(screen.getByText(/hasta el 30\/11\/2026/)).toBeTruthy()
       const franja = container.firstElementChild as HTMLElement
       expect(franja.className).not.toMatch(/vencido/)
       expect(franja.className).not.toMatch(/por-vencer/)

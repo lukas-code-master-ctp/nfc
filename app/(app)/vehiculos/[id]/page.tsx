@@ -10,6 +10,7 @@ import { getPendienteByVehicle } from '@/lib/data/transferencias'
 import { documentStatus } from '@/lib/documents/status'
 import { estadoMantencion } from '@/lib/mantencion/status'
 import { createReadUrl } from '@/lib/storage/signedUrls'
+import { fecha } from '@/lib/fecha'
 import BackLink from '@/components/BackLink'
 import DocumentForm from '@/components/DocumentForm'
 import DocumentList from '@/components/DocumentList'
@@ -121,7 +122,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
             <p className="mt-0.5 text-sm text-acero">
               Kilometraje: <span className="font-medium text-tinta">{vehicle.kmActual.toLocaleString('es-CL')} km</span>
               {vehicle.kmActualizadoEn && (
-                <span className="text-xs"> · actualizado el {new Date(vehicle.kmActualizadoEn).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</span>
+                <span className="text-xs"> · actualizado el {fecha(vehicle.kmActualizadoEn)}</span>
               )}
             </p>
           )}

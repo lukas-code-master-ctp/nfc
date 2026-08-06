@@ -104,7 +104,7 @@ describe('filaDeEmpresa', () => {
       expect(fila[col('Fase')]).toBe('Prueba')
       expect(fila[col('Cobro actual (CLP)')]).toBe(0)
       expect(fila[col('Valor del ticket (CLP)')]).toBe(10 * PRICE_PER_VEHICLE)
-      expect(fila[col('Fin de prueba')]).toBe('2026-09-01')
+      expect(fila[col('Fin de prueba')]).toBe('01/09/2026')
     })
 
     it('el último día de la prueba todavía es prueba', () => {
@@ -129,7 +129,7 @@ describe('filaDeEmpresa', () => {
       expect(fila[col('Cobro actual (CLP)')]).toBe(6 * PRICE_PER_VEHICLE)
       expect(fila[col('Valor del ticket (CLP)')]).toBe(10 * PRICE_PER_VEHICLE)
       expect(fila[col('Código promocional')]).toBe('LANZAMIENTO')
-      expect(fila[col('Promoción hasta')]).toBe('2026-10-01')
+      expect(fila[col('Promoción hasta')]).toBe('01/10/2026')
     })
 
     // Es el bug que `coberturaDe` existe para evitar: la promoción es una
@@ -188,8 +188,12 @@ describe('filaDeEmpresa', () => {
       expect(fila[col('Nombre del cliente')]).toBe('')
     })
 
-    it('la fecha de alta se recorta al día', () => {
-      expect(filaDeEmpresa(empresa(), HOY)[col('Fecha de alta')]).toBe('2026-01-15')
+    it('la fecha de alta se muestra en dd/mm/aaaa', () => {
+      expect(filaDeEmpresa(empresa(), HOY)[col('Fecha de alta')]).toBe('15/01/2026')
+    })
+
+    it('la última conexión se muestra en dd/mm/aaaa', () => {
+      expect(filaDeEmpresa(empresa(), HOY)[col('Última conexión')]).toBe('04/08/2026')
     })
   })
 })

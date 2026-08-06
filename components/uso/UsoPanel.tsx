@@ -1,13 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { fechaHora } from '@/lib/fecha'
 
 type Driver = { id: string; nombre: string }
 type Modo = 'idle' | 'tomar' | 'entregar'
-
-function hora(iso: string): string {
-  return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
-}
 
 async function subirFoto(token: string, driverId: string, pin: string, tipo: string, file: File): Promise<string> {
   const res = await fetch(`/api/v/${token}/upload-url`, {
@@ -106,7 +103,7 @@ export default function UsoPanel({ token, drivers, enUso, autoAbrir = false }: {
       {enUso ? (
         <>
           <p className="text-base font-semibold text-tinta">En uso por {enUso.driverNombre}</p>
-          <p className="text-sm text-acero">Desde el {hora(enUso.tomadoEn)}</p>
+          <p className="text-sm text-acero">Desde el {fechaHora(enUso.tomadoEn)}</p>
           {modo === 'idle' && (
             <button onClick={() => setModo('entregar')} className={`mt-3 ${btnPrimary}`}>Entregar vehículo</button>
           )}

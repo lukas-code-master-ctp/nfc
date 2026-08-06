@@ -9,6 +9,7 @@
 
 import { cargoDe } from '@/lib/billing'
 import { faseDelPlan, coberturaDe, type FasePlan } from '@/lib/plan/fase'
+import { fecha, fechaCalendario } from '@/lib/fecha'
 import type { Periodicidad, PromoAplicada, TipoCuenta } from '@/lib/types'
 
 /** Lo que el export necesita saber de una empresa. */
@@ -89,11 +90,6 @@ export function escaparCampo(valor: string | number): string {
   return /[";\n\r]/.test(seguro) ? `"${seguro.replace(/"/g, '""')}"` : seguro
 }
 
-/** `2026-08-05T13:44:02.000Z` → `2026-08-05`. Vacío si no hay nada. */
-function soloFecha(iso: string | null): string {
-  return iso ? iso.slice(0, 10) : ''
-}
-
 /**
  * Las 16 celdas de una empresa, en el orden de `COLUMNAS`.
  *
@@ -126,13 +122,16 @@ export function filaDeEmpresa(e: FilaExport, hoy: string): (string | number)[] {
     // caso explícito una cuenta en prueba aparecería pagando el ticket completo.
     fase === 'prueba' ? 0 : cargo.monto,
     ETIQUETA_FASE[fase],
-    e.gratisHasta ?? '',
+    fechaCalendario(e.gratisHasta),
     e.promo?.codigo ?? '',
-    e.promo?.hasta ?? '',
+    fechaCalendario(e.promo?.hasta),
     e.rut,
     e.telefono,
-    soloFecha(e.createdAt),
-    e.ultimaConexion ?? '',
+    fecha(e.createdAt),
+    // `ultimaConexion` es una fecha calendario `YYYY-MM-DD` (ver JSDoc en
+    // `AdminCompanyRow`), NO un instante ISO: usar `fecha()` acá reintroduciría
+    // el desfase de huso horario que este módulo existe para evitar.
+    fechaCalendario(e.ultimaConexion),
   ]
 }
 

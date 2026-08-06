@@ -1,21 +1,11 @@
 import Link from 'next/link'
+import { fechaCalendario } from '@/lib/fecha'
 import type { EstadoPrueba } from '@/lib/plan/prueba'
 
 const TONO: Record<Exclude<EstadoPrueba, 'sin_prueba'>, string> = {
   activa: 'border-azul/30 bg-azul/5 text-acero',
   por_terminar: 'border-por-vencer/40 bg-por-vencer/10 text-tinta',
   vencida: 'border-vencido/40 bg-vencido/10 text-tinta',
-}
-
-/**
- * `hasta` es una fecha calendario `YYYY-MM-DD`, no un instante: se arma por
- * componentes en vez de parsearla como ISO, por el mismo motivo que el
- * `fechaCL` de `/facturacion` (evita el desfase de huso horario de
- * `toLocaleDateString` sobre una medianoche UTC vista desde Chile).
- */
-function fechaCL(fechaISO: string): string {
-  const [y, m, d] = fechaISO.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function RelojIcon() {
@@ -72,8 +62,8 @@ export default function FranjaPrueba({
     const dias = Math.max(0, promo.diasRestantes)
     const texto =
       dias === 0
-        ? `Tu promoción termina hoy · hasta el ${fechaCL(promo.hasta)}.`
-        : `Tienes una promoción activa · ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`} · hasta el ${fechaCL(promo.hasta)}.`
+        ? `Tu promoción termina hoy · hasta el ${fechaCalendario(promo.hasta)}.`
+        : `Tienes una promoción activa · ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`} · hasta el ${fechaCalendario(promo.hasta)}.`
 
     return (
       <div className={`${MARCO} border-azul/30 bg-azul/5 text-acero`}>

@@ -3,6 +3,7 @@ import RevisarDanoButton from '@/components/vehicle/RevisarDanoButton'
 import ForzarEntregaButton from '@/components/vehicle/ForzarEntregaButton'
 import PillTip from '@/components/PillTip'
 import { calcularConsumo } from '@/lib/usages/consumo'
+import { fechaHora } from '@/lib/fecha'
 import type { ConsumoBencina } from '@/lib/types'
 
 interface UsageRow {
@@ -21,10 +22,6 @@ interface UsageRow {
   limpieza?: string | null
   iaAnalizadoEn?: string
   datosConfirmados?: boolean
-}
-
-function fecha(iso: string): string {
-  return new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' })
 }
 
 export default function BitacoraUso({ usos, puedeEditar, consumoParams }: { usos: UsageRow[]; puedeEditar: boolean; consumoParams: ConsumoBencina | null }) {
@@ -61,8 +58,8 @@ export default function BitacoraUso({ usos, puedeEditar, consumoParams }: { usos
                 </div>
               </div>
               <p className="mt-1 text-xs text-acero">
-                Tomó: {fecha(u.tomadoEn)}
-                {u.entregadoEn ? ` · Entregó: ${fecha(u.entregadoEn)}` : ''}
+                Tomó: {fechaHora(u.tomadoEn)}
+                {u.entregadoEn ? ` · Entregó: ${fechaHora(u.entregadoEn)}` : ''}
                 {u.entregadoPorNombre && u.entregadoPorNombre !== u.driverNombre ? ` (por ${u.entregadoPorNombre})` : ''}
               </p>
               {u.estado === 'abierto' && puedeEditar && <ForzarEntregaButton usageId={u.id} />}
