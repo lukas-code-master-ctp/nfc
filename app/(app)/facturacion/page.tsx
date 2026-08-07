@@ -142,9 +142,13 @@ export default async function FacturacionPage() {
 
           {/* Solo con plan ya elegido: sin `periodicidad`, canjear acá calcularía
               `promo.hasta` desde `gratisHasta: null` y la promoción arrancaría
-              HOY, solapándose con los 30 días de prueba que "Elegir plan" recién
-              va a fijar — ver I1 de la revisión final. El camino correcto sin
-              plan es el botón de arriba, que ya lleva el campo de código. */}
+              HOY, solapándose con la ventana de lanzamiento que "Elegir plan"
+              recién va a fijar — ver I1 de la revisión final. El camino correcto
+              sin plan es el botón de arriba, que ya lleva el campo de código.
+              Pasada la ventana el solapamiento ya no puede ocurrir (`gratisHasta`
+              queda en `null`), pero la guarda se mantiene: sigue siendo cierto
+              que canjear antes de elegir plan deja la promoción corriendo sobre
+              una cuenta que todavía no contrató nada. */}
           {!promo && yaEligio && <PanelPromo />}
 
           <BillingRequestForm currentCupo={cupo} periodicidad={periodicidad} />
