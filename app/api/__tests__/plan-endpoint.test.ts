@@ -209,6 +209,71 @@ describe('camino feliz', () => {
   })
 })
 
+// El alta no puede ACORTAR una fecha que la empresa ya tenía (ej. una
+// promoción canjeada antes de elegir plan, o el backfill de la migración
+// dejándola con un gratisHasta posterior a LANZAMIENTO_HASTA). Espejo de la
+// guarda que ya tiene `calcularParche` en la migración.
+describe('el alta no acorta un gratisHasta posterior que la empresa ya tenía', () => {
+  it('empresa con gratisHasta posterior a LANZAMIENTO_HASTA lo conserva, no lo pisa', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-02T12:00:00Z'))
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Empresa Test' },
+      plan: { maxVehiculos: 3, gratisHasta: '2026-12-25' },
+    })
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({
+      gratisHasta: '2026-12-25',
+      suscripcion: expect.objectContaining({ proximoCobro: '2026-12-26' }),
+    }))
+  })
+
+  it('empresa con gratisHasta posterior, dando de alta DESPUÉS de LANZAMIENTO_HASTA, igual lo conserva', async () => {
+    vi.useFakeTimers()
+    // Sin la guarda esta línea escribiría gratisHasta: null y borraría la
+    // fecha por completo, porque gratisHastaDeAlta(hoy) ya devuelve null
+    // pasada la ventana.
+    vi.setSystemTime(new Date('2026-09-15T12:00:00Z'))
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Empresa Test' },
+      plan: { maxVehiculos: 3, gratisHasta: '2026-12-25' },
+    })
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({
+      gratisHasta: '2026-12-25',
+      suscripcion: expect.objectContaining({ proximoCobro: '2026-12-26' }),
+    }))
+  })
+
+  it('empresa con gratisHasta igual a LANZAMIENTO_HASTA se comporta igual que sin fecha previa', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-02T12:00:00Z'))
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Empresa Test' },
+      plan: { maxVehiculos: 3, gratisHasta: LANZAMIENTO_HASTA },
+    })
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({
+      gratisHasta: LANZAMIENTO_HASTA,
+    }))
+  })
+})
+
 describe('correo best-effort', () => {
   it('si el correo lanza, la respuesta sigue siendo 200 y el plan quedó guardado', async () => {
     mocks.sendBillingRequestEmail.mockRejectedValue(new Error('resend caído'))

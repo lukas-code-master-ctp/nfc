@@ -96,7 +96,20 @@ export async function POST(req: NextRequest) {
   }
 
   const hoy = hoyEnChile(new Date())
-  const gratisHasta = gratisHastaDeAlta(hoy)
+  const gratisHastaCalculado = gratisHastaDeAlta(hoy)
+  // El alta nunca ACORTA una fecha que la empresa ya tenía: una promoción
+  // canjeada antes de elegir plan (o el backfill de la migración) puede
+  // haberle dejado un `gratisHasta` posterior al de la ventana de
+  // lanzamiento — igual que `calcularParche` en la migración, escribir
+  // encima le quitaría días ya prometidos. `null` (sin fecha previa, o la
+  // ventana ya pasada) siempre pierde contra cualquier fecha real: las dos
+  // son cadenas `YYYY-MM-DD`, así que el orden lexicográfico es el
+  // cronológico.
+  const gratisHastaPrevio = company?.plan?.gratisHasta ?? null
+  const gratisHasta =
+    gratisHastaPrevio && (!gratisHastaCalculado || gratisHastaPrevio > gratisHastaCalculado)
+      ? gratisHastaPrevio
+      : gratisHastaCalculado
   await savePlan(m.companyId, {
     periodicidad: periodicidad as Periodicidad,
     maxVehiculos: vehiculos,
