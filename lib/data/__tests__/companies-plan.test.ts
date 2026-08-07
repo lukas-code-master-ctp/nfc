@@ -105,4 +105,20 @@ describe('savePlan', () => {
       { merge: true },
     )
   })
+
+  it('escribe `promo` en el payload real de Firestore', async () => {
+    // Rama del allowlist sin caller en producción hoy (canjearPromo escribe
+    // plan.promo directo por transacción, ver lib/data/promoCodes.ts) y sin
+    // test hasta ahora. Se deja: no es una rama muerta, es la que usaría
+    // cualquier futuro llamador de savePlan que necesite tocar promo.
+    const promo = {
+      codigo: 'LANZAMIENTO50',
+      mesesGratis: 3,
+      vehiculosIncluidos: 5,
+      canjeadoEn: '2026-08-06T12:00:00.000Z',
+      hasta: '2026-12-01',
+    }
+    await savePlan('c1', { promo })
+    expect(companySet).toHaveBeenCalledWith({ plan: { promo } }, { merge: true })
+  })
 })
