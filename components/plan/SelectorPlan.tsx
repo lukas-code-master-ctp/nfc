@@ -12,10 +12,12 @@ import {
 } from '@/lib/billing'
 import type { Periodicidad } from '@/lib/types'
 import CampoPromo, { MOTIVOS, type PromoValidada } from '@/components/plan/CampoPromo'
+import { gratisHastaDeAlta, LANZAMIENTO_HASTA } from '@/lib/plan/prueba'
+import { fechaCalendario } from '@/lib/fecha'
 
 const ATAJOS = [1, 3, 5, 10]
 
-export default function SelectorPlan({ inicial }: { inicial: number }) {
+export default function SelectorPlan({ inicial, hoy }: { inicial: number; hoy: string }) {
   const router = useRouter()
   const [periodicidad, setPeriodicidad] = useState<Periodicidad>('mensual')
   const [vehiculos, setVehiculos] = useState(inicial)
@@ -288,7 +290,9 @@ export default function SelectorPlan({ inicial }: { inicial: number }) {
       {error && <p className="text-sm text-vencido">{error}</p>}
 
       <p className="text-center text-sm text-acero">
-        Empiezas con 30 días de prueba. Coordinamos el pago contigo antes de que terminen.
+        {gratisHastaDeAlta(hoy)
+          ? `Promoción de lanzamiento: no se cobra nada hasta el ${fechaCalendario(LANZAMIENTO_HASTA)}.`
+          : 'El cobro empieza al contratar.'}
       </p>
     </div>
   )

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { estadoPrueba, addDias, DIAS_PRUEBA, UMBRAL_POR_TERMINAR } from '@/lib/plan/prueba'
+import { estadoPrueba, addDias, UMBRAL_POR_TERMINAR, LANZAMIENTO_HASTA, gratisHastaDeAlta } from '@/lib/plan/prueba'
 import { hoyEnChile } from '@/lib/documents/status'
 import { debeElegirPlan } from '@/lib/plan'
 
@@ -79,8 +79,32 @@ describe('debeElegirPlan', () => {
 })
 
 describe('constantes', () => {
-  it('la prueba dura 30 días y avisa a los 7', () => {
-    expect(DIAS_PRUEBA).toBe(30)
+  it('avisa a los 7 días', () => {
     expect(UMBRAL_POR_TERMINAR).toBe(7)
+  })
+})
+
+describe('gratisHastaDeAlta', () => {
+  it('durante la ventana entrega la fecha de lanzamiento', () => {
+    expect(gratisHastaDeAlta('2026-08-06')).toBe(LANZAMIENTO_HASTA)
+  })
+
+  // El último día es gratis: el borde es inclusivo, igual que en faseDelPlan.
+  it('el último día de la ventana todavía cuenta', () => {
+    expect(gratisHastaDeAlta(LANZAMIENTO_HASTA)).toBe(LANZAMIENTO_HASTA)
+  })
+
+  // Estampar una fecha ya vencida haría que `estadoPrueba` devolviera
+  // 'vencida' y la franja le dijera "tu prueba terminó" a alguien que se
+  // acaba de registrar. Por eso `null` y no la constante.
+  it('pasada la ventana no entrega ninguna fecha', () => {
+    expect(gratisHastaDeAlta('2026-09-02')).toBeNull()
+    expect(gratisHastaDeAlta('2027-01-01')).toBeNull()
+  })
+})
+
+describe('estadoPrueba sigue igual', () => {
+  it('sin fecha no anuncia ningún plazo', () => {
+    expect(estadoPrueba(null, new Date('2026-09-05T12:00:00Z')).estado).toBe('sin_prueba')
   })
 })

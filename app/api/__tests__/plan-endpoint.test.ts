@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { NextRequest } from 'next/server'
+import { LANZAMIENTO_HASTA } from '@/lib/plan/prueba'
 
 const mocks = vi.hoisted(() => ({
   getMembership: vi.fn(),
@@ -123,12 +124,17 @@ describe('alta ya hecha', () => {
 })
 
 describe('camino feliz', () => {
-  it('guarda el plan con gratisHasta = hoy + 30 días y registra la solicitud', async () => {
+  it('guarda el plan con gratisHasta = LANZAMIENTO_HASTA y una suscripción inicial, y registra la solicitud', async () => {
     vi.useFakeTimers()
-    // 02:00 UTC del 2 de agosto es todavía 1 de agosto en Chile (UTC-4): si la
-    // ruta calculara la fecha con `toISOString().slice(0,10)` en vez de
-    // `hoyEnChile`, este test detectaría el desfase de día (con el reloj
-    // anterior, 12:00 UTC, ambos cálculos coincidían y el bug pasaba colado).
+    // OJO: esta fecha YA NO discrimina la fuente del "hoy". Con
+    // `DIAS_PRUEBA` (prueba de 30 días por cuenta) el 02:00 UTC del 2 de
+    // agosto detectaba el desfase de día entre `hoyEnChile` y
+    // `toISOString().slice(0,10)`, porque el resultado dependía del valor
+    // exacto de "hoy". Con `LANZAMIENTO_HASTA` fija, cualquier "hoy" dentro
+    // de la ventana (sea el de Chile o el de UTC) da el mismo
+    // `gratisHasta`, así que las dos fuentes de fecha coinciden acá. El caso
+    // que sí discrimina es el borde de `LANZAMIENTO_HASTA` mismo, más abajo
+    // ("el borde de LANZAMIENTO_HASTA...").
     vi.setSystemTime(new Date('2026-08-02T02:00:00Z'))
 
     const res = await POST(req({ periodicidad: 'anual', maxVehiculos: 8 }))
@@ -137,7 +143,16 @@ describe('camino feliz', () => {
     expect(mocks.savePlan).toHaveBeenCalledWith('c1', {
       periodicidad: 'anual',
       maxVehiculos: 8,
-      gratisHasta: '2026-08-31',
+      gratisHasta: LANZAMIENTO_HASTA,
+      suscripcion: {
+        flowCustomerId: null,
+        tarjeta: null,
+        cicloDesde: null,
+        proximoCobro: '2026-09-02',
+        impagoDesde: null,
+        cupoProximoCiclo: null,
+        cancelaEn: null,
+      },
     })
     // Verifica que createBillingRequest se llamó con los argumentos correctos, incluyendo desiredVehicles.
     expect(mocks.createBillingRequest).toHaveBeenCalledWith(
@@ -155,6 +170,107 @@ describe('camino feliz', () => {
         desiredVehicles: 8,
       })
     )
+  })
+
+  it('el alta después de la ventana de lanzamiento guarda gratisHasta: null y proximoCobro de hoy', async () => {
+    vi.useFakeTimers()
+    // Un día después del último día gratis: en Chile (UTC-4) sigue siendo
+    // 2026-09-02 a esta hora.
+    vi.setSystemTime(new Date('2026-09-02T12:00:00Z'))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 4 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', {
+      periodicidad: 'mensual',
+      maxVehiculos: 4,
+      gratisHasta: null,
+      suscripcion: expect.objectContaining({ proximoCobro: '2026-09-02' }),
+    })
+  })
+
+  it('el borde de LANZAMIENTO_HASTA: a esta hora sigue siendo el último día gratis en Chile', async () => {
+    vi.useFakeTimers()
+    // 02:00 UTC del 2 de septiembre es todavía 2026-09-01 en Chile (UTC-4) —
+    // el último día gratis, inclusive. Si la ruta calculara "hoy" con
+    // `toISOString().slice(0,10)` en vez de `hoyEnChile`, leería "2026-09-02"
+    // (ya pasada la ventana) y guardaría `gratisHasta: null`, negándole a
+    // quien se registra entre las 20:00 y las 23:59 hora Chile del último día
+    // de la promoción su último día gratis, y dejándolo con cobro inmediato.
+    vi.setSystemTime(new Date('2026-09-02T02:00:00Z'))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 4 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({
+      gratisHasta: LANZAMIENTO_HASTA,
+      suscripcion: expect.objectContaining({ proximoCobro: '2026-09-02' }),
+    }))
+  })
+})
+
+// El alta no puede ACORTAR una fecha que la empresa ya tenía (ej. una
+// promoción canjeada antes de elegir plan, o el backfill de la migración
+// dejándola con un gratisHasta posterior a LANZAMIENTO_HASTA). Espejo de la
+// guarda que ya tiene `calcularParche` en la migración.
+describe('el alta no acorta un gratisHasta posterior que la empresa ya tenía', () => {
+  it('empresa con gratisHasta posterior a LANZAMIENTO_HASTA lo conserva, no lo pisa', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-02T12:00:00Z'))
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Empresa Test' },
+      plan: { maxVehiculos: 3, gratisHasta: '2026-12-25' },
+    })
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({
+      gratisHasta: '2026-12-25',
+      suscripcion: expect.objectContaining({ proximoCobro: '2026-12-26' }),
+    }))
+  })
+
+  it('empresa con gratisHasta posterior, dando de alta DESPUÉS de LANZAMIENTO_HASTA, igual lo conserva', async () => {
+    vi.useFakeTimers()
+    // Sin la guarda esta línea escribiría gratisHasta: null y borraría la
+    // fecha por completo, porque gratisHastaDeAlta(hoy) ya devuelve null
+    // pasada la ventana.
+    vi.setSystemTime(new Date('2026-09-15T12:00:00Z'))
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Empresa Test' },
+      plan: { maxVehiculos: 3, gratisHasta: '2026-12-25' },
+    })
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({
+      gratisHasta: '2026-12-25',
+      suscripcion: expect.objectContaining({ proximoCobro: '2026-12-26' }),
+    }))
+  })
+
+  it('empresa con gratisHasta igual a LANZAMIENTO_HASTA se comporta igual que sin fecha previa', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-02T12:00:00Z'))
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Empresa Test' },
+      plan: { maxVehiculos: 3, gratisHasta: LANZAMIENTO_HASTA },
+    })
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({
+      gratisHasta: LANZAMIENTO_HASTA,
+    }))
   })
 })
 
@@ -242,6 +358,59 @@ describe('solicitud sobre el tope self-service (I2)', () => {
 
   it('solicitados no numérico o no razonable se ignora sin fallar la petición', async () => {
     const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5, solicitados: 'muchos' }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 5 }))
+  })
+})
+
+// CRÍTICO: una empresa anterior al selector puede tener un cupo por ENCIMA
+// del tope self-service, otorgado a mano por un admin de plataforma (ej.
+// Inmobiliaria Isla SpA: maxVehiculos 50, 19 vehículos, periodicidad null).
+// Forzar el tope de 30 en la rama `excedeTope` le bajaría el cupo en
+// silencio y sin vuelta atrás (el 409 `plan_ya_elegido` cierra la puerta a
+// reintentar). El endpoint debe conservar el mayor entre el tope y el cupo
+// que la empresa ya tenía.
+describe('alta no puede bajar un cupo que la empresa ya tenía (C-CRÍTICO)', () => {
+  it('empresa con maxVehiculos 50 (sin periodicidad) que pide 50 conserva 50, no 30', async () => {
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Inmobiliaria Isla SpA' },
+      plan: { maxVehiculos: 50 }, // periodicidad ausente: cuenta anterior al selector
+    })
+    mocks.listVehicles.mockResolvedValue(Array.from({ length: 19 }, (_, i) => ({ id: `v${i}` })))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 50, solicitados: 50 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 50 }))
+  })
+
+  it('empresa con maxVehiculos 50 y 35 vehículos cargados no cae en el callejón sin salida cupo_menor_al_uso', async () => {
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Inmobiliaria Isla SpA' },
+      plan: { maxVehiculos: 50 },
+    })
+    mocks.listVehicles.mockResolvedValue(Array.from({ length: 35 }, (_, i) => ({ id: `v${i}` })))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 50, solicitados: 50 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 50 }))
+  })
+
+  it('el camino ordinario (≤30) sigue igual: cupo 3 pidiendo 5 obtiene 5', async () => {
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Empresa Test' },
+      plan: { maxVehiculos: 3 },
+    })
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
 
     expect(res.status).toBe(200)
     expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 5 }))

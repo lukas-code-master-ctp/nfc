@@ -5,10 +5,32 @@ import { daysUntil } from '@/lib/documents/status'
 
 export type EstadoPrueba = 'sin_prueba' | 'activa' | 'por_terminar' | 'vencida'
 
-export const DIAS_PRUEBA = 30
 // El mismo hito que ya usan los recordatorios de documentos: dos umbrales
 // distintos para "se te acaba el tiempo" en la misma app sería incoherencia.
 export const UMBRAL_POR_TERMINAR = 7
+
+/**
+ * Último día sin cobro de la promoción de lanzamiento, **inclusive**.
+ *
+ * Reemplaza a la prueba de 30 días por cuenta, que tenía un defecto de
+ * origen: la ventana de regalo nunca se cerraba, porque cada alta nueva la
+ * corría un mes más hacia adelante. Con una fecha fija, todos terminan el
+ * mismo día — que es lo que una promoción de lanzamiento debe hacer.
+ */
+export const LANZAMIENTO_HASTA = '2026-09-01'
+
+/**
+ * Qué `gratisHasta` corresponde a una cuenta que se da de alta hoy.
+ *
+ * Devuelve `null` pasada la ventana, y eso no es un detalle: estampar una
+ * fecha ya vencida haría que `estadoPrueba` respondiera `'vencida'` y la
+ * franja le dijera "tu prueba terminó" a un cliente que acaba de registrarse.
+ * Ambas son cadenas `YYYY-MM-DD`, así que el orden lexicográfico es el
+ * cronológico y el borde es inclusivo, igual que en `faseDelPlan`.
+ */
+export function gratisHastaDeAlta(hoy: string): string | null {
+  return hoy <= LANZAMIENTO_HASTA ? LANZAMIENTO_HASTA : null
+}
 
 /** `YYYY-MM-DD` + días, sobre fecha calendario. */
 export function addDias(fechaISO: string, dias: number): string {

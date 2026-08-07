@@ -16,7 +16,7 @@ vi.mock('@/lib/firebase/admin', () => ({
 
 import { createCompany, getCompany, savePlan } from '@/lib/data/companies'
 import { debeElegirPlan } from '@/lib/plan'
-import { EMPTY_COMPANY } from '@/lib/types'
+import { EMPTY_COMPANY, suscripcionInicial } from '@/lib/types'
 
 beforeEach(() => {
   companySet.mockReset()
@@ -92,5 +92,33 @@ describe('savePlan', () => {
       { plan: { periodicidad: null, gratisHasta: null } },
       { merge: true },
     )
+  })
+
+  it('escribe `suscripcion` en el payload real de Firestore', async () => {
+    // Bug: savePlan es un allowlist explícito y `suscripcion` no estaba en él,
+    // así que el campo se descartaba en silencio — la empresa quedaba sin
+    // `plan.suscripcion` y el cron de cobro nunca la encontraría.
+    const suscripcion = suscripcionInicial('2026-09-02')
+    await savePlan('c1', { periodicidad: 'anual', gratisHasta: '2026-09-01', suscripcion })
+    expect(companySet).toHaveBeenCalledWith(
+      { plan: { periodicidad: 'anual', gratisHasta: '2026-09-01', suscripcion } },
+      { merge: true },
+    )
+  })
+
+  it('escribe `promo` en el payload real de Firestore', async () => {
+    // Rama del allowlist sin caller en producción hoy (canjearPromo escribe
+    // plan.promo directo por transacción, ver lib/data/promoCodes.ts) y sin
+    // test hasta ahora. Se deja: no es una rama muerta, es la que usaría
+    // cualquier futuro llamador de savePlan que necesite tocar promo.
+    const promo = {
+      codigo: 'LANZAMIENTO50',
+      mesesGratis: 3,
+      vehiculosIncluidos: 5,
+      canjeadoEn: '2026-08-06T12:00:00.000Z',
+      hasta: '2026-12-01',
+    }
+    await savePlan('c1', { promo })
+    expect(companySet).toHaveBeenCalledWith({ plan: { promo } }, { merge: true })
   })
 })

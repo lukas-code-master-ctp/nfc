@@ -3,6 +3,7 @@ import { getMembership } from '@/lib/auth/membership'
 import { can } from '@/lib/auth/roles'
 import { getCompany } from '@/lib/data/companies'
 import { maxVehiculosDe } from '@/lib/plan'
+import { hoyEnChile } from '@/lib/documents/status'
 import SelectorPlan from '@/components/plan/SelectorPlan'
 import { TapCarIsotipo, TapCarWordmark } from '@/components/brand/Logo'
 
@@ -41,7 +42,7 @@ export default async function PlanPage() {
           <h1 className="mt-4 text-xl font-bold tracking-tight text-tinta">Arma tu plan</h1>
           <p className="mt-1 text-sm text-acero">Puedes cambiarlo después desde Facturación.</p>
         </div>
-        <SelectorPlan inicial={inicial} />
+        <SelectorPlan inicial={inicial} hoy={hoyEnChile(new Date())} />
       </div>
     </main>
   )

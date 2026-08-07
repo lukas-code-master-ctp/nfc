@@ -23,7 +23,7 @@ describe('FranjaPrueba', () => {
 
   it('0 días muestra "termina hoy"', () => {
     render(<FranjaPrueba estado="por_terminar" diasRestantes={0} destino="/plan" />)
-    expect(screen.getByText('Tu prueba termina hoy.')).toBeTruthy()
+    expect(screen.getByText('La promoción de lanzamiento termina hoy.')).toBeTruthy()
   })
 
   it('vencida NO dice que la app se bloquea; el texto contiene "Sigue usando"', () => {
@@ -123,9 +123,9 @@ describe('FranjaPrueba', () => {
     })
   })
 
-  it('sin promoción (promo=null), el comportamiento actual se conserva', () => {
+  it('sin promoción vigente (promo=null), muestra el texto propio de la promoción de lanzamiento, no el de la promoción canjeada', () => {
     render(<FranjaPrueba estado="por_terminar" diasRestantes={5} destino="/plan" promo={null} />)
     expect(screen.getByText(/quedan 5 días/)).toBeTruthy()
-    expect(screen.queryByText(/promoción/)).toBeNull()
+    expect(screen.queryByText(/Tienes una promoción activa/)).toBeNull()
   })
 })

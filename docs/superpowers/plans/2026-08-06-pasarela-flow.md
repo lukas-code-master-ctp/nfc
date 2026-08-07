@@ -306,7 +306,7 @@ Expected: PASS — 15 tests.
 
 Cambiar `dias >= DIA_SOLO_LECTURA` por `dias > DIA_SOLO_LECTURA` y confirmar que falla el borde del día 8. Después cambiar `prorrateo` para que multiplique por el precio unitario en vez de usar `cargoDe`, y confirmar que falla "descuenta la cobertura promocional". Revertir ambos.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add lib/billing && git commit -m "feat(cobros): la escalera de impago y el prorrateo, puros"
@@ -593,7 +593,39 @@ export function commerceOrderDe(
 export async function listPagos(companyId: string): Promise<Pago[]>
 ```
 
-- [ ] **Step 4: Bloquear la colección al cliente**
+- [ ] **Step 4: `updateSuscripcion` — escrituras parciales atómicas**
+
+Hallazgo del entregable anterior, que hay que resolver **antes** de `cobrarCiclo`: `savePlan` trata `suscripcion` como un campo entero, y `Suscripcion` no tiene ningún campo opcional. O sea que escribir solo `impagoDesde` obliga a leer el bloque completo, copiarlo, cambiar un campo y volver a escribirlo — **read-modify-write, que no es atómico**.
+
+Eso importa acá porque este entregable escribe campos sueltos todo el tiempo y hay dos escritores concurrentes reales: el cron diario y el retorno del registro de tarjeta, que llaman ambos a `cobrarCiclo`. La reserva de `pagos/{commerceOrder}` impide el cobro doble, pero no impide que uno de los dos pise el `impagoDesde` que el otro acaba de escribir.
+
+En `lib/data/companies.ts`:
+
+```ts
+/**
+ * Escribe campos SUELTOS de `plan.suscripcion` sin tocar los demás.
+ *
+ * Existe aparte de `savePlan` porque ese trata `suscripcion` como un objeto
+ * entero: escribir `impagoDesde` a través de él exige leerlo completo,
+ * copiarlo y devolverlo, y dos escritores concurrentes —el cron y el retorno
+ * de Flow, que llaman los dos a `cobrarCiclo`— se pisan el cambio del otro sin
+ * que nadie se entere. El `set(..., { merge: true })` de Firestore fusiona los
+ * mapas anidados de verdad, así que un parche de un solo campo deja los otros
+ * seis intactos.
+ */
+export async function updateSuscripcion(
+  companyId: string,
+  patch: Partial<Suscripcion>,
+): Promise<void>
+```
+
+Test obligatorio: escribir solo `impagoDesde` sobre una suscripción existente **deja los otros seis campos intactos**. Es el que impide que alguien lo "simplifique" a `savePlan` más adelante.
+
+**Verificar contra el emulador antes de desplegar esto.** La premisa —que `set(data, { merge: true })` fusiona mapas anidados de forma recursiva a cualquier profundidad, y no solo un nivel— está respaldada por la documentación de Firestore y por precedente en este mismo código (`savePlan` ya depende de ella un nivel más arriba, igual que `promoCodes.ts` y `saveOnboarding`), pero **no se pudo comprobar con una corrida real**: el emulador necesita Java, que no está en la máquina de desarrollo. Si la premisa fuera falsa, cada escritura de un campo suelto **borraría los otros seis** y una cuenta perdería su tarjeta registrada al primer cobro fallido. Correr `npm run test:rules` con el emulador levantado, o una prueba manual en el proyecto de Firebase, antes de que esto toque producción. (`Suscripcion` no tiene arreglos, que es la única excepción documentada al merge recursivo.)
+
+Todas las escrituras de suscripción de este entregable (`cobrarCiclo`, `/api/plan/cupo`, `/api/plan/cancelar`, el cron) pasan por acá, **no** por `savePlan`.
+
+- [ ] **Step 5: Bloquear la colección al cliente**
 
 En `firestore.rules`, junto a `usages` y `mantenciones`:
 
@@ -603,13 +635,13 @@ En `firestore.rules`, junto a `usages` y `mantenciones`:
     }
 ```
 
-- [ ] **Step 5: Desplegar las reglas**
+- [ ] **Step 6: Desplegar las reglas**
 
 ```bash
 node --env-file=.env.local scripts/deploy-firestore-rules.mjs
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add -A && git commit -m "feat(cobros): la coleccion pagos y su idempotencia"
@@ -684,7 +716,7 @@ Expected: PASS — 8 tests.
 
 Quitar la condición `solo si estaba en null` del paso 8 y confirmar que falla el caso 6. Quitar el avance del ciclo del paso 5 y confirmar que falla el caso 2. Revertir ambos.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add lib/data && git commit -m "feat(cobros): cobrarCiclo, con idempotencia y escalera de impago"
@@ -899,7 +931,7 @@ Se acepta que entrar por URL directa a `/reportes` se saltee el bloqueo de lectu
 
 402 en `solo_lectura` y `bloqueada`, paso libre en `reintentando` y `al_dia`; y que la ficha pública bloqueada **no incluya ninguna URL de documento** en su HTML.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add -A && git commit -m "feat(cobros): solo lectura y bloqueo por impago"

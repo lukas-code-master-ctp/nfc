@@ -74,6 +74,7 @@ export async function savePlan(companyId: string, patch: Partial<PlanData>): Pro
   if (patch.periodicidad !== undefined) plan.periodicidad = patch.periodicidad
   if (patch.gratisHasta !== undefined) plan.gratisHasta = patch.gratisHasta
   if (patch.promo !== undefined) plan.promo = patch.promo
+  if (patch.suscripcion !== undefined) plan.suscripcion = patch.suscripcion
   if (Object.keys(plan).length === 0) return
   await adminDb.collection(COL).doc(companyId).set({ plan }, { merge: true })
 }

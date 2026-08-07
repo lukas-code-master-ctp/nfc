@@ -220,6 +220,49 @@ export interface PromoCode {
 export const MAX_MESES_PROMO = 24
 export const MAX_VEHICULOS_PROMO = 100
 
+export interface TarjetaRegistrada {
+  /** Lo que devuelve Flow en getRegisterStatus. Nunca guardamos más que esto. */
+  marca: string
+  ultimos4: string
+  /** ISO completo. */
+  registradaEn: string
+}
+
+export interface Suscripcion {
+  /** El cliente en Flow. `null` hasta que se crea. */
+  flowCustomerId: string | null
+  tarjeta: TarjetaRegistrada | null
+  /**
+   * `YYYY-MM-DD`: inicio del ciclo actualmente pagado.
+   * `null` = todavía no se cobró ni una vez, así que no hay ciclo que prorratear.
+   */
+  cicloDesde: string | null
+  /** `YYYY-MM-DD`: el día en que toca ejecutar el próximo cargo. */
+  proximoCobro: string
+  /**
+   * `YYYY-MM-DD`: el día del PRIMER cobro rechazado. `null` = al día.
+   * Es el único campo que mueve la escalera de impago completa.
+   */
+  impagoDesde: string | null
+  /** El cupo que reemplaza a `maxVehiculos` al cerrar el ciclo. `null` = sin cambio. */
+  cupoProximoCiclo: number | null
+  /** `YYYY-MM-DD`: baja pedida, efectiva al cerrar el ciclo pagado. */
+  cancelaEn: string | null
+}
+
+/** Un bloque nuevo, con todo en su estado inicial. Sin claves `undefined`. */
+export function suscripcionInicial(proximoCobro: string): Suscripcion {
+  return {
+    flowCustomerId: null,
+    tarjeta: null,
+    cicloDesde: null,
+    proximoCobro,
+    impagoDesde: null,
+    cupoProximoCiclo: null,
+    cancelaEn: null,
+  }
+}
+
 export interface PlanData {
   /** Máximo de vehículos permitidos por el plan. Mínimo 1. */
   maxVehiculos: number
@@ -234,6 +277,8 @@ export interface PlanData {
   gratisHasta?: string | null
   /** El código canjeado. Uno por empresa. */
   promo?: PromoAplicada | null
+  /** El estado de cobro. Ausente en cuentas anteriores a la pasarela. */
+  suscripcion?: Suscripcion
 }
 
 export const DEFAULT_PLAN: PlanData = { maxVehiculos: 3 }
