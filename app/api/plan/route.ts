@@ -56,9 +56,16 @@ export async function POST(req: NextRequest) {
   }
   const excedeTope = solicitadosNum != null && solicitadosNum > MAX_VEHICULOS_SELF_SERVICE
 
+  // Se necesita antes de calcular `vehiculos`: una cuenta anterior al selector
+  // puede llegar con un cupo (`maxVehiculos`) por ENCIMA del tope self-service,
+  // otorgado a mano por un admin de plataforma. Forzar el tope ahí sería una
+  // baja de cupo silenciosa e irreversible (el 409 de más abajo cierra la
+  // puerta a reintentar) — ver el caso de Inmobiliaria Isla SpA (50 → 30).
+  const company = await getCompany(m.companyId)
+
   let vehiculos: number
   if (excedeTope) {
-    vehiculos = MAX_VEHICULOS_SELF_SERVICE
+    vehiculos = Math.max(MAX_VEHICULOS_SELF_SERVICE, company?.plan?.maxVehiculos ?? 0)
   } else {
     const n = Number(maxVehiculos)
     // El tope se comprueba acá y no solo en el formulario: el cliente no decide
@@ -71,7 +78,6 @@ export async function POST(req: NextRequest) {
 
   // Este endpoint es el alta, no el cambio de plan. Sin esta comprobación
   // alguien reiniciaría su prueba llamándolo de nuevo.
-  const company = await getCompany(m.companyId)
   if (company?.plan?.periodicidad) {
     return NextResponse.json({ error: 'plan_ya_elegido' }, { status: 409 })
   }

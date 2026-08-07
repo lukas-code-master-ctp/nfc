@@ -274,3 +274,56 @@ describe('solicitud sobre el tope self-service (I2)', () => {
     expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 5 }))
   })
 })
+
+// CRÍTICO: una empresa anterior al selector puede tener un cupo por ENCIMA
+// del tope self-service, otorgado a mano por un admin de plataforma (ej.
+// Inmobiliaria Isla SpA: maxVehiculos 50, 19 vehículos, periodicidad null).
+// Forzar el tope de 30 en la rama `excedeTope` le bajaría el cupo en
+// silencio y sin vuelta atrás (el 409 `plan_ya_elegido` cierra la puerta a
+// reintentar). El endpoint debe conservar el mayor entre el tope y el cupo
+// que la empresa ya tenía.
+describe('alta no puede bajar un cupo que la empresa ya tenía (C-CRÍTICO)', () => {
+  it('empresa con maxVehiculos 50 (sin periodicidad) que pide 50 conserva 50, no 30', async () => {
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Inmobiliaria Isla SpA' },
+      plan: { maxVehiculos: 50 }, // periodicidad ausente: cuenta anterior al selector
+    })
+    mocks.listVehicles.mockResolvedValue(Array.from({ length: 19 }, (_, i) => ({ id: `v${i}` })))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 50, solicitados: 50 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 50 }))
+  })
+
+  it('empresa con maxVehiculos 50 y 35 vehículos cargados no cae en el callejón sin salida cupo_menor_al_uso', async () => {
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Inmobiliaria Isla SpA' },
+      plan: { maxVehiculos: 50 },
+    })
+    mocks.listVehicles.mockResolvedValue(Array.from({ length: 35 }, (_, i) => ({ id: `v${i}` })))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 50, solicitados: 50 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 50 }))
+  })
+
+  it('el camino ordinario (≤30) sigue igual: cupo 3 pidiendo 5 obtiene 5', async () => {
+    mocks.getCompany.mockResolvedValue({
+      id: 'c1',
+      ownerUid: 'u1',
+      company: { razonSocial: 'Empresa Test' },
+      plan: { maxVehiculos: 3 },
+    })
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 5 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({ maxVehiculos: 5 }))
+  })
+})
