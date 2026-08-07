@@ -126,10 +126,15 @@ describe('alta ya hecha', () => {
 describe('camino feliz', () => {
   it('guarda el plan con gratisHasta = LANZAMIENTO_HASTA y una suscripción inicial, y registra la solicitud', async () => {
     vi.useFakeTimers()
-    // 02:00 UTC del 2 de agosto es todavía 1 de agosto en Chile (UTC-4): si la
-    // ruta calculara la fecha con `toISOString().slice(0,10)` en vez de
-    // `hoyEnChile`, este test detectaría el desfase de día (con el reloj
-    // anterior, 12:00 UTC, ambos cálculos coincidían y el bug pasaba colado).
+    // OJO: esta fecha YA NO discrimina la fuente del "hoy". Con
+    // `DIAS_PRUEBA` (prueba de 30 días por cuenta) el 02:00 UTC del 2 de
+    // agosto detectaba el desfase de día entre `hoyEnChile` y
+    // `toISOString().slice(0,10)`, porque el resultado dependía del valor
+    // exacto de "hoy". Con `LANZAMIENTO_HASTA` fija, cualquier "hoy" dentro
+    // de la ventana (sea el de Chile o el de UTC) da el mismo
+    // `gratisHasta`, así que las dos fuentes de fecha coinciden acá. El caso
+    // que sí discrimina es el borde de `LANZAMIENTO_HASTA` mismo, más abajo
+    // ("el borde de LANZAMIENTO_HASTA...").
     vi.setSystemTime(new Date('2026-08-02T02:00:00Z'))
 
     const res = await POST(req({ periodicidad: 'anual', maxVehiculos: 8 }))
@@ -182,6 +187,25 @@ describe('camino feliz', () => {
       gratisHasta: null,
       suscripcion: expect.objectContaining({ proximoCobro: '2026-09-02' }),
     })
+  })
+
+  it('el borde de LANZAMIENTO_HASTA: a esta hora sigue siendo el último día gratis en Chile', async () => {
+    vi.useFakeTimers()
+    // 02:00 UTC del 2 de septiembre es todavía 2026-09-01 en Chile (UTC-4) —
+    // el último día gratis, inclusive. Si la ruta calculara "hoy" con
+    // `toISOString().slice(0,10)` en vez de `hoyEnChile`, leería "2026-09-02"
+    // (ya pasada la ventana) y guardaría `gratisHasta: null`, negándole a
+    // quien se registra entre las 20:00 y las 23:59 hora Chile del último día
+    // de la promoción su último día gratis, y dejándolo con cobro inmediato.
+    vi.setSystemTime(new Date('2026-09-02T02:00:00Z'))
+
+    const res = await POST(req({ periodicidad: 'mensual', maxVehiculos: 4 }))
+
+    expect(res.status).toBe(200)
+    expect(mocks.savePlan).toHaveBeenCalledWith('c1', expect.objectContaining({
+      gratisHasta: LANZAMIENTO_HASTA,
+      suscripcion: expect.objectContaining({ proximoCobro: '2026-09-02' }),
+    }))
   })
 })
 
