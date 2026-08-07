@@ -81,7 +81,7 @@ export default async function FacturacionPage() {
           )}
           {company?.plan?.gratisHasta && (
             <div className="flex justify-between gap-4">
-              <dt className="text-acero">{prueba.estado === 'vencida' ? 'Prueba terminada el' : 'Sin cobro hasta'}</dt>
+              <dt className="text-acero">{prueba.estado === 'vencida' ? 'Promoción de lanzamiento terminada el' : 'Sin cobro hasta'}</dt>
               <dd className="font-medium text-tinta">{fechaCalendario(company.plan.gratisHasta)}</dd>
             </div>
           )}

@@ -90,10 +90,10 @@ export default function FranjaPrueba({
       ? // Dice la verdad: la app NO se bloquea. Un aviso que amenaza con algo
         // que no ocurre entrena a la gente a ignorar todos los avisos,
         // incluidos los de vencimiento de documentos, que son el producto.
-        'Tu prueba terminó. Sigue usando TapCar mientras coordinamos tu plan.'
+        'La promoción de lanzamiento terminó. Sigue usando TapCar mientras coordinamos tu plan.'
       : dias === 0
-        ? 'Tu prueba termina hoy.'
-        : `Estás en la versión de prueba · ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`}.`
+        ? 'La promoción de lanzamiento termina hoy.'
+        : `Promoción de lanzamiento · ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`}.`
 
   return (
     <div className={`${MARCO} ${TONO[estado]}`}>
