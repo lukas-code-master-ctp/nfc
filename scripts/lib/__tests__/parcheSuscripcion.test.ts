@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { calcularParche, LANZAMIENTO_HASTA, addDias } from '../parcheSuscripcion.mjs'
 import { LANZAMIENTO_HASTA as LANZAMIENTO_HASTA_APP, addDias as addDiasApp } from '@/lib/plan/prueba'
+import { suscripcionInicial } from '@/lib/types'
 
 // `scripts/migrar-suscripciones.mjs` es un `.mjs`: no puede importar el
 // TypeScript de `lib/`, así que `scripts/lib/parcheSuscripcion.mjs` DUPLICA
@@ -74,16 +75,13 @@ describe('calcularParche', () => {
   })
 
   it('suscripcion ausente: se siembra con proximoCobro = el día siguiente al último día gratis', () => {
+    // `toEqual` contra la función real (no un literal a mano) es lo que
+    // detecta que la copia del script (`suscripcionInicial` en
+    // parcheSuscripcion.mjs) se desvió de `lib/types.ts`: un campo nuevo en
+    // el tipo `Suscripcion` que la copia no siembre queda estructuralmente
+    // incompleto, y un literal a mano no lo habría notado.
     const patch = calcularParche({})
-    expect(patch['plan.suscripcion']).toMatchObject({
-      flowCustomerId: null,
-      tarjeta: null,
-      cicloDesde: null,
-      proximoCobro: addDias(LANZAMIENTO_HASTA, 1),
-      impagoDesde: null,
-      cupoProximoCiclo: null,
-      cancelaEn: null,
-    })
+    expect(patch['plan.suscripcion']).toEqual(suscripcionInicial(addDias(LANZAMIENTO_HASTA, 1)))
   })
 
   it('suscripcion ausente, con gratisHasta ya posterior: proximoCobro usa esa fecha, no la de lanzamiento', () => {
